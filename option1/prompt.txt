@@ -1,0 +1,134 @@
+# 角色
+你是一名精通MIMIC-IV数据库和重症医学数据分析的数据工程师。
+
+# 任务
+请根据以下研究方案，生成从MIMIC-IV 3.1版本数据库中提取aSAH（动脉瘤性蛛网膜下腔出血）患者队列的完整SQL代码，并生成输血分组和后续因果推断建模的Python代码。生成的sql和python代码需要在big query里运行
+
+# 数据库版本
+MIMIC-IV 3.1
+- hosp表：`physionet-data.mimiciv_3_1_hosp`
+- icu表：`physionet-data.mimiciv_3_1_icu`
+
+# 研究目标
+识别aSAH患者中，宽松输血策略（Hb<10触发输血）相对于限制输血策略（Hb<7触发输血）是否存在异质性治疗效果（HTE）。
+
+# 研究设计
+- 暴露变量：输血分组（1=宽松输血组，0=限制输血组）
+- 主要结局：住院死亡率
+- 次要结局：出院时运动GCS（格拉斯哥昏迷评分运动部分）
+- 分析时间点：首次贫血时间点T₀（首次Hb<10 g/dL的时间）
+
+# 需要的变量清单
+
+## 1. 结局变量
+- `mortality`：住院死亡率（从admissions表获取hospital_expire_flag）
+- `gcs_motor`：出院前最后一次运动GCS评分（chartevents，itemid=220739）
+
+## 2. 治疗变量
+- `transfusion_group`：1=宽松输血组（Hb<10后24h内输血），0=限制输血组（Hb<7后24h内输血，且之前没有宽松输血）
+
+## 3. 协变量（效应修正因子和混杂因子）
+- `age`：年龄（patients表anchor_age）
+- `gender`：性别
+- `race`：种族
+- `admission_type`：入院类型
+- `min_map`：T₀前最低平均动脉压（chartevents，itemid=220181或225309）
+- `mean_map`：T₀前平均MAP
+- `max_lactate`：T₀前最高乳酸（labevents，itemid=50813）
+- `mean_lactate`：T₀前平均乳酸
+- `min_pf_ratio`：T₀前最低PaO₂/FiO₂比值（PaO₂=50821，FiO₂=223835）
+- `initial_gcs`：入ICU时首次GCS（chartevents，itemid=220739）
+- `nadir_hb`：首次贫血时的Hb值
+- `mean_heart_rate`：T₀前平均心率（chartevents，itemid=220045）
+- `max_shock_index`：T₀前最高休克指数（心率/收缩压，收缩压itemid=220179）
+- `min_platelet`：T₀前最低血小板（labevents，itemid=51265）
+
+# 患者纳入排除标准
+- 纳入：年龄≥18岁，ICD诊断为aSAH（见下方编码），有ICU停留记录
+- 排除：ICU停留<24小时，Hb从未低于10的患者
+
+# aSAH诊断编码
+- ICD-9: 430
+- ICD-10: I60.x（I60.0-I60.9）
+- 需要关联动脉瘤诊断：ICD-9 437.3，ICD-10 I67.1
+
+# 输出要求
+
+请生成以下代码文件，每个文件独立可运行：
+
+## 文件1：01_create_dataset.sql
+包含所有BigQuery SQL代码，按顺序执行：
+1. 创建数据集（如果不存在）
+2. 提取aSAH患者队列（sah_patients）
+3. 提取首次ICU停留（first_icu_stay）
+4. 提取血红蛋白和贫血时间点（hemoglobin_measurements, first_hb_below_10, first_hb_below_7, first_anemia_time）
+5. 提取输血记录（transfusions）
+6. 提取MAP（map_baseline）并聚合（map_aggregated）
+7. 提取乳酸（lactate_baseline）并聚合（lactate_aggregated）
+8. 提取PaO₂和FiO₂，计算PF比值（pao2_measurements, fio2_measurements, pf_ratio_matched, min_pf_ratio）
+9. 提取人口学特征（demographics）
+10. 提取初始GCS（initial_gcs）
+11. 提取心率（heart_rate_aggregated）
+12. 提取休克指数（shock_index_aggregated）
+13. 提取血小板（platelet_aggregated）
+14. 整合最终数据表（final_cohort）
+
+要求：
+- 每个CREATE TABLE语句前先DROP IF EXISTS
+- 所有时间窗口：协变量必须在T₀之前提取
+- PF比值匹配窗口：PaO₂时间前4小时、后1小时内的FiO₂
+- 添加适当的数据质量过滤（合理性范围）
+- 添加注释说明每个步骤的目的
+
+## 文件2：02_transfusion_grouping.py
+Python代码，用于输血分组：
+1. 从BigQuery读取hemoglobin_measurements和transfusions数据
+2. 实现分组逻辑：
+   - 宽松组：首次Hb<10后24小时内有输血
+   - 限制组：首次Hb<7后24小时内有输血，且之前没有宽松输血
+   - 排除：其他情况
+3. 输出transfusion_groups_corrected.csv
+4. 打印分组统计信息
+
+## 文件3：03_causal_ml_analysis.py
+Python代码，因果机器学习分析：
+1. 读取final_cohort.csv和transfusion_groups_corrected.csv
+2. 数据预处理（缺失值填充、标准化）
+3. 训练测试集划分（80/20）
+4. Causal Forest模型（econml库）：
+   - 估计CATE（个体治疗效应）
+   - 计算95%置信区间
+   - 判断是否所有区间跨0
+5. GATES分析：
+   - 按CATE分5组
+   - 计算每组实际ATE
+   - Spearman单调性检验
+6. SHAP分析：
+   - 训练XGBoost预测CATE
+   - 计算SHAP值
+   - 特征重要性排序
+7. 生成4张图：
+   - gates_plot.png
+   - shap_summary.png
+   - feature_importance.png
+   - cate_analysis.png（三合一：CATE分布、按组CATE、校准图）
+8. 输出HTE存在性的综合判断
+
+## 文件4：run_all.sh（可选）
+bash脚本，按顺序执行上述流程。
+
+# 代码风格要求
+- 使用4空格缩进
+- 每个函数添加docstring
+- 关键步骤添加print输出，显示进度
+- 错误处理（try-except）
+- 设置随机种子（42）确保可重复
+
+# 注意事项
+- 所有时间比较使用TIMESTAMP类型
+- 处理NULL值时使用合理的默认值或中位数填充
+- 注意ICU停留可能有多条记录，取第一次
+- 注意一个患者可能多次住院，取第一次aSAH住院
+- 所有表名使用反引号括起来，避免大小写问题
+
+请开始生成代码。
