@@ -29,7 +29,7 @@ SELECT
               AND LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%'
         )
     ) AS current_traumatic_flagged_with_nontraumatic_title
-FROM `mimic-study-498508.ash_study.source_sah_admissions` s
+FROM `mimic-study-498508.asah_study.source_sah_admissions` s
 WHERE is_adult = 1
   AND has_sah_dx = 1;
 
@@ -39,7 +39,7 @@ SELECT
     di.icd_code,
     dd.long_title,
     COUNT(DISTINCT di.hadm_id) AS admissions
-FROM `mimic-study-498508.ash_study.source_sah_admissions` s
+FROM `mimic-study-498508.asah_study.source_sah_admissions` s
 INNER JOIN `physionet-data.mimiciv_3_1_hosp.diagnoses_icd` di
     ON s.subject_id = di.subject_id
    AND s.hadm_id = di.hadm_id

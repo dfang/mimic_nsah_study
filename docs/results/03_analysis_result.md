@@ -1,3 +1,5 @@
+> Note: This is a historical result export from the earlier phenotype run that used `gcs_motor_min_48h` as the neural clustering variable. The current extraction and analysis strategy uses `gcs_min_48h` / `gcs_grade_min_48h` for primary clustering and keeps `gcs_motor_min_48h` for sensitivity or prediction comparison. Re-run the SQL and Python analysis before using this file as current evidence.
+
 读取 BigQuery 表：mimic-study-498508.ash_study.physiology_features_48h
 当前 cohort flag：eligible_primary_analysis = 1
 读取完成：229 行，29 列

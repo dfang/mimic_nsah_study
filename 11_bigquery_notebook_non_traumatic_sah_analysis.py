@@ -1,23 +1,25 @@
-# BigQuery Notebook 可直接运行的 aSAH 早期生理表型分析脚本
+# BigQuery Notebook 可直接运行的 non-traumatic SAH 早期生理表型分析脚本
 #
 # 使用方式：
 # 1. 在 BigQuery Notebook / Colab Enterprise 新建 Python notebook。
-# 2. 确认已经运行过 01_create_phenotype_cohort.sql。
+# 2. 确认已经运行过 10_create_non_traumatic_sah_cohort.sql。
 # 3. 把本脚本整段复制到一个 Python cell 中运行，或上传后执行：
-#       %run 03_bigquery_notebook_phenotype_analysis.py
+#       %run 11_bigquery_notebook_non_traumatic_sah_analysis.py
 #
 # 脚本会直接读取：
-#   mimic-study-498508.asah_study.physiology_features_48h
+#   mimic-study-498508.non_traumatic_sah_study.physiology_features_48h
 #
 # 并写回以下 BigQuery 表：
 #   phenotype_k_selection_metrics
-#   phenotype_cluster_assignments
-#   phenotype_cluster_centers_zscore
-#   phenotype_feature_summary_raw
-#   phenotype_outcome_summary
-#   phenotype_anemia_feasibility
-#   phenotype_lightweight_tests
-#   phenotype_cluster_stability
+#   phenotype_cluster_assignments                  (primary K=3)
+#   phenotype_cluster_centers_zscore              (primary K=3)
+#   phenotype_feature_summary_raw                 (primary K=3)
+#   phenotype_outcome_summary                     (primary K=3)
+#   phenotype_anemia_feasibility                  (primary K=3)
+#   phenotype_lightweight_tests                   (primary K=3)
+#   phenotype_cluster_stability                   (primary K=3)
+#   phenotype_*_k4_exploratory                    (K=4 high-resolution sensitivity)
+#   phenotype_k3_k4_refinement_crosstab
 
 from __future__ import annotations
 
@@ -46,11 +48,13 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # =============================================================================
 
 PROJECT_ID = "mimic-study-498508"
-DATASET_ID = "asah_study"
+DATASET_ID = "non_traumatic_sah_study"
 INPUT_TABLE = f"{PROJECT_ID}.{DATASET_ID}.physiology_features_48h"
 
-# 主分析默认 K=4。建议同时查看 K_SELECTION_METRICS，再决定是否改为 3 或 auto。
-FINAL_K = 4
+# 主分析使用 K=3；K=4 作为高分辨率敏感性分析，用于观察重症组内是否可进一步
+# 分离出小型极高危表型。
+PRIMARY_K = 3
+EXPLORATORY_K = 4
 K_MIN = 2
 K_MAX = 5
 MIN_CLUSTER_FRAC = 0.05
@@ -65,10 +69,10 @@ COHORT_FLAG = "eligible_primary_analysis"
 FEATURES = [
     "hb_min_48h_all",
     "gcs_min_48h",
+    "gcs_grade_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
-    "lactate_max_48h",
-    "oxygenation_min_48h",
+    "spo2_min_48h",
     "creatinine_max_48h",
     "platelet_min_48h",
 ]
@@ -76,10 +80,10 @@ FEATURES = [
 FEATURE_LABELS = {
     "hb_min_48h_all": "Hb min",
     "gcs_min_48h": "GCS min",
+    "gcs_grade_min_48h": "GCS grade",
     "map_min_48h": "MAP min",
     "shock_index_max_48h": "Shock index max",
-    "lactate_max_48h": "Lactate max",
-    "oxygenation_min_48h": "Oxygenation min",
+    "spo2_min_48h": "SpO2 min",
     "creatinine_max_48h": "Creatinine max",
     "platelet_min_48h": "Platelet min",
 }
@@ -88,10 +92,10 @@ FEATURE_LABELS = {
 SEVERITY_DIRECTIONS = {
     "hb_min_48h_all": -1,
     "gcs_min_48h": -1,
+    "gcs_grade_min_48h": 1,
     "map_min_48h": -1,
     "shock_index_max_48h": 1,
-    "lactate_max_48h": 1,
-    "oxygenation_min_48h": -1,
+    "spo2_min_48h": -1,
     "creatinine_max_48h": 1,
     "platelet_min_48h": -1,
 }
@@ -105,6 +109,14 @@ OUTPUT_TABLES = {
     "anemia_feasibility": f"{PROJECT_ID}.{DATASET_ID}.phenotype_anemia_feasibility",
     "tests": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lightweight_tests",
     "stability": f"{PROJECT_ID}.{DATASET_ID}.phenotype_cluster_stability",
+    "assignments_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_cluster_assignments_k4_exploratory",
+    "centers_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_cluster_centers_zscore_k4_exploratory",
+    "feature_summary_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_feature_summary_raw_k4_exploratory",
+    "outcome_summary_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_outcome_summary_k4_exploratory",
+    "anemia_feasibility_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_anemia_feasibility_k4_exploratory",
+    "tests_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lightweight_tests_k4_exploratory",
+    "stability_k4": f"{PROJECT_ID}.{DATASET_ID}.phenotype_cluster_stability_k4_exploratory",
+    "k3_k4_crosstab": f"{PROJECT_ID}.{DATASET_ID}.phenotype_k3_k4_refinement_crosstab",
 }
 
 
@@ -126,7 +138,9 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "race",
         "admission_type",
         "insurance",
-        "asah_evidence_level",
+        "nsah_evidence_level",
+        "has_aneurysm_dx",
+        "has_aneurysm_procedure",
         "icu_los_days",
         "hospital_los_days",
         "hospital_mortality",
@@ -139,9 +153,18 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
         "eligible_sensitivity_48h_los",
-        "gcs_grade_min_48h",
         "gcs_motor_min_48h",
         "wfns_gcs_grade_min_48h",
+        "epvs_mean_48h",
+        "epvs_first_48h",
+        "epvs_max_48h",
+        "troponin_peak_48h",
+        "troponin_labels_48h",
+        "troponin_units_48h",
+        "lactate_max_48h",
+        "oxygenation_min_48h",
+        "pao2_fio2_min_48h",
+        "spo2_fio2_min_48h",
         "sapsiii_24h",
         "sofa_24h",
         *FEATURES,
@@ -191,7 +214,7 @@ def validate_input(df: pd.DataFrame) -> None:
 
 
 def build_feature_matrix(df: pd.DataFrame):
-    """对 8 个核心聚类变量做中位数填补和 Z-score 标准化。"""
+    """对 8 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
     x_raw = df[FEATURES].apply(pd.to_numeric, errors="coerce")
     missing_summary = pd.DataFrame(
         {
@@ -237,19 +260,6 @@ def run_k_selection(x_scaled: np.ndarray) -> pd.DataFrame:
     display(metrics)
     write_dataframe(metrics, OUTPUT_TABLES["k_metrics"])
     return metrics
-
-
-def choose_final_k(metrics: pd.DataFrame) -> int:
-    """返回最终 K；若 FINAL_K='auto' 可按 silhouette 和最小类比例自动选择。"""
-    if isinstance(FINAL_K, str) and FINAL_K == "auto":
-        eligible = metrics[metrics["min_cluster_frac"] >= MIN_CLUSTER_FRAC].copy()
-        if eligible.empty:
-            eligible = metrics.copy()
-        selected = eligible.sort_values(
-            ["silhouette", "min_cluster_frac"], ascending=False
-        ).iloc[0]
-        return int(selected["k"])
-    return int(FINAL_K)
 
 
 def fit_final_kmeans(x_scaled: np.ndarray, k: int):
@@ -489,6 +499,114 @@ def plot_anemia_mortality(assignments: pd.DataFrame) -> None:
     plt.show()
 
 
+ASSIGNMENT_COLUMNS = [
+    "cohort_flag",
+    "subject_id",
+    "hadm_id",
+    "stay_id",
+    "raw_cluster",
+    "phenotype",
+    "phenotype_label",
+    "hospital_mortality",
+    "early_anemia_all",
+    "age",
+    "gender",
+    "race",
+    "admission_type",
+    "nsah_evidence_level",
+    "has_aneurysm_dx",
+    "has_aneurysm_procedure",
+    "gcs_motor_min_48h",
+    "wfns_gcs_grade_min_48h",
+    "epvs_mean_48h",
+    "epvs_first_48h",
+    "epvs_max_48h",
+    "troponin_peak_48h",
+    "troponin_labels_48h",
+    "troponin_units_48h",
+    "sapsiii_24h",
+    "sofa_24h",
+    *FEATURES,
+]
+
+
+def run_phenotype_solution(df: pd.DataFrame, x_scaled: np.ndarray, k: int, solution_label: str):
+    """Fit one K-means solution and build all downstream summary tables."""
+    print(f"\n{solution_label}: K = {k}")
+    kmeans_model, raw_labels = fit_final_kmeans(x_scaled, k)
+    centers, label_map = build_ordered_phenotype_labels(x_scaled, raw_labels)
+    assignments = build_assignments(df, raw_labels, label_map)
+    assignments["phenotype_solution"] = solution_label
+    centers["phenotype_solution"] = solution_label
+
+    feature_summary = build_feature_summary(assignments)
+    feature_summary["phenotype_solution"] = solution_label
+    outcome_summary = build_outcome_summary(assignments)
+    outcome_summary["phenotype_solution"] = solution_label
+    anemia_feasibility = build_anemia_feasibility(assignments)
+    anemia_feasibility["phenotype_solution"] = solution_label
+    tests = run_lightweight_tests(assignments)
+    tests["phenotype_solution"] = solution_label
+    stability = run_stability_check(x_scaled, raw_labels, k)
+    stability["phenotype_solution"] = solution_label
+
+    print("\nK-means 原始 cluster 到 phenotype 严重程度排序映射：")
+    display(pd.DataFrame({"raw_cluster": list(label_map.keys()), "phenotype": list(label_map.values())}).sort_values("phenotype"))
+
+    print("\n标准化 cluster center：")
+    display(centers)
+    plot_cluster_centers(centers)
+
+    print("\nPhenotype 结局汇总：")
+    display(outcome_summary)
+
+    print("\nPhenotype x anemia 可行性表：")
+    display(anemia_feasibility)
+    plot_anemia_mortality(assignments)
+
+    print("\n轻量统计检验：")
+    display(tests)
+
+    print("\n聚类稳定性：")
+    display(stability)
+
+    return {
+        "model": kmeans_model,
+        "raw_labels": raw_labels,
+        "centers": centers,
+        "assignments": assignments,
+        "feature_summary": feature_summary,
+        "outcome_summary": outcome_summary,
+        "anemia_feasibility": anemia_feasibility,
+        "tests": tests,
+        "stability": stability,
+    }
+
+
+def build_k3_k4_refinement_crosstab(primary_assignments: pd.DataFrame, exploratory_assignments: pd.DataFrame) -> pd.DataFrame:
+    """Compare primary K=3 phenotypes against exploratory K=4 phenotypes."""
+    merged = primary_assignments[["stay_id", "phenotype", "hospital_mortality"]].rename(columns={"phenotype": "phenotype_k3"}).merge(
+        exploratory_assignments[["stay_id", "phenotype"]].rename(columns={"phenotype": "phenotype_k4"}),
+        on="stay_id",
+        how="inner",
+    )
+    rows = []
+    for (phenotype_k3, phenotype_k4), group in merged.groupby(["phenotype_k3", "phenotype_k4"]):
+        k3_n = int((merged["phenotype_k3"] == phenotype_k3).sum())
+        rows.append(
+            {
+                "cohort_flag": COHORT_FLAG,
+                "phenotype_k3": int(phenotype_k3),
+                "phenotype_k4": int(phenotype_k4),
+                "n": int(len(group)),
+                "frac_within_k3": float(len(group) / k3_n) if k3_n else np.nan,
+                "hospital_deaths": int((group["hospital_mortality"] == 1).sum()),
+                "hospital_mortality_rate": float(group["hospital_mortality"].mean()),
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["phenotype_k3", "phenotype_k4"])
+
+
 # =============================================================================
 # 4. 主流程
 # =============================================================================
@@ -519,75 +637,40 @@ x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary = build_feature_mat
 metrics = run_k_selection(x_scaled)
 plot_k_metrics(metrics)
 
-selected_k = choose_final_k(metrics)
-print(f"\n最终用于聚类的 K = {selected_k}")
+primary = run_phenotype_solution(df, x_scaled, PRIMARY_K, "primary_k3")
+exploratory = run_phenotype_solution(df, x_scaled, EXPLORATORY_K, "exploratory_k4")
+k3_k4_crosstab = build_k3_k4_refinement_crosstab(primary["assignments"], exploratory["assignments"])
 
-kmeans_model, raw_labels = fit_final_kmeans(x_scaled, selected_k)
-centers, label_map = build_ordered_phenotype_labels(x_scaled, raw_labels)
-assignments = build_assignments(df, raw_labels, label_map)
-
-feature_summary = build_feature_summary(assignments)
-outcome_summary = build_outcome_summary(assignments)
-anemia_feasibility = build_anemia_feasibility(assignments)
-tests = run_lightweight_tests(assignments)
-stability = run_stability_check(x_scaled, raw_labels, selected_k)
-
-print("\nK-means 原始 cluster 到 phenotype 严重程度排序映射：")
-display(pd.DataFrame({"raw_cluster": list(label_map.keys()), "phenotype": list(label_map.values())}).sort_values("phenotype"))
-
-print("\n标准化 cluster center：")
-display(centers)
-plot_cluster_centers(centers)
-
-print("\nPhenotype 结局汇总：")
-display(outcome_summary)
-
-print("\nPhenotype x anemia 可行性表：")
-display(anemia_feasibility)
-plot_anemia_mortality(assignments)
-
-print("\n轻量统计检验：")
-display(tests)
-
-print("\n聚类稳定性：")
-display(stability)
+print("\nK=3 主分型与 K=4 高分辨率分型交叉表：")
+display(k3_k4_crosstab)
 
 # 写回 BigQuery。
-write_dataframe(centers, OUTPUT_TABLES["centers"])
+write_dataframe(primary["centers"], OUTPUT_TABLES["centers"])
 write_dataframe(
-    assignments[
-        [
-            "cohort_flag",
-            "subject_id",
-            "hadm_id",
-            "stay_id",
-            "raw_cluster",
-            "phenotype",
-            "phenotype_label",
-            "hospital_mortality",
-            "early_anemia_all",
-            "age",
-            "gender",
-            "race",
-            "admission_type",
-            "gcs_grade_min_48h",
-            "gcs_motor_min_48h",
-            "wfns_gcs_grade_min_48h",
-            "sapsiii_24h",
-            "sofa_24h",
-            *FEATURES,
-        ]
-    ],
+    primary["assignments"][ASSIGNMENT_COLUMNS],
     OUTPUT_TABLES["assignments"],
 )
-write_dataframe(feature_summary, OUTPUT_TABLES["feature_summary"])
-write_dataframe(outcome_summary, OUTPUT_TABLES["outcome_summary"])
-write_dataframe(anemia_feasibility, OUTPUT_TABLES["anemia_feasibility"])
-write_dataframe(tests, OUTPUT_TABLES["tests"])
-write_dataframe(stability, OUTPUT_TABLES["stability"])
+write_dataframe(primary["feature_summary"], OUTPUT_TABLES["feature_summary"])
+write_dataframe(primary["outcome_summary"], OUTPUT_TABLES["outcome_summary"])
+write_dataframe(primary["anemia_feasibility"], OUTPUT_TABLES["anemia_feasibility"])
+write_dataframe(primary["tests"], OUTPUT_TABLES["tests"])
+write_dataframe(primary["stability"], OUTPUT_TABLES["stability"])
+
+write_dataframe(exploratory["centers"], OUTPUT_TABLES["centers_k4"])
+write_dataframe(
+    exploratory["assignments"][ASSIGNMENT_COLUMNS],
+    OUTPUT_TABLES["assignments_k4"],
+)
+write_dataframe(exploratory["feature_summary"], OUTPUT_TABLES["feature_summary_k4"])
+write_dataframe(exploratory["outcome_summary"], OUTPUT_TABLES["outcome_summary_k4"])
+write_dataframe(exploratory["anemia_feasibility"], OUTPUT_TABLES["anemia_feasibility_k4"])
+write_dataframe(exploratory["tests"], OUTPUT_TABLES["tests_k4"])
+write_dataframe(exploratory["stability"], OUTPUT_TABLES["stability_k4"])
+write_dataframe(k3_k4_crosstab, OUTPUT_TABLES["k3_k4_crosstab"])
 
 print("\n分析完成。下一步请重点检查：")
-print("1. phenotype_k_selection_metrics：K=4 是否合理，是否存在过小 cluster")
-print("2. phenotype_cluster_centers_zscore：每类是否有清晰生理含义")
-print("3. phenotype_outcome_summary：不同 phenotype 死亡率是否有临床梯度")
-print("4. phenotype_anemia_feasibility：每个 phenotype x anemia 格子的死亡事件数是否足够")
+print("1. phenotype_k_selection_metrics：确认 K=3 比 K=4 更适合作为稳定主分型")
+print("2. phenotype_outcome_summary：K=3 是否形成低风险 + 两个机制不同的中高危表型")
+print("3. phenotype_outcome_summary_k4_exploratory：K=4 是否切出小型极高危表型")
+print("4. phenotype_k3_k4_refinement_crosstab：K=4 极高危小亚型是否主要来自 K=3 重症组")
+print("5. phenotype_anemia_feasibility：K=3 每个 phenotype x anemia 格子的死亡事件数是否足够")

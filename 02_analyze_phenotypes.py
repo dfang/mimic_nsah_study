@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Analyze early physiological phenotypes for the aSAH MIMIC-IV cohort.
+"""Analyze early physiological phenotypes for the MIMIC-IV SAH cohort.
 
 Input is a CSV export of:
-    mimic-study-498508.ash_study.physiology_features_48h
+    mimic-study-498508.non_traumatic_sah_study.physiology_features_48h
 
 The script performs:
     1. primary cohort filtering
@@ -41,22 +41,22 @@ RANDOM_SEED = 42
 
 FEATURES = [
     "hb_min_48h_all",
-    "gcs_motor_min_48h",
+    "gcs_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
     "lactate_max_48h",
-    "spo2_fio2_min_48h",
+    "oxygenation_min_48h",
     "creatinine_max_48h",
     "platelet_min_48h",
 ]
 
 FEATURE_LABELS = {
     "hb_min_48h_all": "Hb min",
-    "gcs_motor_min_48h": "GCS motor min",
+    "gcs_min_48h": "GCS min",
     "map_min_48h": "MAP min",
     "shock_index_max_48h": "Shock index max",
     "lactate_max_48h": "Lactate max",
-    "spo2_fio2_min_48h": "SpO2/FiO2 min",
+    "oxygenation_min_48h": "Oxygenation min",
     "creatinine_max_48h": "Creatinine max",
     "platelet_min_48h": "Platelet min",
 }
@@ -64,11 +64,11 @@ FEATURE_LABELS = {
 # Positive means physiologically worse after standardization.
 SEVERITY_DIRECTIONS = {
     "hb_min_48h_all": -1,
-    "gcs_motor_min_48h": -1,
+    "gcs_min_48h": -1,
     "map_min_48h": -1,
     "shock_index_max_48h": 1,
     "lactate_max_48h": 1,
-    "spo2_fio2_min_48h": -1,
+    "oxygenation_min_48h": -1,
     "creatinine_max_48h": 1,
     "platelet_min_48h": -1,
 }
@@ -88,12 +88,12 @@ REQUIRED_COLUMNS = [
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Run aSAH early physiological phenotype analysis."
+        description="Run SAH early physiological phenotype analysis."
     )
     parser.add_argument(
         "--input",
         required=True,
-        help="CSV exported from mimic-study-498508.ash_study.physiology_features_48h.",
+        help="CSV exported from mimic-study-498508.non_traumatic_sah_study.physiology_features_48h.",
     )
     parser.add_argument(
         "--output-dir",
@@ -522,4 +522,3 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         raise
-

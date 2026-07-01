@@ -11,7 +11,7 @@
 -- 1. 逐病例导出：第 3 步被排除的 adult SAH records
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `mimic-study-498508.ash_study.step03_excluded_cases` AS
+CREATE OR REPLACE TABLE `mimic-study-498508.asah_study.step03_excluded_cases` AS
 WITH sah_dx_titles AS (
     SELECT
         di.subject_id,
@@ -169,7 +169,7 @@ SELECT
     aneurysm.aneurysm_diagnosis_titles,
     nonasah.possible_nonasah_diagnosis_titles,
     proc.possible_aneurysm_or_neuro_procedure_titles
-FROM `mimic-study-498508.ash_study.source_sah_admissions` s
+FROM `mimic-study-498508.asah_study.source_sah_admissions` s
 LEFT JOIN sah_dx_titles sah
     ON s.subject_id = sah.subject_id
    AND s.hadm_id = sah.hadm_id
@@ -191,13 +191,13 @@ SELECT
     COUNT(*) AS excluded_rows,
     COUNT(DISTINCT subject_id) AS excluded_patients,
     COUNT(DISTINCT hadm_id) AS excluded_admissions
-FROM `mimic-study-498508.ash_study.step03_excluded_cases`;
+FROM `mimic-study-498508.asah_study.step03_excluded_cases`;
 
 -- -----------------------------------------------------------------------------
 -- 2. 排除原因汇总
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `mimic-study-498508.ash_study.step03_excluded_reason_summary` AS
+CREATE OR REPLACE TABLE `mimic-study-498508.asah_study.step03_excluded_reason_summary` AS
 SELECT
     step03_exclusion_reason,
     has_traumatic_title,
@@ -208,7 +208,7 @@ SELECT
     COUNT(DISTINCT subject_id) AS patients,
     COUNTIF(hospital_expire_flag = 1) AS deaths,
     AVG(CAST(hospital_expire_flag AS FLOAT64)) AS hospital_mortality
-FROM `mimic-study-498508.ash_study.step03_excluded_cases`
+FROM `mimic-study-498508.asah_study.step03_excluded_cases`
 GROUP BY
     step03_exclusion_reason,
     has_traumatic_title,
@@ -218,14 +218,14 @@ GROUP BY
 ORDER BY admissions DESC;
 
 SELECT *
-FROM `mimic-study-498508.ash_study.step03_excluded_reason_summary`
+FROM `mimic-study-498508.asah_study.step03_excluded_reason_summary`
 ORDER BY admissions DESC;
 
 -- -----------------------------------------------------------------------------
 -- 3. 被排除病例的 SAH ICD 标题分布
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `mimic-study-498508.ash_study.step03_excluded_sah_code_summary` AS
+CREATE OR REPLACE TABLE `mimic-study-498508.asah_study.step03_excluded_sah_code_summary` AS
 SELECT
     di.icd_version,
     di.icd_code,
@@ -233,7 +233,7 @@ SELECT
     COUNT(*) AS diagnosis_rows,
     COUNT(DISTINCT di.subject_id) AS patients,
     COUNT(DISTINCT di.hadm_id) AS admissions
-FROM `mimic-study-498508.ash_study.step03_excluded_cases` e
+FROM `mimic-study-498508.asah_study.step03_excluded_cases` e
 INNER JOIN `physionet-data.mimiciv_3_1_hosp.diagnoses_icd` di
     ON e.subject_id = di.subject_id
    AND e.hadm_id = di.hadm_id
@@ -247,16 +247,16 @@ GROUP BY di.icd_version, di.icd_code, dd.long_title
 ORDER BY admissions DESC, diagnosis_rows DESC;
 
 SELECT *
-FROM `mimic-study-498508.ash_study.step03_excluded_sah_code_summary`
+FROM `mimic-study-498508.asah_study.step03_excluded_sah_code_summary`
 ORDER BY admissions DESC, diagnosis_rows DESC;
 
 -- -----------------------------------------------------------------------------
 -- 4. 可能被误排除的病例：无 aneurysm dx/procedure，但有具体 I60.0-I60.7 非创伤 SAH
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `mimic-study-498508.ash_study.step03_excluded_probable_asah_candidates` AS
+CREATE OR REPLACE TABLE `mimic-study-498508.asah_study.step03_excluded_probable_asah_candidates` AS
 SELECT *
-FROM `mimic-study-498508.ash_study.step03_excluded_cases`
+FROM `mimic-study-498508.asah_study.step03_excluded_cases`
 WHERE has_traumatic_title = 0
   AND has_s066_traumatic_sah_code = 0
   AND has_avm_or_malformation_title = 0
@@ -270,10 +270,10 @@ SELECT
     COUNT(DISTINCT subject_id) AS patients,
     COUNTIF(hospital_expire_flag = 1) AS deaths,
     AVG(CAST(hospital_expire_flag AS FLOAT64)) AS hospital_mortality
-FROM `mimic-study-498508.ash_study.step03_excluded_probable_asah_candidates`;
+FROM `mimic-study-498508.asah_study.step03_excluded_probable_asah_candidates`;
 
 SELECT *
-FROM `mimic-study-498508.ash_study.step03_excluded_probable_asah_candidates`
+FROM `mimic-study-498508.asah_study.step03_excluded_probable_asah_candidates`
 ORDER BY subject_id, hadm_id
 LIMIT 100;
 

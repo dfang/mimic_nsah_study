@@ -19,7 +19,7 @@ SELECT
     COUNTIF(has_aneurysm_procedure = 1) AS admissions_with_aneurysm_procedure,
     COUNTIF(has_aneurysm_dx = 1 OR has_aneurysm_procedure = 1) AS admissions_with_any_aneurysm_evidence,
     AVG(CAST(hospital_expire_flag AS FLOAT64)) AS hospital_mortality
-FROM `mimic-study-498508.ash_study.source_sah_admissions`
+FROM `mimic-study-498508.asah_study.source_sah_admissions`
 WHERE is_adult = 1
   AND has_sah_dx = 1
   AND has_traumatic_sah_dx = 0;
@@ -35,8 +35,8 @@ SELECT
     COUNTIF(f.core_feature_missing_count <= 2 AND f.massive_transfusion_24h = 0) AS primary_like_rows,
     COUNTIF(f.core_feature_missing_count <= 2 AND f.massive_transfusion_24h = 0 AND f.icu_los_hours >= 48) AS sensitivity_48h_los_rows,
     COUNTIF(f.core_feature_missing_count <= 2 AND f.massive_transfusion_24h = 0 AND f.any_rbc_transfusion_48h = 0) AS no_transfusion_rows
-FROM `mimic-study-498508.ash_study.source_sah_admissions` s
-INNER JOIN `mimic-study-498508.ash_study.physiology_features_48h` f
+FROM `mimic-study-498508.asah_study.source_sah_admissions` s
+INNER JOIN `mimic-study-498508.asah_study.physiology_features_48h` f
     ON s.subject_id = f.subject_id
    AND s.hadm_id = f.hadm_id
 WHERE s.is_adult = 1

@@ -4,10 +4,12 @@
 
 本仓库服务于以下研究：
 
-**Identifying Heterogeneous Treatment Effects of Red Blood Cell Transfusion in Critically Ill Patients with aSAH Using MIMIC-IV**
-**使用 MIMIC-IV 识别重症 aSAH 患者红细胞输血的异质性治疗效应**
+**Early Multimodal Physiological Phenotypes and Outcomes in Critically Ill Patients with Non-traumatic SAH Using MIMIC-IV**
+**使用 MIMIC-IV 识别重症非创伤性蛛网膜下腔出血患者的早期多模态生理表型及结局**
 
-项目目标是从 MIMIC-IV 中提取动脉瘤性蛛网膜下腔出血（aSAH）重症患者队列，定义红细胞输血策略，并使用可复现的因果机器学习流程估计异质性治疗效应（HTE）。
+项目当前目标是从 MIMIC-IV 中提取非创伤性蛛网膜下腔出血（non-traumatic SAH）重症患者队列，构建 0-48 小时早期多模态生理特征，并使用可复现的无监督学习与回归流程分析临床表型、贫血/红细胞输血相关特征和结局。
+
+既往 aSAH 研究脚本与中间结果需要保留，作为敏感性分析或后续回到 aSAH 主题时复用。
 
 ## 数据与临床范围
 
@@ -15,13 +17,17 @@
 - 预期源数据集：
   - `physionet-data.mimiciv_3_1_hosp`
   - `physionet-data.mimiciv_3_1_icu`
+  - `physionet-data.mimiciv_3_1_derived`
 - 本研究使用的 BigQuery 项目名：`mimic-study-498508`。
-- 本研究使用的 BigQuery 数据集名：`ash_study`。
-- `mimic-study-498508.ash_study` 可用于存储 cohort 构建过程中的中间结果表和最终分析表。
-- 研究队列：成年 aSAH 重症患者，需有 ICU 住院记录，并且血红蛋白低于研究设定的触发阈值。
-- 核心暴露：红细胞输血策略。
-- 核心结局：住院死亡率；在数据可得时，可纳入神经功能或疾病严重程度相关的次要结局。
-- 主要分析目标：识别异质性治疗效应（HTE），而不仅是平均治疗效应。
+- 既往 aSAH 研究数据集名：`asah_study`。
+- 当前 non-traumatic SAH 主研究数据集名：`non_traumatic_sah_study`。
+- `mimic-study-498508.asah_study` 用于保留上次 aSAH cohort 构建过程中的中间结果表和最终分析表。
+- `mimic-study-498508.non_traumatic_sah_study` 用于当前 non-traumatic SAH cohort 中间结果、最终宽表和分析结果。
+- 当前研究队列：成年 non-traumatic SAH 重症患者，需有 ICU 住院记录；不要求动脉瘤诊断或动脉瘤处置证据。
+- 动脉瘤诊断和动脉瘤处置证据应保留为分层或敏感性分析变量。
+- 核心暴露/分层因素：早期贫血、红细胞输血、循环/呼吸/神经/肾功能等早期生理表型。
+- 核心结局：住院死亡率；在数据可得时，可纳入 ICU 死亡、住院/ICU 时长等次要结局。
+- 主要分析目标：识别 non-traumatic SAH 的早期临床表型及其结局差异；如进行治疗效应分析，应明确其探索性和因果假设。
 
 ## 仓库约定
 
@@ -39,12 +45,17 @@
 
 - 除非用户明确切换数据库版本，默认使用 MIMIC-IV 3.1 表名。
 - 完整 BigQuery 表名必须使用反引号包裹。
+- 早期生理指标优先使用 `physionet-data.mimiciv_3_1_derived` 的社区衍生表
+  （如 `vitalsign`, `gcs`, `bg`, `chemistry`, `complete_blood_count`），再用 `hosp`/`icu`
+  原始表作为兜底或审计来源；这样可减少手工 itemid 映射遗漏和指标缺失。
 - 派生分析表默认可使用 `CREATE OR REPLACE TABLE`；如果任务明确要求，则先写 `DROP TABLE IF EXISTS`。
 - 每个队列构建步骤应添加简洁注释，说明目的。
 - 所有基线协变量必须在索引时间点 `T0` 之前提取。
 - 时间戳逻辑是因果设计的一部分；不要随意移动暴露、协变量或结局窗口。如需调整，必须记录理由。
 - 对生命体征和实验室指标应用临床合理范围过滤。
-- 本项目允许使用 `mimic-study-498508.ash_study` 作为 cohort 中间结果和最终分析表的目标位置。
+- 旧 aSAH 脚本默认使用 `mimic-study-498508.asah_study`。
+- 新 non-traumatic SAH 脚本默认使用 `mimic-study-498508.non_traumatic_sah_study`。
+- 如果需要保留旧 `ash_study` 结果，先运行 `00_migrate_ash_study_to_asah_study.sql` 复制到 `asah_study`，确认无误前不要删除旧 dataset。
 - 不要将其他私人 BigQuery 项目 ID 硬编码到代码中，除非用户明确提供。
 
 ## 因果分析规范
