@@ -1,3 +1,7 @@
 tmp
-.omx
+.DS_Store
+__pycache__dist/
 .omx/
+.codewhale/
+
+dist/
