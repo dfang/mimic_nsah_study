@@ -105,6 +105,8 @@ Phenotype-loop pass criteria:
 
 This project should run as a manuscript-quality loop. Each loop has one job, one artifact, and one decision. Do not add models or variables unless they solve the current weakest manuscript problem.
 
+Each loop has a hard iteration cap. If a loop reaches its cap without passing its decision rule, record the unresolved issue as a limitation and move on — do not loop indefinitely. Backtracking is allowed: if a later loop (e.g., Loop 6) reveals a fundamental problem that requires revisiting an earlier loop (e.g., Loop 3), return to that loop and restart its iteration counter from zero. Backtracking itself is capped at 2 occurrences across the entire project; on the third backtrack, record the issue as a limitation and proceed.
+
 ### Loop 1. Question loop
 
 Objective:
@@ -125,6 +127,8 @@ Failure response:
 
 - If the story becomes primarily transfusion HTE, split it into a later exploratory paper and keep this paper phenotype-focused.
 
+Max iterations: 2. If unresolved after 2 rounds, proceed with the best-available framing and note the tension as a limitation.
+
 ### Loop 2. Cohort loop
 
 Objective:
@@ -144,6 +148,15 @@ Decision rule:
 Failure response:
 
 - If sample loss is too high, inspect which criterion causes loss before changing definitions. Do not relax criteria without recording the clinical reason.
+
+Cohort sensitivity cohorts (defined here, executed in Loop 6):
+
+This loop also defines the sensitivity cohorts that Loop 6 will reuse, so the definitions are consistent and the work is not duplicated:
+- No-RBC 48h cohort (patients with zero RBC transfusions in the first 48h)
+- ICU LOS `>=48h` cohort (exclude early deaths / early transfers)
+- These cohorts are defined once here; Loop 6 re-applies the primary analysis pipeline to them.
+
+Max iterations: 3. If unresolved after 3 rounds, document the cohort definition as final, list the remaining sample-loss concern as a limitation, and proceed.
 
 ### Loop 3. Feature loop
 
@@ -166,6 +179,8 @@ Failure response:
 
 - Replace high-missingness primary variables with lower-missingness clinically adjacent variables only after documenting why.
 
+Max iterations: 3. If unresolved after 3 rounds, lock the best-available feature set and list the remaining missingness concern as a limitation.
+
 ### Loop 4. Phenotype loop
 
 Objective:
@@ -187,6 +202,8 @@ Failure response:
 
 - If clusters are not interpretable, do not force labels. Revisit feature set and missingness before trying more complex algorithms.
 
+Max iterations: 3. If unresolved after 3 rounds, report the best-available clustering as exploratory and downgrade the phenotype claim language accordingly.
+
 ### Loop 5. Anemia and transfusion loop
 
 Objective:
@@ -207,11 +224,15 @@ Failure response:
 
 - If RBC exposure is rare or strongly confounded, keep transfusion as a descriptor/sensitivity factor rather than a main treatment-effect claim.
 
+Max iterations: 2. If unresolved after 2 rounds, keep transfusion as a phenotype descriptor only and explicitly limit causal language.
+
 ### Loop 6. Robustness loop
 
 Objective:
 
 - Make the phenotype robust against obvious reviewer attacks.
+
+This loop reuses the sensitivity cohorts defined in Loop 2 (no-RBC 48h cohort, ICU LOS `>=48h` cohort). Do not redefine them here — apply the primary analysis pipeline from Loop 4 to these pre-defined sub-cohorts.
 
 Artifact:
 
@@ -228,6 +249,8 @@ Decision rule:
 Failure response:
 
 - If a sensitivity analysis changes the story, downgrade the claim and explain what the sensitivity reveals instead of hiding it.
+
+Max iterations: 2. If unresolved after 2 rounds, report the sensitivity results transparently and let them stand as documented limitations rather than re-running the primary analysis indefinitely.
 
 ### Loop 7. Prediction and incremental-value loop
 
@@ -247,6 +270,8 @@ Decision rule:
 Failure response:
 
 - If prediction value is weak, position phenotypes as descriptive clinical profiles and avoid claiming predictive superiority.
+
+Max iterations: 2. Prediction models are confirmatory, not generative — two rounds are enough to settle the incremental-value question.
 
 ### Loop 8. Mechanism loop
 
@@ -274,6 +299,8 @@ Decision rule:
 Failure response:
 
 - If a mechanism is not measured, write it as an interpretation hypothesis, not a finding.
+
+Max iterations: 2. Mechanism interpretation is inherently speculative for an observational study — two rounds are enough.
 
 ### Loop 9. Reviewer loop
 
@@ -303,6 +330,8 @@ Failure response:
 
 - If a concern cannot be answered empirically, weaken the manuscript claim before submission.
 
+Max iterations: 2. After two rounds of reviewer-attack mapping, any remaining unanswered concerns become explicit limitations.
+
 ### Loop 10. Manuscript loop
 
 Objective:
@@ -331,6 +360,8 @@ Decision rule:
 Failure response:
 
 - If a result cannot be shown cleanly, remove it from the abstract rather than expanding analysis indefinitely.
+
+Max iterations: 2. Manuscript synchronization should converge quickly — if it doesn't, the underlying analysis loops need revisiting (backtrack).
 
 ## 5. Stop rules before submission
 
