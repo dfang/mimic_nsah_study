@@ -174,6 +174,7 @@ FEATURES = [
     "shock_index_max_48h",
     "spo2_min_48h",
     "creatinine_max_48h",
+    "sodium_max_48h",
     "platelet_min_48h",
 ]
 
@@ -185,6 +186,7 @@ FEATURE_LABELS = {
     "shock_index_max_48h": "Shock index max",
     "spo2_min_48h": "SpO2 min",
     "creatinine_max_48h": "Creatinine max",
+    "sodium_max_48h": "Sodium max",
     "platelet_min_48h": "Platelet min",
 }
 
@@ -198,6 +200,7 @@ SEVERITY_DIRECTIONS = {
     "shock_index_max_48h": 1,
     "spo2_min_48h": -1,
     "creatinine_max_48h": 1,
+    "sodium_max_48h": 1,
     "platelet_min_48h": -1,
     "epvs_mean_48h": 1,
 }
@@ -212,6 +215,7 @@ GCS_SENSITIVITY_FEATURE_SETS = {
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
+        "sodium_max_48h",
         "platelet_min_48h",
     ],
     "gcs_total_only": [
@@ -221,6 +225,7 @@ GCS_SENSITIVITY_FEATURE_SETS = {
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
+        "sodium_max_48h",
         "platelet_min_48h",
     ],
     "gcs_grade_alternative": [
@@ -230,6 +235,7 @@ GCS_SENSITIVITY_FEATURE_SETS = {
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
+        "sodium_max_48h",
         "platelet_min_48h",
     ],
 }
@@ -253,7 +259,7 @@ SENSITIVITY_COHORT_FLAGS = {
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
-    "main_7": FEATURES,
+    "main_8": FEATURES,
     "add_epvs_mean": [*FEATURES, "epvs_mean_48h"],
     "replace_hb_with_epvs_mean": [
         "epvs_mean_48h",
@@ -262,6 +268,7 @@ EPVS_SENSITIVITY_FEATURE_SETS = {
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
+        "sodium_max_48h",
         "platelet_min_48h",
     ],
 }
@@ -437,7 +444,7 @@ def preprocess_feature_matrix(df: pd.DataFrame, features: list[str]):
 
 
 def build_feature_matrix(df: pd.DataFrame):
-    """对 7 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
+    """对 8 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
     x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary = preprocess_feature_matrix(df, FEATURES)
     display(missing_summary)
     return x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary
@@ -941,12 +948,12 @@ def evaluate_prediction_model(assignments: pd.DataFrame, model_name: str, predic
 
 
 def run_prediction_increment(assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较 GCS-only、7 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
+    """比较 GCS-only、8 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
     assignments = assignments.copy()
     assignments["phenotype_factor"] = assignments["phenotype"].map(lambda x: f"P{int(x)}")
     model_specs = {
         "gcs_only": ["gcs_min_48h"],
-        "features_7": FEATURES,
+        "features_8": FEATURES,
         "phenotype_only": ["phenotype_factor"],
         "phenotype_anemia_covariates": [
             "phenotype_factor",
@@ -1254,7 +1261,7 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": np.nan,
                     "early_anemia_rate": np.nan,
                     "silhouette": np.nan,
-                    "ari_vs_primary_main_7": np.nan,
+                    "ari_vs_primary_main_8": np.nan,
                     "min_cluster_n": np.nan,
                     "min_cluster_frac": np.nan,
                     "max_feature_missing_rate": np.nan,
@@ -1285,11 +1292,11 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": float(df.loc[mask, "hospital_mortality"].mean()),
                     "early_anemia_rate": float(df.loc[mask, "early_anemia_all"].mean()),
                     "silhouette": silhouette,
-                    "ari_vs_primary_main_7": ari,
+                    "ari_vs_primary_main_8": ari,
                     "min_cluster_n": int(counts.min()),
                     "min_cluster_frac": float(counts.min() / len(df)),
                     "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
-                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not replace the main 7-variable solution without clinical justification.",
+                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not replace the main 8-variable solution without clinical justification.",
                 }
             )
 

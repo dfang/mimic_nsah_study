@@ -26,7 +26,7 @@ Primary dataset:
 
 Point 3 means the project must treat feature engineering as a clinical design artifact, not just as a list of model inputs.
 
-The current fixed primary feature set is the 7-variable 0-48h low-missingness physiology panel already implemented in `10_create_non_traumatic_sah_cohort.sql` and used by `11_bigquery_notebook_non_traumatic_sah_analysis.py`.
+The current fixed primary feature set is the 8-variable 0-48h low-missingness physiology panel already implemented in `10_create_non_traumatic_sah_cohort.sql` and used by `11_bigquery_notebook_non_traumatic_sah_analysis.py`.
 
 | Domain                                     | Primary variable      | Aggregation                                                  | Worse direction | Role in manuscript                                                                                             |
 | ------------------------------------------ | --------------------- | ------------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -36,6 +36,7 @@ The current fixed primary feature set is the 7-variable 0-48h low-missingness ph
 | Hemodynamic stress                         | `shock_index_max_48h` | Maximum HR/SBP                                               | Higher          | Core clustering feature; captures circulatory stress                                                           |
 | Oxygenation                                | `spo2_min_48h`        | Minimum SpO2                                                 | Lower           | Core clustering feature; chosen over PaO2/FiO2 to avoid FiO2-driven missingness                                |
 | Renal / organ dysfunction                  | `creatinine_max_48h`  | Maximum creatinine                                           | Higher          | Core clustering feature; captures early renal dysfunction                                                      |
+| Electrolyte / osmotic stress               | `sodium_max_48h`      | Maximum sodium                                               | Higher          | Core clustering feature; captures early hypernatremia or osmotic stress                                        |
 | Platelet / coagulation-inflammatory status | `platelet_min_48h`    | Minimum platelet count                                       | Lower           | Core clustering feature; captures thrombocytopenia/coagulation vulnerability                                   |
 
 Candidate variables are not primary clustering inputs unless the audit justifies them:

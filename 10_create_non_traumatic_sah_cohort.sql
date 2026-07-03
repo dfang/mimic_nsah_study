@@ -8,7 +8,7 @@
 -- 1. 先宽后严：先保留候选人群和筛选标记，再生成主分析 cohort。
 -- 2. 时间锚点：首次 ICU 入科时间 icu_intime。
 -- 3. 主窗口：ICU 入科后 0-48 小时；敏感性窗口可复用明细表改成 0-24 小时。
--- 4. 主聚类变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、platelet。
+-- 4. 主聚类变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、sodium、platelet。
 --    Lactate 和 PaO2/FiO2 因当前 cohort 缺失率高，仅保留为描述/敏感性变量，不进入主聚类或 eligibility 缺失计数。
 -- 5. 每个关键步骤后都附带验证查询，便于检查样本量、唯一性、覆盖率和异常值。
 
@@ -769,6 +769,24 @@ WHERE chem.creatinine BETWEEN 0.1 AND 20
   AND chem.charttime >= c.icu_intime
   AND chem.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
 
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.sodium_0_48h` AS
+SELECT
+    chem.subject_id,
+    chem.hadm_id,
+    c.stay_id,
+    chem.charttime,
+    DATETIME_DIFF(chem.charttime, c.icu_intime, MINUTE) / 60.0 AS hours_from_icu_intime,
+    'mimiciv_3_1_derived.chemistry' AS source_table,
+    CAST(NULL AS INT64) AS source_itemid,
+    chem.sodium
+FROM `physionet-data.mimiciv_3_1_derived.chemistry` chem
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    ON chem.subject_id = c.subject_id
+   AND chem.hadm_id = c.hadm_id
+WHERE chem.sodium BETWEEN 100 AND 180
+  AND chem.charttime >= c.icu_intime
+  AND chem.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h` AS
 SELECT
     cbc.subject_id,
@@ -787,12 +805,13 @@ WHERE cbc.platelet BETWEEN 10 AND 1000
   AND cbc.charttime >= c.icu_intime
   AND cbc.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
 
--- 验证：乳酸、肌酐、血小板覆盖率。
+-- 验证：乳酸、肌酐、钠、血小板覆盖率。
 SELECT
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h`) AS stays_with_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h` WHERE source_table = 'mimiciv_3_1_derived.bg') AS stays_with_bg_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h` WHERE source_table = 'labevents_50813') AS stays_with_labevents_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.creatinine_0_48h`) AS stays_with_creatinine,
+    (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.sodium_0_48h`) AS stays_with_sodium,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h`) AS stays_with_platelet;
 
 -- 目的：提取并清洗 0-48h PaO2、SpO2 和 FiO2。
@@ -1210,6 +1229,15 @@ creatinine AS (
     FROM `mimic-study-498508.non_traumatic_sah_study.creatinine_0_48h`
     GROUP BY stay_id
 ),
+sodium AS (
+    SELECT
+        stay_id,
+        MAX(sodium) AS sodium_max_48h,
+        AVG(sodium) AS sodium_mean_48h,
+        COUNT(*) AS sodium_measurement_count
+    FROM `mimic-study-498508.non_traumatic_sah_study.sodium_0_48h`
+    GROUP BY stay_id
+),
 platelet AS (
     SELECT
         stay_id,
@@ -1277,6 +1305,8 @@ SELECT
     troponin.troponin_units_48h,
     creatinine.creatinine_max_48h,
     creatinine.creatinine_mean_48h,
+    sodium.sodium_max_48h,
+    sodium.sodium_mean_48h,
     platelet.platelet_min_48h,
     platelet.platelet_mean_48h,
     CASE WHEN hb.hb_min_48h_all < 10 THEN 1 ELSE 0 END AS early_anemia_all,
@@ -1289,6 +1319,7 @@ SELECT
       + IF(si.shock_index_max_48h IS NULL, 1, 0)
       + IF(spo2.spo2_min_48h IS NULL, 1, 0)
       + IF(creatinine.creatinine_max_48h IS NULL, 1, 0)
+      + IF(sodium.sodium_max_48h IS NULL, 1, 0)
       + IF(platelet.platelet_min_48h IS NULL, 1, 0)
     ) AS core_feature_missing_count,
     hb.hb_measurement_count,
@@ -1304,6 +1335,7 @@ SELECT
     spo2.spo2_measurement_count,
     troponin.troponin_measurement_count,
     creatinine.creatinine_measurement_count,
+    sodium.sodium_measurement_count,
     platelet.platelet_measurement_count
 FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
 LEFT JOIN `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags` rf
@@ -1332,6 +1364,8 @@ LEFT JOIN troponin
     ON c.stay_id = troponin.stay_id
 LEFT JOIN creatinine
     ON c.stay_id = creatinine.stay_id
+LEFT JOIN sodium
+    ON c.stay_id = sodium.stay_id
 LEFT JOIN platelet
     ON c.stay_id = platelet.stay_id;
 
@@ -1352,6 +1386,7 @@ SELECT
     COUNTIF(spo2_min_48h IS NOT NULL) AS spo2_nonmissing,
     COUNTIF(troponin_peak_48h IS NOT NULL) AS troponin_nonmissing,
     COUNTIF(creatinine_max_48h IS NOT NULL) AS creatinine_nonmissing,
+    COUNTIF(sodium_max_48h IS NOT NULL) AS sodium_nonmissing,
     COUNTIF(platelet_min_48h IS NOT NULL) AS platelet_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
@@ -1400,7 +1435,7 @@ SELECT
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`;
 
--- 验证：主分析样本中 7 个低缺失主聚类变量范围；total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
+-- 验证：主分析样本中 8 个低缺失主聚类变量范围；total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
 SELECT
     MIN(hb_min_48h_all) AS min_hb_min_48h,
     MAX(hb_min_48h_all) AS max_hb_min_48h,
@@ -1430,6 +1465,8 @@ SELECT
     MAX(spo2_fio2_min_48h) AS max_spo2_fio2_min_48h,
     MIN(creatinine_max_48h) AS min_creatinine_max_48h,
     MAX(creatinine_max_48h) AS max_creatinine_max_48h,
+    MIN(sodium_max_48h) AS min_sodium_max_48h,
+    MAX(sodium_max_48h) AS max_sodium_max_48h,
     MIN(platelet_min_48h) AS min_platelet_min_48h,
     MAX(platelet_min_48h) AS max_platelet_min_48h
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`
@@ -1516,6 +1553,9 @@ SELECT 'oxygenation_min_48h_sensitivity', COUNTIF(oxygenation_min_48h IS NULL), 
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'creatinine_max_48h', COUNTIF(creatinine_max_48h IS NULL), COUNT(*), COUNTIF(creatinine_max_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'sodium_max_48h', COUNTIF(sodium_max_48h IS NULL), COUNT(*), COUNTIF(sodium_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'platelet_min_48h', COUNTIF(platelet_min_48h IS NULL), COUNT(*), COUNTIF(platelet_min_48h IS NULL) / COUNT(*)
