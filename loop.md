@@ -32,7 +32,7 @@ The current fixed primary feature set is the 8-variable 0-48h low-missingness ph
 | ------------------------------------------ | --------------------- | ------------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------- |
 | Anemia / oxygen-carrying capacity          | `hb_min_48h_all`      | Minimum Hb from ICU admission to 48h                         | Lower           | Core clustering feature; anemia defined as Hb `<10 g/dL`; sensitivity uses pre-transfusion Hb or no-RBC cohort |
 | Neurologic injury                          | `gcs_min_48h`         | Minimum total GCS from ICU admission to 48h                  | Lower           | Core clustering feature; main neurologic severity marker                                                       |
-| Neurologic severity grade                  | `gcs_grade_min_48h`   | Derived from minimum total GCS: 1=`13-15`, 2=`9-12`, 3=`3-8` | Higher          | Core clustering feature for interpretable clinical severity; must be checked by GCS redundancy sensitivity     |
+| Neurologic motor response                  | `gcs_motor_min_48h`   | Minimum GCS motor component from ICU admission to 48h        | Lower           | Core clustering feature for neurologic motor severity; checked against total-only and GCS grade alternatives   |
 | Hemodynamic perfusion                      | `map_min_48h`         | Minimum MAP                                                  | Lower           | Core clustering feature; captures hypotension/perfusion vulnerability                                          |
 | Hemodynamic stress                         | `shock_index_max_48h` | Maximum HR/SBP                                               | Higher          | Core clustering feature; captures circulatory stress                                                           |
 | Oxygenation                                | `spo2_min_48h`        | Minimum SpO2                                                 | Lower           | Core clustering feature; chosen over PaO2/FiO2 to avoid FiO2-driven missingness                                |
@@ -50,7 +50,7 @@ Candidate variables are not primary clustering inputs unless the audit justifies
 | `epvs_mean_48h`, `epvs_first_48h`, `epvs_max_48h` | Candidate sensitivity feature                  | Derived from Hb/Hct; possible collinearity with anemia                               |
 | `troponin_peak_48h`                               | Candidate mechanism descriptor                 | Assay and indication-driven missingness require audit                                |
 | `sapsiii_24h`, `sofa_24h`                         | Prediction comparison / covariate if available | Overlaps with core physiological variables and is not available in the current table |
-| `gcs_motor_min_48h`                               | Sensitivity / prediction comparison            | Kept out of primary clustering because total GCS is the main neurologic marker       |
+| `gcs_grade_min_48h`                               | Descriptive / sensitivity comparison           | Kept out of primary clustering because it is derived directly from total GCS         |
 
 Feature-loop pass criteria:
 

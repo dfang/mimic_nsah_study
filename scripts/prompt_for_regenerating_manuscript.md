@@ -33,7 +33,7 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 - `dist/YYYYMMDD/figures/fig3_outcomes.png` — 死亡率/贫血率/输注率柱状图
 - `dist/YYYYMMDD/figures/fig_s1_k4_refinement.png` — K=3/K=4 交叉分布堆叠柱状图
 - `dist/YYYYMMDD/figures/fig_s2_bootstrap.png` — Bootstrap 稳定性分布图
-- `dist/YYYYMMDD/figures/fig_s3_gcs_sensitivity.png` — GCS 冗余敏感性分析
+- `dist/YYYYMMDD/figures/fig_s3_gcs_sensitivity.png` — GCS 变量选择敏感性分析
 - `dist/YYYYMMDD/figures/fig_s4_prediction.png` — 死亡预测模型 AUROC/Brier 比较
 - `dist/YYYYMMDD/figures/fig_s5_forest_plot.png` — 调整后 OR 森林图
 

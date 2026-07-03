@@ -45,7 +45,7 @@ ORDER BY missing_rate DESC;
 - 单个核心变量缺失率 `20%-40%`：主分析可谨慎保留，但必须做敏感性分析。
 - 单个核心变量缺失率 `>40%`：不建议直接作为主聚类变量，考虑替换或作为敏感性分析。
 
-当前主聚类使用 8 个低缺失变量：`hb_min_48h_all`、`gcs_min_48h`、`gcs_grade_min_48h`、`map_min_48h`、`shock_index_max_48h`、`spo2_min_48h`、`creatinine_max_48h`、`platelet_min_48h`。`lactate_max_48h`、`pao2_fio2_min_48h`、`spo2_fio2_min_48h` 和 `oxygenation_min_48h` 是敏感性字段，不进入主聚类。
+当前主聚类使用 8 个低缺失变量：`hb_min_48h_all`、`gcs_min_48h`、`gcs_motor_min_48h`、`map_min_48h`、`shock_index_max_48h`、`spo2_min_48h`、`creatinine_max_48h`、`platelet_min_48h`。`gcs_grade_min_48h`、`lactate_max_48h`、`pao2_fio2_min_48h`、`spo2_fio2_min_48h` 和 `oxygenation_min_48h` 是描述或敏感性字段，不进入主聚类。
 
 同时检查候选增强变量：
 
@@ -181,7 +181,7 @@ Notebook 中对应的主文/补充图建议：
 - Figure 2：K 选择指标图 + K=3 标准化中心热图，说明为什么主分型选 K=3。
 - Figure 3：K=3 各 phenotype 住院死亡率和 phenotype x anemia 死亡率，展示风险分层和贫血信号。
 - Supplementary Figure：K=3 到 K=4 交叉热图，说明 K=4 极高危小亚型是 K=3 重症组内的高分辨率切分，而不是主分型替代方案。
-- Supplementary Figure：bootstrap ARI/min cluster size 和 GCS 冗余敏感性结果，回应审稿人对聚类稳定性和 GCS 重复编码的质疑。
+- Supplementary Figure：bootstrap ARI/min cluster size 和 GCS 敏感性结果，回应审稿人对聚类稳定性和神经功能变量选择的质疑。
 - Supplementary Figure：候选变量缺失率图，支持乳酸、PaO2/FiO2、troponin 不进入主聚类的理由。
 - Supplementary Figure：死亡预测 AUROC/Brier 图，说明 phenotype 的风险分层价值不只等同于单个 GCS 指标。
 - Supplementary Table：`phenotype_anemia_stratified_models`，用于报告各 phenotype 内贫血 aOR；稀疏格子只报告事件数，不做强解释。
@@ -222,9 +222,9 @@ ORDER BY variable_type, variable, level, phenotype;
 
 - 这张表是论文 Table 1 的主要来源，包含 Overall 和 K=3 phenotype 分层。
 - 连续变量报告 median [Q1, Q3]，分类变量报告 n (%)，并给出 phenotype 间 Kruskal-Wallis 或卡方检验 p 值。
-- 年龄、性别、入院类型、aneurysm evidence、贫血、输血、ICU/住院时长、total GCS/GCS grade 和候选严重程度评分如 SAPS III/SOFA 都应先在这张表里审查。GCS motor 可放在敏感性或补充材料中，不作为主表神经功能代表。若某些变量缺失率高，只能作为描述或敏感性变量，不应作为主回归强制协变量。
+- 年龄、性别、入院类型、aneurysm evidence、贫血、输血、ICU/住院时长、total GCS/GCS motor、GCS grade 和候选严重程度评分如 SAPS III/SOFA 都应先在这张表里审查。GCS grade 可放在敏感性或补充材料中，不作为主聚类神经功能代表。若某些变量缺失率高，只能作为描述或敏感性变量，不应作为主回归强制协变量。
 
-### GCS 冗余敏感性
+### GCS 敏感性
 
 查看：
 
@@ -236,8 +236,8 @@ ORDER BY feature_set, phenotype;
 
 判断：
 
-- `gcs_total_only` 和 `gcs_grade_only` 相对 `primary_dual_gcs` 的 ARI 如果仍较高，说明主分型不是由 total GCS 与 GCS grade 重复编码强行驱动。
-- 如果去掉任一 GCS 指标后样本重新分配明显、死亡率模式改变，主文建议改用 `gcs_min_48h` 单指标聚类，`gcs_grade_min_48h` 只作为描述和临床解释变量。
+- `gcs_total_only`、`gcs_motor_only` 和 `gcs_grade_alternative` 相对 `primary_total_gcs_motor` 的 ARI 如果仍较高，说明主分型不是由某一种 GCS 表达方式单独驱动。
+- 如果去掉或替换任一 GCS 指标后样本重新分配明显、死亡率模式改变，主文需明确主聚类变量选择对结果有影响，并将替代方案作为敏感性结果报告。
 
 ### Bootstrap 稳定性
 

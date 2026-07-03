@@ -170,7 +170,7 @@ COHORT_FLAG = "eligible_primary_analysis"
 FEATURES = [
     "hb_min_48h_all",
     "gcs_min_48h",
-    "gcs_grade_min_48h",
+    "gcs_motor_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
     "spo2_min_48h",
@@ -181,7 +181,7 @@ FEATURES = [
 FEATURE_LABELS = {
     "hb_min_48h_all": "Hb min",
     "gcs_min_48h": "GCS min",
-    "gcs_grade_min_48h": "GCS grade",
+    "gcs_motor_min_48h": "GCS motor min",
     "map_min_48h": "MAP min",
     "shock_index_max_48h": "Shock index max",
     "spo2_min_48h": "SpO2 min",
@@ -193,6 +193,7 @@ FEATURE_LABELS = {
 SEVERITY_DIRECTIONS = {
     "hb_min_48h_all": -1,
     "gcs_min_48h": -1,
+    "gcs_motor_min_48h": -1,
     "gcs_grade_min_48h": 1,
     "map_min_48h": -1,
     "shock_index_max_48h": 1,
@@ -203,9 +204,19 @@ SEVERITY_DIRECTIONS = {
 }
 
 GCS_SENSITIVITY_FEATURE_SETS = {
-    "primary_dual_gcs": FEATURES,
-    "gcs_total_only": [feature for feature in FEATURES if feature != "gcs_grade_min_48h"],
-    "gcs_grade_only": [feature for feature in FEATURES if feature != "gcs_min_48h"],
+    "primary_total_gcs_motor": FEATURES,
+    "gcs_total_only": [feature for feature in FEATURES if feature != "gcs_motor_min_48h"],
+    "gcs_motor_only": [feature for feature in FEATURES if feature != "gcs_min_48h"],
+    "gcs_grade_alternative": [
+        "hb_min_48h_all",
+        "gcs_min_48h",
+        "gcs_grade_min_48h",
+        "map_min_48h",
+        "shock_index_max_48h",
+        "spo2_min_48h",
+        "creatinine_max_48h",
+        "platelet_min_48h",
+    ],
 }
 
 CANDIDATE_AUDIT_FEATURES = [
@@ -232,7 +243,7 @@ EPVS_SENSITIVITY_FEATURE_SETS = {
     "replace_hb_with_epvs_mean": [
         "epvs_mean_48h",
         "gcs_min_48h",
-        "gcs_grade_min_48h",
+        "gcs_motor_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
         "spo2_min_48h",
@@ -245,6 +256,7 @@ BASELINE_CONTINUOUS_FEATURES = [
     "age",
     "icu_los_days",
     "hospital_los_days",
+    "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",
     "epvs_mean_48h",
     "troponin_peak_48h",
@@ -329,7 +341,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
         "eligible_sensitivity_48h_los",
-        "gcs_motor_min_48h",
+        "gcs_grade_min_48h",
         "wfns_gcs_grade_min_48h",
         "epvs_mean_48h",
         "epvs_first_48h",
@@ -653,7 +665,7 @@ def run_bootstrap_stability(x_scaled: np.ndarray, reference_phenotype: pd.Series
 
 
 def run_gcs_sensitivity(df: pd.DataFrame, reference_assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较双 GCS、total GCS only、GCS grade only 三套主聚类变量。"""
+    """比较 total GCS + motor、total only、motor only 和 grade 替代方案。"""
     reference = reference_assignments["phenotype"].astype(int).to_numpy()
     rows = []
 
@@ -672,7 +684,7 @@ def run_gcs_sensitivity(df: pd.DataFrame, reference_assignments: pd.DataFrame) -
             "k": int(PRIMARY_K),
             "n": int(len(df)),
             "silhouette": float(silhouette_score(x_scaled_sens, phenotype)),
-            "ari_vs_primary_dual_gcs": float(adjusted_rand_score(reference, phenotype)),
+            "ari_vs_primary_total_gcs_motor": float(adjusted_rand_score(reference, phenotype)),
             "min_cluster_n": int(counts.min()),
             "min_cluster_frac": float(counts.min() / len(df)),
             "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
@@ -1496,7 +1508,7 @@ ASSIGNMENT_COLUMNS = [
     "any_rbc_transfusion_48h",
     "massive_transfusion_24h",
     "core_feature_missing_count",
-    "gcs_motor_min_48h",
+    "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",
     "epvs_mean_48h",
     "epvs_first_48h",
@@ -1636,7 +1648,7 @@ display(
 plot_bootstrap_stability(bootstrap_stability)
 
 gcs_sensitivity = run_gcs_sensitivity(df, primary["assignments"])
-print("\nGCS total 与 GCS grade 冗余敏感性分析：")
+print("\nGCS total、GCS motor 与 GCS grade 替代敏感性分析：")
 display(gcs_sensitivity)
 
 candidate_feature_audit = build_candidate_feature_audit(df)
@@ -1708,7 +1720,7 @@ print("2. phenotype_outcome_summary：K=3 是否形成低风险 + 两个机制�
 print("3. phenotype_outcome_summary_k4_exploratory：K=4 是否切出小型极高危表型")
 print("4. phenotype_k3_k4_refinement_crosstab：K=4 极高危小亚型是否主要来自 K=3 重症组")
 print("5. phenotype_anemia_feasibility：K=3 每个 phenotype x anemia 格子的死亡事件数是否足够")
-print("6. phenotype_gcs_sensitivity_summary：去掉 total GCS 或 GCS grade 后主分型是否仍稳定")
+print("6. phenotype_gcs_sensitivity_summary：去掉 total GCS 或 GCS motor、或用 GCS grade 替代后主分型是否仍稳定")
 print("7. phenotype_bootstrap_stability：bootstrap ARI 是否支持 K=3 assignment 的稳健性")
 print("8. phenotype_prediction_metrics：phenotype 是否比 GCS-only 提供预测增量")
 print("9. phenotype_regression_models：调整年龄、性别、入院类型、aneurysm evidence 和贫血后 phenotype 是否仍有关联")
