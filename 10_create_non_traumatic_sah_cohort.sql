@@ -8,7 +8,8 @@
 -- 1. 先宽后严：先保留候选人群和筛选标记，再生成主分析 cohort。
 -- 2. 时间锚点：首次 ICU 入科时间 icu_intime。
 -- 3. 主窗口：ICU 入科后 0-48 小时；敏感性窗口可复用明细表改成 0-24 小时。
--- 4. 主聚类变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、sodium、platelet。
+-- 4. 主聚类变量：GCS motor、MAP、shock index、SpO2、creatinine、sodium、platelet。
+--    Hb 保留为贫血暴露、描述和敏感性变量，不进入主聚类或 eligibility 缺失计数。
 --    Lactate 和 PaO2/FiO2 因当前 cohort 缺失率高，仅保留为描述/敏感性变量，不进入主聚类或 eligibility 缺失计数。
 -- 5. 每个关键步骤后都附带验证查询，便于检查样本量、唯一性、覆盖率和异常值。
 
@@ -396,7 +397,7 @@ FROM `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags`;
 -- -----------------------------------------------------------------------------
 
 -- 目的：提取 0-48h Hb 明细，并标记是否发生在首次 RBC 输血前。
--- 原因：Hb 是贫血定义和聚类变量，输血后 Hb 可能被治疗改变。
+-- 原因：Hb 是贫血定义和敏感性变量，输血后 Hb 可能被治疗改变。
 --       优先使用 MIMIC-IV derived.complete_blood_count，避免重复手写 CBC itemid 映射。
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.hb_0_48h` AS
 SELECT
@@ -1313,8 +1314,7 @@ SELECT
     CASE WHEN hb.hb_min_48h_pre_transfusion < 10 THEN 1 ELSE 0 END AS early_anemia_pre_transfusion,
     CASE WHEN rf.first_rbc_time_48h IS NOT NULL AND hb.hb_min_48h_all IS NOT NULL THEN 1 ELSE 0 END AS has_hb_and_rbc_48h,
     (
-        IF(hb.hb_min_48h_all IS NULL, 1, 0)
-      + IF(gcs.gcs_motor_min_48h IS NULL, 1, 0)
+        IF(gcs.gcs_motor_min_48h IS NULL, 1, 0)
       + IF(map_agg.map_min_48h IS NULL, 1, 0)
       + IF(si.shock_index_max_48h IS NULL, 1, 0)
       + IF(spo2.spo2_min_48h IS NULL, 1, 0)
@@ -1435,12 +1435,12 @@ SELECT
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`;
 
--- 验证：主分析样本中 8 个低缺失主聚类变量范围；total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
+-- 验证：主分析样本中 7 个低缺失主聚类变量范围；Hb、total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
 SELECT
-    MIN(hb_min_48h_all) AS min_hb_min_48h,
-    MAX(hb_min_48h_all) AS max_hb_min_48h,
     MIN(gcs_motor_min_48h) AS min_gcs_motor_min_48h,
     MAX(gcs_motor_min_48h) AS max_gcs_motor_min_48h,
+    MIN(hb_min_48h_all) AS min_hb_min_48h_descriptive,
+    MAX(hb_min_48h_all) AS max_hb_min_48h_descriptive,
     MIN(gcs_min_48h) AS min_gcs_min_48h_descriptive,
     MAX(gcs_min_48h) AS max_gcs_min_48h_descriptive,
     MIN(gcs_grade_min_48h) AS min_gcs_grade_min_48h_descriptive,
@@ -1519,7 +1519,7 @@ ORDER BY step;
 -- 目的：生成主分析样本的变量缺失率汇总。
 -- 原因：Python 插补和建模前需要确认各变量缺失程度。
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.feature_missingness_summary` AS
-SELECT 'hb_min_48h_all' AS feature, COUNTIF(hb_min_48h_all IS NULL) AS missing_n, COUNT(*) AS total_n, COUNTIF(hb_min_48h_all IS NULL) / COUNT(*) AS missing_rate
+SELECT 'hb_min_48h_all_descriptive' AS feature, COUNTIF(hb_min_48h_all IS NULL) AS missing_n, COUNT(*) AS total_n, COUNTIF(hb_min_48h_all IS NULL) / COUNT(*) AS missing_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'epvs_mean_48h_candidate', COUNTIF(epvs_mean_48h IS NULL), COUNT(*), COUNTIF(epvs_mean_48h IS NULL) / COUNT(*)

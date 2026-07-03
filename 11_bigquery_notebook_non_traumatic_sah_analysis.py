@@ -168,7 +168,6 @@ CV_FOLDS = 5
 COHORT_FLAG = "eligible_primary_analysis"
 
 FEATURES = [
-    "hb_min_48h_all",
     "gcs_motor_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
@@ -208,7 +207,6 @@ SEVERITY_DIRECTIONS = {
 GCS_SENSITIVITY_FEATURE_SETS = {
     "primary_gcs_motor": FEATURES,
     "add_total_gcs": [
-        "hb_min_48h_all",
         "gcs_min_48h",
         "gcs_motor_min_48h",
         "map_min_48h",
@@ -219,7 +217,6 @@ GCS_SENSITIVITY_FEATURE_SETS = {
         "platelet_min_48h",
     ],
     "gcs_total_only": [
-        "hb_min_48h_all",
         "gcs_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
@@ -229,7 +226,6 @@ GCS_SENSITIVITY_FEATURE_SETS = {
         "platelet_min_48h",
     ],
     "gcs_grade_alternative": [
-        "hb_min_48h_all",
         "gcs_grade_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
@@ -259,24 +255,16 @@ SENSITIVITY_COHORT_FLAGS = {
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
-    "main_8": FEATURES,
+    "main_7": FEATURES,
     "add_epvs_mean": [*FEATURES, "epvs_mean_48h"],
-    "replace_hb_with_epvs_mean": [
-        "epvs_mean_48h",
-        "gcs_motor_min_48h",
-        "map_min_48h",
-        "shock_index_max_48h",
-        "spo2_min_48h",
-        "creatinine_max_48h",
-        "sodium_max_48h",
-        "platelet_min_48h",
-    ],
 }
 
 BASELINE_CONTINUOUS_FEATURES = [
     "age",
     "icu_los_days",
     "hospital_los_days",
+    "hb_min_48h_all",
+    "hb_min_48h_pre_transfusion",
     "gcs_min_48h",
     "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",
@@ -359,6 +347,8 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "early_anemia_pre_transfusion",
         "any_rbc_transfusion_48h",
         "massive_transfusion_24h",
+        "hb_min_48h_all",
+        "hb_min_48h_pre_transfusion",
         "core_feature_missing_count",
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
@@ -444,7 +434,7 @@ def preprocess_feature_matrix(df: pd.DataFrame, features: list[str]):
 
 
 def build_feature_matrix(df: pd.DataFrame):
-    """对 8 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
+    """对 7 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
     x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary = preprocess_feature_matrix(df, FEATURES)
     display(missing_summary)
     return x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary
@@ -948,12 +938,12 @@ def evaluate_prediction_model(assignments: pd.DataFrame, model_name: str, predic
 
 
 def run_prediction_increment(assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较 GCS-only、8 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
+    """比较 GCS-only、7 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
     assignments = assignments.copy()
     assignments["phenotype_factor"] = assignments["phenotype"].map(lambda x: f"P{int(x)}")
     model_specs = {
         "gcs_only": ["gcs_min_48h"],
-        "features_8": FEATURES,
+        "features_7": FEATURES,
         "phenotype_only": ["phenotype_factor"],
         "phenotype_anemia_covariates": [
             "phenotype_factor",
@@ -1261,7 +1251,7 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": np.nan,
                     "early_anemia_rate": np.nan,
                     "silhouette": np.nan,
-                    "ari_vs_primary_main_8": np.nan,
+                    "ari_vs_primary_main_7": np.nan,
                     "min_cluster_n": np.nan,
                     "min_cluster_frac": np.nan,
                     "max_feature_missing_rate": np.nan,
@@ -1292,11 +1282,11 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": float(df.loc[mask, "hospital_mortality"].mean()),
                     "early_anemia_rate": float(df.loc[mask, "early_anemia_all"].mean()),
                     "silhouette": silhouette,
-                    "ari_vs_primary_main_8": ari,
+                    "ari_vs_primary_main_7": ari,
                     "min_cluster_n": int(counts.min()),
                     "min_cluster_frac": float(counts.min() / len(df)),
                     "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
-                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not replace the main 8-variable solution without clinical justification.",
+                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not be added to the main 7-variable solution without clinical justification.",
                 }
             )
 
@@ -1531,6 +1521,8 @@ ASSIGNMENT_COLUMNS = [
     "any_rbc_transfusion_48h",
     "massive_transfusion_24h",
     "core_feature_missing_count",
+    "hb_min_48h_all",
+    "hb_min_48h_pre_transfusion",
     "gcs_min_48h",
     "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",

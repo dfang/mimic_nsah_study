@@ -45,11 +45,11 @@ ORDER BY missing_rate DESC;
 - 单个核心变量缺失率 `20%-40%`：主分析可谨慎保留，但必须做敏感性分析。
 - 单个核心变量缺失率 `>40%`：不建议直接作为主聚类变量，考虑替换或作为敏感性分析。
 
-当前主聚类使用 8 个低缺失变量：`hb_min_48h_all`、`gcs_motor_min_48h`、`map_min_48h`、`shock_index_max_48h`、`spo2_min_48h`、`creatinine_max_48h`、`sodium_max_48h`、`platelet_min_48h`。`gcs_min_48h`、`gcs_grade_min_48h`、`lactate_max_48h`、`pao2_fio2_min_48h`、`spo2_fio2_min_48h` 和 `oxygenation_min_48h` 是描述或敏感性字段，不进入主聚类。
+当前主聚类使用 7 个低缺失变量：`gcs_motor_min_48h`、`map_min_48h`、`shock_index_max_48h`、`spo2_min_48h`、`creatinine_max_48h`、`sodium_max_48h`、`platelet_min_48h`。`hb_min_48h_all`、`hb_min_48h_pre_transfusion`、`gcs_min_48h`、`gcs_grade_min_48h`、`lactate_max_48h`、`pao2_fio2_min_48h`、`spo2_fio2_min_48h` 和 `oxygenation_min_48h` 是暴露、描述或敏感性字段，不进入主聚类。
 
 同时检查候选增强变量：
 
-- `epvs_mean_48h_candidate`：若缺失率低、分布合理，可考虑敏感性聚类；不要和 Hb 主变量的重复信息解释为独立生理维度。
+- `epvs_mean_48h_candidate`：若缺失率低、分布合理，可考虑敏感性聚类；不要和 Hb/Hct 的重复信息解释为独立生理维度。
 - `troponin_peak_48h_candidate`：先看缺失率、assay label 和单位。若只在少数疑似心肌损伤患者中检测，建议作为描述/分层变量，不进入主聚类。
 
 乳酸缺失率在 `feature_missingness_summary` 中查看。血气/FiO2 氧合变量单独查看，但不作为主聚类纳入条件：
@@ -270,9 +270,9 @@ ORDER BY model;
 
 判断：
 
-- 重点比较 `gcs_only`、`features_8`、`phenotype_only`、`phenotype_anemia_covariates`。
+- 重点比较 `gcs_only`、`features_7`、`phenotype_only`、`phenotype_anemia_covariates`。
 - 期望看到 phenotype 或 phenotype+协变量相对 GCS-only 有 AUROC、Brier 或校准改善。
-- 如果 phenotype-only 不如 8 个原始变量，这不是失败；phenotype 的价值是压缩信息和增强可解释性。真正关键是 phenotype+贫血+协变量是否形成稳定、可解释的风险分层模型。
+- 如果 phenotype-only 不如 7 个原始变量，这不是失败；phenotype 的价值是压缩信息和增强可解释性。真正关键是 phenotype+贫血+协变量是否形成稳定、可解释的风险分层模型。
 
 ### 多变量回归
 
@@ -333,8 +333,7 @@ ORDER BY feature_set, phenotype;
 
 判断：
 
-- 如果 `add_epvs_mean` 相对主 8 变量 ARI 高，说明加入 ePVS 不改变主表型，主文可把 ePVS 放在补充材料。
-- 如果 `replace_hb_with_epvs_mean` 明显改变 assignment，说明 ePVS 捕捉到的不是单纯贫血信息，但仍需谨慎，因为 ePVS 来自 Hb/Hct 派生。
+- 如果 `add_epvs_mean` 相对主 7 变量 ARI 高，说明加入 ePVS 不改变主表型，主文可把 ePVS 放在补充材料。
 - 不建议把 ePVS 放入主聚类，除非能在方法中充分解释其临床含义、公式、单位转换和与 Hb 的共线性。
 
 ### ePVS/troponin 候选变量审计
@@ -375,7 +374,7 @@ ORDER BY missing_rate DESC;
 你现在最需要确认三件事：
 
 1. 主分析样本量是否接近预期的 1500。
-2. 8 个核心变量中有没有某个变量缺失率过高，尤其是 `spo2_min_48h`、`shock_index_max_48h` 和 `sodium_max_48h`。
+2. 7 个核心变量中有没有某个变量缺失率过高，尤其是 `spo2_min_48h`、`shock_index_max_48h` 和 `sodium_max_48h`。
 3. K=3 是否能形成稳定、可解释的主分型；K=4 是否只作为 K=3 重症组的高分辨率极重症切分。
 
 这三点确认后，再进入正式结局模型和论文表图制作。
