@@ -28,29 +28,29 @@ Point 3 means the project must treat feature engineering as a clinical design ar
 
 The current fixed primary feature set is the 8-variable 0-48h low-missingness physiology panel already implemented in `10_create_non_traumatic_sah_cohort.sql` and used by `11_bigquery_notebook_non_traumatic_sah_analysis.py`.
 
-| Domain | Primary variable | Aggregation | Worse direction | Role in manuscript |
-| --- | --- | --- | --- | --- |
-| Anemia / oxygen-carrying capacity | `hb_min_48h_all` | Minimum Hb from ICU admission to 48h | Lower | Core clustering feature; anemia defined as Hb `<10 g/dL`; sensitivity uses pre-transfusion Hb or no-RBC cohort |
-| Neurologic injury | `gcs_min_48h` | Minimum total GCS from ICU admission to 48h | Lower | Core clustering feature; main neurologic severity marker |
-| Neurologic severity grade | `gcs_grade_min_48h` | Derived from minimum total GCS: 1=`13-15`, 2=`9-12`, 3=`3-8` | Higher | Core clustering feature for interpretable clinical severity; must be checked by GCS redundancy sensitivity |
-| Hemodynamic perfusion | `map_min_48h` | Minimum MAP | Lower | Core clustering feature; captures hypotension/perfusion vulnerability |
-| Hemodynamic stress | `shock_index_max_48h` | Maximum HR/SBP | Higher | Core clustering feature; captures circulatory stress |
-| Oxygenation | `spo2_min_48h` | Minimum SpO2 | Lower | Core clustering feature; chosen over PaO2/FiO2 to avoid FiO2-driven missingness |
-| Renal / organ dysfunction | `creatinine_max_48h` | Maximum creatinine | Higher | Core clustering feature; captures early renal dysfunction |
-| Platelet / coagulation-inflammatory status | `platelet_min_48h` | Minimum platelet count | Lower | Core clustering feature; captures thrombocytopenia/coagulation vulnerability |
+| Domain                                     | Primary variable      | Aggregation                                                  | Worse direction | Role in manuscript                                                                                             |
+| ------------------------------------------ | --------------------- | ------------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------- |
+| Anemia / oxygen-carrying capacity          | `hb_min_48h_all`      | Minimum Hb from ICU admission to 48h                         | Lower           | Core clustering feature; anemia defined as Hb `<10 g/dL`; sensitivity uses pre-transfusion Hb or no-RBC cohort |
+| Neurologic injury                          | `gcs_min_48h`         | Minimum total GCS from ICU admission to 48h                  | Lower           | Core clustering feature; main neurologic severity marker                                                       |
+| Neurologic severity grade                  | `gcs_grade_min_48h`   | Derived from minimum total GCS: 1=`13-15`, 2=`9-12`, 3=`3-8` | Higher          | Core clustering feature for interpretable clinical severity; must be checked by GCS redundancy sensitivity     |
+| Hemodynamic perfusion                      | `map_min_48h`         | Minimum MAP                                                  | Lower           | Core clustering feature; captures hypotension/perfusion vulnerability                                          |
+| Hemodynamic stress                         | `shock_index_max_48h` | Maximum HR/SBP                                               | Higher          | Core clustering feature; captures circulatory stress                                                           |
+| Oxygenation                                | `spo2_min_48h`        | Minimum SpO2                                                 | Lower           | Core clustering feature; chosen over PaO2/FiO2 to avoid FiO2-driven missingness                                |
+| Renal / organ dysfunction                  | `creatinine_max_48h`  | Maximum creatinine                                           | Higher          | Core clustering feature; captures early renal dysfunction                                                      |
+| Platelet / coagulation-inflammatory status | `platelet_min_48h`    | Minimum platelet count                                       | Lower           | Core clustering feature; captures thrombocytopenia/coagulation vulnerability                                   |
 
 Candidate variables are not primary clustering inputs unless the audit justifies them:
 
-| Candidate | Current role | Reason not primary |
-| --- | --- | --- |
-| `lactate_max_48h` | Description and sensitivity subset | Clinically meaningful but often selectively measured |
-| `pao2_fio2_min_48h` | Oxygenation sensitivity | FiO2 and blood gas missingness can dominate clustering |
-| `spo2_fio2_min_48h` | Oxygenation sensitivity | Charted FiO2 coverage and unit cleaning are unstable |
-| `oxygenation_min_48h` | Oxygenation sensitivity | Composite oxygenation source may mix measurement mechanisms |
-| `epvs_mean_48h`, `epvs_first_48h`, `epvs_max_48h` | Candidate sensitivity feature | Derived from Hb/Hct; possible collinearity with anemia |
-| `troponin_peak_48h` | Candidate mechanism descriptor | Assay and indication-driven missingness require audit |
-| `sapsiii_24h`, `sofa_24h` | Prediction comparison / covariate if available | Overlaps with core physiological variables and is not available in the current table |
-| `gcs_motor_min_48h` | Sensitivity / prediction comparison | Kept out of primary clustering because total GCS is the main neurologic marker |
+| Candidate                                         | Current role                                   | Reason not primary                                                                   |
+| ------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `lactate_max_48h`                                 | Description and sensitivity subset             | Clinically meaningful but often selectively measured                                 |
+| `pao2_fio2_min_48h`                               | Oxygenation sensitivity                        | FiO2 and blood gas missingness can dominate clustering                               |
+| `spo2_fio2_min_48h`                               | Oxygenation sensitivity                        | Charted FiO2 coverage and unit cleaning are unstable                                 |
+| `oxygenation_min_48h`                             | Oxygenation sensitivity                        | Composite oxygenation source may mix measurement mechanisms                          |
+| `epvs_mean_48h`, `epvs_first_48h`, `epvs_max_48h` | Candidate sensitivity feature                  | Derived from Hb/Hct; possible collinearity with anemia                               |
+| `troponin_peak_48h`                               | Candidate mechanism descriptor                 | Assay and indication-driven missingness require audit                                |
+| `sapsiii_24h`, `sofa_24h`                         | Prediction comparison / covariate if available | Overlaps with core physiological variables and is not available in the current table |
+| `gcs_motor_min_48h`                               | Sensitivity / prediction comparison            | Kept out of primary clustering because total GCS is the main neurologic marker       |
 
 Feature-loop pass criteria:
 
@@ -72,15 +72,15 @@ The current fixed primary phenotype solution is:
 
 Required primary phenotype table:
 
-| Field group | Required columns or source table | Purpose |
-| --- | --- | --- |
-| Size | phenotype, N, percentage | Shows whether any cluster is too small |
-| Outcome | hospital mortality, ICU mortality if available, ICU/hospital LOS | Shows clinical separation |
-| Core physiology | median/IQR of the 8 primary features | Makes the phenotype clinically interpretable |
-| Anemia | `early_anemia_all`, `early_anemia_pre_transfusion`, Hb distribution | Tests whether anemia burden differs by phenotype |
-| RBC exposure | `any_rbc_transfusion_48h`, `rbc_events_48h`, `rbc_units_48h` if reliable | Describes treatment exposure without overclaiming causality |
-| Etiology specificity | `nsah_evidence_level`, aneurysm diagnosis/procedure flags | Addresses non-traumatic SAH heterogeneity |
-| Stability | silhouette, bootstrap ARI, hierarchical-vs-K-means ARI | Shows the phenotype is not a single unstable algorithmic artifact |
+| Field group          | Required columns or source table                                         | Purpose                                                           |
+| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Size                 | phenotype, N, percentage                                                 | Shows whether any cluster is too small                            |
+| Outcome              | hospital mortality, ICU mortality if available, ICU/hospital LOS         | Shows clinical separation                                         |
+| Core physiology      | median/IQR of the 8 primary features                                     | Makes the phenotype clinically interpretable                      |
+| Anemia               | `early_anemia_all`, `early_anemia_pre_transfusion`, Hb distribution      | Tests whether anemia burden differs by phenotype                  |
+| RBC exposure         | `any_rbc_transfusion_48h`, `rbc_events_48h`, `rbc_units_48h` if reliable | Describes treatment exposure without overclaiming causality       |
+| Etiology specificity | `nsah_evidence_level`, aneurysm diagnosis/procedure flags                | Addresses non-traumatic SAH heterogeneity                         |
+| Stability            | silhouette, bootstrap ARI, hierarchical-vs-K-means ARI                   | Shows the phenotype is not a single unstable algorithmic artifact |
 
 Required interpretation rule:
 
@@ -152,6 +152,7 @@ Failure response:
 Cohort sensitivity cohorts (defined here, executed in Loop 6):
 
 This loop also defines the sensitivity cohorts that Loop 6 will reuse, so the definitions are consistent and the work is not duplicated:
+
 - No-RBC 48h cohort (patients with zero RBC transfusions in the first 48h)
 - ICU LOS `>=48h` cohort (exclude early deaths / early transfers)
 - These cohorts are defined once here; Loop 6 re-applies the primary analysis pipeline to them.
@@ -336,7 +337,7 @@ Max iterations: 2. After two rounds of reviewer-attack mapping, any remaining un
 
 Objective:
 
-- Keep writing synchronized with analysis.
+- Keep writing synchronized with analysis(@dist/analysis_result.md).
 
 Artifact:
 
@@ -375,4 +376,3 @@ The study is ready for manuscript drafting when all are true:
 - Anemia and transfusion results are described at the correct evidentiary level.
 - The main claim avoids unsupported causal or treatment-recommendation language.
 - Every major reviewer concern has either a table, a sensitivity result, or a limitation.
-

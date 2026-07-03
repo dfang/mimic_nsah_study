@@ -40,6 +40,8 @@
   - `03_causal_ml_analysis.py`
   - `run_all.sh`
 - 除非任务明确要求修改，保留 `option1/` 和 `option2/` 中已有研究资料。
+- 生成内容到 `dist/` 时，必须放入 `YYYYMMDD`（如 `20260702`）文件夹内，并且在该目录下编写一个 `readme.txt`，明确告知其中的 markdown 和 pdf 文件是由哪个模型（如 `codex`、`gemini` 或 `claude`）生成的。
+
 
 ## BigQuery 与 SQL 规范
 
