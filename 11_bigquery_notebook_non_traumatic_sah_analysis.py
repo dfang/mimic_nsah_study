@@ -168,12 +168,13 @@ CV_FOLDS = 5
 COHORT_FLAG = "eligible_primary_analysis"
 
 FEATURES = [
+    "hb_min_48h_all",
     "gcs_motor_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
     "spo2_min_48h",
     "creatinine_max_48h",
-    "sodium_max_48h",
+    "inr_max_48h",
     "platelet_min_48h",
 ]
 
@@ -185,6 +186,7 @@ FEATURE_LABELS = {
     "shock_index_max_48h": "Shock index max",
     "spo2_min_48h": "SpO2 min",
     "creatinine_max_48h": "Creatinine max",
+    "inr_max_48h": "INR max",
     "sodium_max_48h": "Sodium max",
     "platelet_min_48h": "Platelet min",
 }
@@ -199,6 +201,7 @@ SEVERITY_DIRECTIONS = {
     "shock_index_max_48h": 1,
     "spo2_min_48h": -1,
     "creatinine_max_48h": 1,
+    "inr_max_48h": 1,
     "sodium_max_48h": 1,
     "platelet_min_48h": -1,
     "epvs_mean_48h": 1,
@@ -207,31 +210,34 @@ SEVERITY_DIRECTIONS = {
 GCS_SENSITIVITY_FEATURE_SETS = {
     "primary_gcs_motor": FEATURES,
     "add_total_gcs": [
+        "hb_min_48h_all",
         "gcs_min_48h",
         "gcs_motor_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
-        "sodium_max_48h",
+        "inr_max_48h",
         "platelet_min_48h",
     ],
     "gcs_total_only": [
+        "hb_min_48h_all",
         "gcs_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
-        "sodium_max_48h",
+        "inr_max_48h",
         "platelet_min_48h",
     ],
     "gcs_grade_alternative": [
+        "hb_min_48h_all",
         "gcs_grade_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
         "spo2_min_48h",
         "creatinine_max_48h",
-        "sodium_max_48h",
+        "inr_max_48h",
         "platelet_min_48h",
     ],
 }
@@ -241,6 +247,7 @@ CANDIDATE_AUDIT_FEATURES = [
     "epvs_first_48h",
     "epvs_max_48h",
     "troponin_peak_48h",
+    "sodium_max_48h",
     "lactate_max_48h",
     "pao2_fio2_min_48h",
     "spo2_fio2_min_48h",
@@ -255,7 +262,7 @@ SENSITIVITY_COHORT_FLAGS = {
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
-    "main_7": FEATURES,
+    "main_8": FEATURES,
     "add_epvs_mean": [*FEATURES, "epvs_mean_48h"],
 }
 
@@ -274,6 +281,7 @@ BASELINE_CONTINUOUS_FEATURES = [
     "sofa_24h",
     *FEATURES,
 ]
+BASELINE_CONTINUOUS_FEATURES = list(dict.fromkeys(BASELINE_CONTINUOUS_FEATURES))
 
 BASELINE_CATEGORICAL_FEATURES = [
     "gender",
@@ -362,6 +370,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "troponin_peak_48h",
         "troponin_labels_48h",
         "troponin_units_48h",
+        "sodium_max_48h",
         "lactate_max_48h",
         "oxygenation_min_48h",
         "pao2_fio2_min_48h",
@@ -370,6 +379,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "sofa_24h",
         *FEATURES,
     ]
+    selected_columns = list(dict.fromkeys(selected_columns))
     sql = f"""
     SELECT {", ".join(selected_columns)}
     FROM `{INPUT_TABLE}`
@@ -384,6 +394,11 @@ def read_table_from_bigquery() -> pd.DataFrame:
 
 def write_dataframe(df: pd.DataFrame, table_id: str) -> None:
     """将 DataFrame 写回 BigQuery，覆盖同名结果表。"""
+    df = df.copy()
+    df.columns = [str(col) for col in df.columns]
+    duplicate_columns = df.columns[df.columns.duplicated()].tolist()
+    if duplicate_columns:
+        raise ValueError(f"写入 {table_id} 前发现重复列名：{duplicate_columns}")
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
     job.result()
@@ -434,7 +449,7 @@ def preprocess_feature_matrix(df: pd.DataFrame, features: list[str]):
 
 
 def build_feature_matrix(df: pd.DataFrame):
-    """对 7 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
+    """对 8 个核心聚类变量做中位数填补和 Z-score 标准化。"""
     x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary = preprocess_feature_matrix(df, FEATURES)
     display(missing_summary)
     return x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary
@@ -938,12 +953,12 @@ def evaluate_prediction_model(assignments: pd.DataFrame, model_name: str, predic
 
 
 def run_prediction_increment(assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较 GCS-only、7 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
+    """比较 GCS-only、8 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
     assignments = assignments.copy()
     assignments["phenotype_factor"] = assignments["phenotype"].map(lambda x: f"P{int(x)}")
     model_specs = {
         "gcs_only": ["gcs_min_48h"],
-        "features_7": FEATURES,
+        "features_8": FEATURES,
         "phenotype_only": ["phenotype_factor"],
         "phenotype_anemia_covariates": [
             "phenotype_factor",
@@ -1251,7 +1266,7 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": np.nan,
                     "early_anemia_rate": np.nan,
                     "silhouette": np.nan,
-                    "ari_vs_primary_main_7": np.nan,
+                    "ari_vs_primary_main_8": np.nan,
                     "min_cluster_n": np.nan,
                     "min_cluster_frac": np.nan,
                     "max_feature_missing_rate": np.nan,
@@ -1282,11 +1297,11 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": float(df.loc[mask, "hospital_mortality"].mean()),
                     "early_anemia_rate": float(df.loc[mask, "early_anemia_all"].mean()),
                     "silhouette": silhouette,
-                    "ari_vs_primary_main_7": ari,
+                    "ari_vs_primary_main_8": ari,
                     "min_cluster_n": int(counts.min()),
                     "min_cluster_frac": float(counts.min() / len(df)),
                     "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
-                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not be added to the main 7-variable solution without clinical justification.",
+                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not be added to the main 8-variable solution without clinical justification.",
                 }
             )
 
@@ -1536,6 +1551,7 @@ ASSIGNMENT_COLUMNS = [
     "sofa_24h",
     *FEATURES,
 ]
+ASSIGNMENT_COLUMNS = list(dict.fromkeys(ASSIGNMENT_COLUMNS))
 
 
 def run_phenotype_solution(df: pd.DataFrame, x_scaled: np.ndarray, k: int, solution_label: str):

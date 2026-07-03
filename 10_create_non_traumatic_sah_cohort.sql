@@ -8,9 +8,8 @@
 -- 1. 先宽后严：先保留候选人群和筛选标记，再生成主分析 cohort。
 -- 2. 时间锚点：首次 ICU 入科时间 icu_intime。
 -- 3. 主窗口：ICU 入科后 0-48 小时；敏感性窗口可复用明细表改成 0-24 小时。
--- 4. 主聚类变量：GCS motor、MAP、shock index、SpO2、creatinine、sodium、platelet。
---    Hb 保留为贫血暴露、描述和敏感性变量，不进入主聚类或 eligibility 缺失计数。
---    Lactate 和 PaO2/FiO2 因当前 cohort 缺失率高，仅保留为描述/敏感性变量，不进入主聚类或 eligibility 缺失计数。
+-- 4. 主聚类变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、INR、platelet。
+--    Sodium、lactate 和 PaO2/FiO2 仅保留为描述/敏感性变量，不进入主聚类或 eligibility 缺失计数。
 -- 5. 每个关键步骤后都附带验证查询，便于检查样本量、唯一性、覆盖率和异常值。
 
 -- 目的：创建本研究专用数据集。
@@ -788,6 +787,40 @@ WHERE chem.sodium BETWEEN 100 AND 180
   AND chem.charttime >= c.icu_intime
   AND chem.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
 
+-- 目的：提取 0-48h INR 明细。
+-- 原因：INR 作为凝血功能维度进入本轮主聚类测试；使用 d_labitems 动态识别 INR 项目以减少版本/itemid 依赖。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.inr_0_48h` AS
+WITH inr_itemids AS (
+    SELECT
+        itemid,
+        label,
+        fluid,
+        category
+    FROM `physionet-data.mimiciv_3_1_hosp.d_labitems`
+    WHERE LOWER(label) LIKE '%inr%'
+      AND LOWER(fluid) = 'blood'
+)
+SELECT
+    le.subject_id,
+    le.hadm_id,
+    c.stay_id,
+    le.charttime,
+    DATETIME_DIFF(le.charttime, c.icu_intime, MINUTE) / 60.0 AS hours_from_icu_intime,
+    'hosp.labevents_inr' AS source_table,
+    le.itemid AS source_itemid,
+    ii.label AS inr_label,
+    le.valueuom,
+    le.valuenum AS inr
+FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+INNER JOIN inr_itemids ii
+    ON le.itemid = ii.itemid
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    ON le.subject_id = c.subject_id
+   AND le.hadm_id = c.hadm_id
+WHERE le.valuenum BETWEEN 0.5 AND 20
+  AND le.charttime >= c.icu_intime
+  AND le.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h` AS
 SELECT
     cbc.subject_id,
@@ -806,14 +839,28 @@ WHERE cbc.platelet BETWEEN 10 AND 1000
   AND cbc.charttime >= c.icu_intime
   AND cbc.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
 
--- 验证：乳酸、肌酐、钠、血小板覆盖率。
+-- 验证：乳酸、肌酐、钠、INR、血小板覆盖率。
 SELECT
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h`) AS stays_with_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h` WHERE source_table = 'mimiciv_3_1_derived.bg') AS stays_with_bg_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h` WHERE source_table = 'labevents_50813') AS stays_with_labevents_lactate,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.creatinine_0_48h`) AS stays_with_creatinine,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.sodium_0_48h`) AS stays_with_sodium,
+    (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.inr_0_48h`) AS stays_with_inr,
     (SELECT COUNT(DISTINCT stay_id) FROM `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h`) AS stays_with_platelet;
+
+-- 验证：INR 项目、单位、覆盖率和范围。
+SELECT
+    inr_label,
+    valueuom,
+    COUNT(*) AS measurements,
+    COUNT(DISTINCT stay_id) AS stays_covered,
+    MIN(inr) AS min_inr,
+    APPROX_QUANTILES(inr, 4)[OFFSET(2)] AS median_inr,
+    MAX(inr) AS max_inr
+FROM `mimic-study-498508.non_traumatic_sah_study.inr_0_48h`
+GROUP BY inr_label, valueuom
+ORDER BY stays_covered DESC, inr_label;
 
 -- 目的：提取并清洗 0-48h PaO2、SpO2 和 FiO2。
 -- 原因：单纯依赖床旁 SpO2/FiO2 会因为 FiO2 记录缺失而造成较高缺失率；
@@ -1239,6 +1286,15 @@ sodium AS (
     FROM `mimic-study-498508.non_traumatic_sah_study.sodium_0_48h`
     GROUP BY stay_id
 ),
+inr AS (
+    SELECT
+        stay_id,
+        MAX(inr) AS inr_max_48h,
+        AVG(inr) AS inr_mean_48h,
+        COUNT(*) AS inr_measurement_count
+    FROM `mimic-study-498508.non_traumatic_sah_study.inr_0_48h`
+    GROUP BY stay_id
+),
 platelet AS (
     SELECT
         stay_id,
@@ -1308,18 +1364,21 @@ SELECT
     creatinine.creatinine_mean_48h,
     sodium.sodium_max_48h,
     sodium.sodium_mean_48h,
+    inr.inr_max_48h,
+    inr.inr_mean_48h,
     platelet.platelet_min_48h,
     platelet.platelet_mean_48h,
     CASE WHEN hb.hb_min_48h_all < 10 THEN 1 ELSE 0 END AS early_anemia_all,
     CASE WHEN hb.hb_min_48h_pre_transfusion < 10 THEN 1 ELSE 0 END AS early_anemia_pre_transfusion,
     CASE WHEN rf.first_rbc_time_48h IS NOT NULL AND hb.hb_min_48h_all IS NOT NULL THEN 1 ELSE 0 END AS has_hb_and_rbc_48h,
     (
-        IF(gcs.gcs_motor_min_48h IS NULL, 1, 0)
+        IF(hb.hb_min_48h_all IS NULL, 1, 0)
+      + IF(gcs.gcs_motor_min_48h IS NULL, 1, 0)
       + IF(map_agg.map_min_48h IS NULL, 1, 0)
       + IF(si.shock_index_max_48h IS NULL, 1, 0)
       + IF(spo2.spo2_min_48h IS NULL, 1, 0)
       + IF(creatinine.creatinine_max_48h IS NULL, 1, 0)
-      + IF(sodium.sodium_max_48h IS NULL, 1, 0)
+      + IF(inr.inr_max_48h IS NULL, 1, 0)
       + IF(platelet.platelet_min_48h IS NULL, 1, 0)
     ) AS core_feature_missing_count,
     hb.hb_measurement_count,
@@ -1336,6 +1395,7 @@ SELECT
     troponin.troponin_measurement_count,
     creatinine.creatinine_measurement_count,
     sodium.sodium_measurement_count,
+    inr.inr_measurement_count,
     platelet.platelet_measurement_count
 FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
 LEFT JOIN `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags` rf
@@ -1366,6 +1426,8 @@ LEFT JOIN creatinine
     ON c.stay_id = creatinine.stay_id
 LEFT JOIN sodium
     ON c.stay_id = sodium.stay_id
+LEFT JOIN inr
+    ON c.stay_id = inr.stay_id
 LEFT JOIN platelet
     ON c.stay_id = platelet.stay_id;
 
@@ -1387,6 +1449,7 @@ SELECT
     COUNTIF(troponin_peak_48h IS NOT NULL) AS troponin_nonmissing,
     COUNTIF(creatinine_max_48h IS NOT NULL) AS creatinine_nonmissing,
     COUNTIF(sodium_max_48h IS NOT NULL) AS sodium_nonmissing,
+    COUNTIF(inr_max_48h IS NOT NULL) AS inr_nonmissing,
     COUNTIF(platelet_min_48h IS NOT NULL) AS platelet_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
@@ -1435,12 +1498,12 @@ SELECT
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`;
 
--- 验证：主分析样本中 7 个低缺失主聚类变量范围；Hb、total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
+-- 验证：主分析样本中 8 个主聚类变量范围；sodium、total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
 SELECT
+    MIN(hb_min_48h_all) AS min_hb_min_48h,
+    MAX(hb_min_48h_all) AS max_hb_min_48h,
     MIN(gcs_motor_min_48h) AS min_gcs_motor_min_48h,
     MAX(gcs_motor_min_48h) AS max_gcs_motor_min_48h,
-    MIN(hb_min_48h_all) AS min_hb_min_48h_descriptive,
-    MAX(hb_min_48h_all) AS max_hb_min_48h_descriptive,
     MIN(gcs_min_48h) AS min_gcs_min_48h_descriptive,
     MAX(gcs_min_48h) AS max_gcs_min_48h_descriptive,
     MIN(gcs_grade_min_48h) AS min_gcs_grade_min_48h_descriptive,
@@ -1465,8 +1528,10 @@ SELECT
     MAX(spo2_fio2_min_48h) AS max_spo2_fio2_min_48h,
     MIN(creatinine_max_48h) AS min_creatinine_max_48h,
     MAX(creatinine_max_48h) AS max_creatinine_max_48h,
-    MIN(sodium_max_48h) AS min_sodium_max_48h,
-    MAX(sodium_max_48h) AS max_sodium_max_48h,
+    MIN(sodium_max_48h) AS min_sodium_max_48h_descriptive,
+    MAX(sodium_max_48h) AS max_sodium_max_48h_descriptive,
+    MIN(inr_max_48h) AS min_inr_max_48h,
+    MAX(inr_max_48h) AS max_inr_max_48h,
     MIN(platelet_min_48h) AS min_platelet_min_48h,
     MAX(platelet_min_48h) AS max_platelet_min_48h
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`
@@ -1519,7 +1584,7 @@ ORDER BY step;
 -- 目的：生成主分析样本的变量缺失率汇总。
 -- 原因：Python 插补和建模前需要确认各变量缺失程度。
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.feature_missingness_summary` AS
-SELECT 'hb_min_48h_all_descriptive' AS feature, COUNTIF(hb_min_48h_all IS NULL) AS missing_n, COUNT(*) AS total_n, COUNTIF(hb_min_48h_all IS NULL) / COUNT(*) AS missing_rate
+SELECT 'hb_min_48h_all' AS feature, COUNTIF(hb_min_48h_all IS NULL) AS missing_n, COUNT(*) AS total_n, COUNTIF(hb_min_48h_all IS NULL) / COUNT(*) AS missing_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'epvs_mean_48h_candidate', COUNTIF(epvs_mean_48h IS NULL), COUNT(*), COUNTIF(epvs_mean_48h IS NULL) / COUNT(*)
@@ -1555,7 +1620,10 @@ UNION ALL
 SELECT 'creatinine_max_48h', COUNTIF(creatinine_max_48h IS NULL), COUNT(*), COUNTIF(creatinine_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
-SELECT 'sodium_max_48h', COUNTIF(sodium_max_48h IS NULL), COUNT(*), COUNTIF(sodium_max_48h IS NULL) / COUNT(*)
+SELECT 'sodium_max_48h_descriptive', COUNTIF(sodium_max_48h IS NULL), COUNT(*), COUNTIF(sodium_max_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'inr_max_48h', COUNTIF(inr_max_48h IS NULL), COUNT(*), COUNTIF(inr_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'platelet_min_48h', COUNTIF(platelet_min_48h IS NULL), COUNT(*), COUNTIF(platelet_min_48h IS NULL) / COUNT(*)

@@ -26,16 +26,17 @@
 
 特征工程必须被视为临床设计产物，而不仅仅是模型输入的列表。
 
-当前已确定的7变量0-48小时低缺失率生理特征面板已在 `10_create_non_traumatic_sah_cohort.sql` 中实现，并由 `11_bigquery_notebook_non_traumatic_sah_analysis.py` 使用。
+当前已确定的8变量0-48小时生理特征面板已在 `10_create_non_traumatic_sah_cohort.sql` 中实现，并由 `11_bigquery_notebook_non_traumatic_sah_analysis.py` 使用。
 
 | 领域 | 主要变量 | 聚合方式 | 恶化方向 | 在论文中的角色 |
 | --- | --- | --- | --- | --- |
+| 贫血 | `hb_min_48h_all` | ICU入院至48h最低Hb | 降低 | 核心聚类特征；反映早期贫血负担 |
 | 神经运动反应 | `gcs_motor_min_48h` | ICU入院至48h最低GCS motor component | 降低 | 核心聚类特征，用于表征神经运动严重程度；需与total GCS和GCS grade替代方案比较 |
 | 血流动力学灌注 | `map_min_48h` | 最低MAP | 降低 | 核心聚类特征；反映低血压/灌注脆弱性 |
 | 血流动力学应激 | `shock_index_max_48h` | 最高HR/SBP | 升高 | 核心聚类特征；反映循环应激 |
 | 氧合 | `spo2_min_48h` | 最低SpO2 | 降低 | 核心聚类特征；选择SpO2而非PaO2/FiO2以避免FiO2驱动的数据缺失 |
 | 肾脏/器官功能障碍 | `creatinine_max_48h` | 最高肌酐 | 升高 | 核心聚类特征；反映早期肾功能障碍 |
-| 电解质/渗透压应激 | `sodium_max_48h` | 最高钠 | 升高 | 核心聚类特征；反映早期高钠或渗透压相关应激 |
+| 凝血功能 | `inr_max_48h` | 最高INR | 升高 | 核心聚类特征；反映早期凝血异常 |
 | 血小板/凝血-炎症状态 | `platelet_min_48h` | 最低血小板计数 | 降低 | 核心聚类特征；反映血小板减少/凝血脆弱性 |
 
 候选变量不作为主要聚类输入，除非审查证明其必要性：
@@ -48,10 +49,11 @@
 | `oxygenation_min_48h` | 氧合敏感性分析 | 复合氧合来源可能混合不同测量机制 |
 | `epvs_mean_48h`、`epvs_first_48h`、`epvs_max_48h` | 候选敏感性特征 | 由Hb/Hct衍生；可能与贫血变量共线 |
 | `troponin_peak_48h` | 候选机制描述变量 | 检测方法和指征驱动缺失需审查 |
+| `sodium_max_48h` | 描述和敏感性特征 | 本轮 Hb+INR 方案中从主面板剔除 |
 | `sapsiii_24h`、`sofa_24h` | 预测比较/协变量（如有） | 与核心生理变量重叠，且当前表中不可用 |
 | `gcs_grade_min_48h` | 描述/敏感性分析比较 | 不纳入主要聚类，因为它直接由total GCS派生 |
 | `gcs_min_48h` | 描述/敏感性分析比较 | 不纳入主要聚类，以避免重复编码GCS motor已捕捉的信息 |
-| `hb_min_48h_all`、`hb_min_48h_pre_transfusion` | 贫血暴露/Hb敏感性分析 | 不纳入主要聚类，避免把贫血暴露放入表型构建 |
+| `hb_min_48h_pre_transfusion` | Hb敏感性分析 | 用于评估输血时间是否影响贫血相关结果 |
 
 特征循环通过标准：
 
@@ -77,7 +79,7 @@
 | --- | --- | --- |
 | 规模 | 表型、N、百分比 | 显示是否存在过小的亚组 |
 | 结局 | 住院死亡率、ICU死亡率（如可用）、ICU/住院LOS | 显示临床分离度 |
-| 核心生理 | 7个主要特征的中位数/IQR | 使表型在临床上可解释 |
+| 核心生理 | 8个主要特征的中位数/IQR | 使表型在临床上可解释 |
 | 贫血 | `early_anemia_all`、`early_anemia_pre_transfusion`、Hb分布 | 检验贫血负荷是否因表型而异 |
 | RBC暴露 | `any_rbc_transfusion_48h`、`rbc_events_48h`、`rbc_units_48h`（如可靠） | 描述治疗暴露而不夸大因果性 |
 | 病因特异性 | `nsah_evidence_level`、动脉瘤诊断/手术标志 | 处理非创伤性SAH异质性 |
