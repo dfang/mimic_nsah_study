@@ -26,13 +26,12 @@ Primary dataset:
 
 Point 3 means the project must treat feature engineering as a clinical design artifact, not just as a list of model inputs.
 
-The current fixed primary feature set is the 8-variable 0-48h low-missingness physiology panel already implemented in `10_create_non_traumatic_sah_cohort.sql` and used by `11_bigquery_notebook_non_traumatic_sah_analysis.py`.
+The current fixed primary feature set is the 7-variable 0-48h low-missingness physiology panel already implemented in `10_create_non_traumatic_sah_cohort.sql` and used by `11_bigquery_notebook_non_traumatic_sah_analysis.py`.
 
 | Domain                                     | Primary variable      | Aggregation                                                  | Worse direction | Role in manuscript                                                                                             |
 | ------------------------------------------ | --------------------- | ------------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------- |
 | Anemia / oxygen-carrying capacity          | `hb_min_48h_all`      | Minimum Hb from ICU admission to 48h                         | Lower           | Core clustering feature; anemia defined as Hb `<10 g/dL`; sensitivity uses pre-transfusion Hb or no-RBC cohort |
-| Neurologic injury                          | `gcs_min_48h`         | Minimum total GCS from ICU admission to 48h                  | Lower           | Core clustering feature; main neurologic severity marker                                                       |
-| Neurologic motor response                  | `gcs_motor_min_48h`   | Minimum GCS motor component from ICU admission to 48h        | Lower           | Core clustering feature for neurologic motor severity; checked against total-only and GCS grade alternatives   |
+| Neurologic motor response                  | `gcs_motor_min_48h`   | Minimum GCS motor component from ICU admission to 48h        | Lower           | Core clustering feature for neurologic motor severity; checked against total GCS and GCS grade alternatives    |
 | Hemodynamic perfusion                      | `map_min_48h`         | Minimum MAP                                                  | Lower           | Core clustering feature; captures hypotension/perfusion vulnerability                                          |
 | Hemodynamic stress                         | `shock_index_max_48h` | Maximum HR/SBP                                               | Higher          | Core clustering feature; captures circulatory stress                                                           |
 | Oxygenation                                | `spo2_min_48h`        | Minimum SpO2                                                 | Lower           | Core clustering feature; chosen over PaO2/FiO2 to avoid FiO2-driven missingness                                |
@@ -51,6 +50,7 @@ Candidate variables are not primary clustering inputs unless the audit justifies
 | `troponin_peak_48h`                               | Candidate mechanism descriptor                 | Assay and indication-driven missingness require audit                                |
 | `sapsiii_24h`, `sofa_24h`                         | Prediction comparison / covariate if available | Overlaps with core physiological variables and is not available in the current table |
 | `gcs_grade_min_48h`                               | Descriptive / sensitivity comparison           | Kept out of primary clustering because it is derived directly from total GCS         |
+| `gcs_min_48h`                                     | Descriptive / sensitivity comparison           | Kept out of primary clustering to avoid repeating information already captured by GCS motor |
 
 Feature-loop pass criteria:
 
@@ -76,7 +76,7 @@ Required primary phenotype table:
 | -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | Size                 | phenotype, N, percentage                                                 | Shows whether any cluster is too small                            |
 | Outcome              | hospital mortality, ICU mortality if available, ICU/hospital LOS         | Shows clinical separation                                         |
-| Core physiology      | median/IQR of the 8 primary features                                     | Makes the phenotype clinically interpretable                      |
+| Core physiology      | median/IQR of the 7 primary features                                     | Makes the phenotype clinically interpretable                      |
 | Anemia               | `early_anemia_all`, `early_anemia_pre_transfusion`, Hb distribution      | Tests whether anemia burden differs by phenotype                  |
 | RBC exposure         | `any_rbc_transfusion_48h`, `rbc_events_48h`, `rbc_units_48h` if reliable | Describes treatment exposure without overclaiming causality       |
 | Etiology specificity | `nsah_evidence_level`, aneurysm diagnosis/procedure flags                | Addresses non-traumatic SAH heterogeneity                         |

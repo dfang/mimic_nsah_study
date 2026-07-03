@@ -41,22 +41,20 @@ RANDOM_SEED = 42
 
 FEATURES = [
     "hb_min_48h_all",
-    "gcs_min_48h",
+    "gcs_motor_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
-    "lactate_max_48h",
-    "oxygenation_min_48h",
+    "spo2_min_48h",
     "creatinine_max_48h",
     "platelet_min_48h",
 ]
 
 FEATURE_LABELS = {
     "hb_min_48h_all": "Hb min",
-    "gcs_min_48h": "GCS min",
+    "gcs_motor_min_48h": "GCS motor min",
     "map_min_48h": "MAP min",
     "shock_index_max_48h": "Shock index max",
-    "lactate_max_48h": "Lactate max",
-    "oxygenation_min_48h": "Oxygenation min",
+    "spo2_min_48h": "SpO2 min",
     "creatinine_max_48h": "Creatinine max",
     "platelet_min_48h": "Platelet min",
 }
@@ -64,11 +62,10 @@ FEATURE_LABELS = {
 # Positive means physiologically worse after standardization.
 SEVERITY_DIRECTIONS = {
     "hb_min_48h_all": -1,
-    "gcs_min_48h": -1,
+    "gcs_motor_min_48h": -1,
     "map_min_48h": -1,
     "shock_index_max_48h": 1,
-    "lactate_max_48h": 1,
-    "oxygenation_min_48h": -1,
+    "spo2_min_48h": -1,
     "creatinine_max_48h": 1,
     "platelet_min_48h": -1,
 }

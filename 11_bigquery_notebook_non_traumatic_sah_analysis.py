@@ -169,7 +169,6 @@ COHORT_FLAG = "eligible_primary_analysis"
 
 FEATURES = [
     "hb_min_48h_all",
-    "gcs_min_48h",
     "gcs_motor_min_48h",
     "map_min_48h",
     "shock_index_max_48h",
@@ -204,12 +203,28 @@ SEVERITY_DIRECTIONS = {
 }
 
 GCS_SENSITIVITY_FEATURE_SETS = {
-    "primary_total_gcs_motor": FEATURES,
-    "gcs_total_only": [feature for feature in FEATURES if feature != "gcs_motor_min_48h"],
-    "gcs_motor_only": [feature for feature in FEATURES if feature != "gcs_min_48h"],
-    "gcs_grade_alternative": [
+    "primary_gcs_motor": FEATURES,
+    "add_total_gcs": [
         "hb_min_48h_all",
         "gcs_min_48h",
+        "gcs_motor_min_48h",
+        "map_min_48h",
+        "shock_index_max_48h",
+        "spo2_min_48h",
+        "creatinine_max_48h",
+        "platelet_min_48h",
+    ],
+    "gcs_total_only": [
+        "hb_min_48h_all",
+        "gcs_min_48h",
+        "map_min_48h",
+        "shock_index_max_48h",
+        "spo2_min_48h",
+        "creatinine_max_48h",
+        "platelet_min_48h",
+    ],
+    "gcs_grade_alternative": [
+        "hb_min_48h_all",
         "gcs_grade_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
@@ -238,11 +253,10 @@ SENSITIVITY_COHORT_FLAGS = {
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
-    "main_8": FEATURES,
+    "main_7": FEATURES,
     "add_epvs_mean": [*FEATURES, "epvs_mean_48h"],
     "replace_hb_with_epvs_mean": [
         "epvs_mean_48h",
-        "gcs_min_48h",
         "gcs_motor_min_48h",
         "map_min_48h",
         "shock_index_max_48h",
@@ -256,6 +270,7 @@ BASELINE_CONTINUOUS_FEATURES = [
     "age",
     "icu_los_days",
     "hospital_los_days",
+    "gcs_min_48h",
     "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",
     "epvs_mean_48h",
@@ -341,6 +356,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
         "eligible_sensitivity_48h_los",
+        "gcs_min_48h",
         "gcs_grade_min_48h",
         "wfns_gcs_grade_min_48h",
         "epvs_mean_48h",
@@ -421,7 +437,7 @@ def preprocess_feature_matrix(df: pd.DataFrame, features: list[str]):
 
 
 def build_feature_matrix(df: pd.DataFrame):
-    """对 8 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
+    """对 7 个低缺失核心聚类变量做中位数填补和 Z-score 标准化。"""
     x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary = preprocess_feature_matrix(df, FEATURES)
     display(missing_summary)
     return x_raw, x_imputed, x_scaled, imputer, scaler, missing_summary
@@ -665,7 +681,7 @@ def run_bootstrap_stability(x_scaled: np.ndarray, reference_phenotype: pd.Series
 
 
 def run_gcs_sensitivity(df: pd.DataFrame, reference_assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较 total GCS + motor、total only、motor only 和 grade 替代方案。"""
+    """比较 GCS motor 主方案、加入 total GCS、total only 和 grade 替代方案。"""
     reference = reference_assignments["phenotype"].astype(int).to_numpy()
     rows = []
 
@@ -684,7 +700,7 @@ def run_gcs_sensitivity(df: pd.DataFrame, reference_assignments: pd.DataFrame) -
             "k": int(PRIMARY_K),
             "n": int(len(df)),
             "silhouette": float(silhouette_score(x_scaled_sens, phenotype)),
-            "ari_vs_primary_total_gcs_motor": float(adjusted_rand_score(reference, phenotype)),
+            "ari_vs_primary_gcs_motor": float(adjusted_rand_score(reference, phenotype)),
             "min_cluster_n": int(counts.min()),
             "min_cluster_frac": float(counts.min() / len(df)),
             "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
@@ -925,12 +941,12 @@ def evaluate_prediction_model(assignments: pd.DataFrame, model_name: str, predic
 
 
 def run_prediction_increment(assignments: pd.DataFrame) -> pd.DataFrame:
-    """比较 GCS-only、8 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
+    """比较 GCS-only、7 变量、phenotype、phenotype+贫血+协变量的预测性能。"""
     assignments = assignments.copy()
     assignments["phenotype_factor"] = assignments["phenotype"].map(lambda x: f"P{int(x)}")
     model_specs = {
         "gcs_only": ["gcs_min_48h"],
-        "features_8": FEATURES,
+        "features_7": FEATURES,
         "phenotype_only": ["phenotype_factor"],
         "phenotype_anemia_covariates": [
             "phenotype_factor",
@@ -1238,7 +1254,7 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": np.nan,
                     "early_anemia_rate": np.nan,
                     "silhouette": np.nan,
-                    "ari_vs_primary_main_8": np.nan,
+                    "ari_vs_primary_main_7": np.nan,
                     "min_cluster_n": np.nan,
                     "min_cluster_frac": np.nan,
                     "max_feature_missing_rate": np.nan,
@@ -1269,11 +1285,11 @@ def run_epvs_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame) ->
                     "hospital_mortality_rate": float(df.loc[mask, "hospital_mortality"].mean()),
                     "early_anemia_rate": float(df.loc[mask, "early_anemia_all"].mean()),
                     "silhouette": silhouette,
-                    "ari_vs_primary_main_8": ari,
+                    "ari_vs_primary_main_7": ari,
                     "min_cluster_n": int(counts.min()),
                     "min_cluster_frac": float(counts.min() / len(df)),
                     "max_feature_missing_rate": float(missing_summary["missing_rate"].max()),
-                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not replace the main 8-variable solution without clinical justification.",
+                    "note": "Exploratory only; ePVS is highly related to hemoglobin/hematocrit and should not replace the main 7-variable solution without clinical justification.",
                 }
             )
 
@@ -1508,6 +1524,7 @@ ASSIGNMENT_COLUMNS = [
     "any_rbc_transfusion_48h",
     "massive_transfusion_24h",
     "core_feature_missing_count",
+    "gcs_min_48h",
     "gcs_grade_min_48h",
     "wfns_gcs_grade_min_48h",
     "epvs_mean_48h",
@@ -1648,7 +1665,7 @@ display(
 plot_bootstrap_stability(bootstrap_stability)
 
 gcs_sensitivity = run_gcs_sensitivity(df, primary["assignments"])
-print("\nGCS total、GCS motor 与 GCS grade 替代敏感性分析：")
+print("\nGCS motor 主方案与 total GCS / GCS grade 替代敏感性分析：")
 display(gcs_sensitivity)
 
 candidate_feature_audit = build_candidate_feature_audit(df)
@@ -1720,7 +1737,7 @@ print("2. phenotype_outcome_summary：K=3 是否形成低风险 + 两个机制�
 print("3. phenotype_outcome_summary_k4_exploratory：K=4 是否切出小型极高危表型")
 print("4. phenotype_k3_k4_refinement_crosstab：K=4 极高危小亚型是否主要来自 K=3 重症组")
 print("5. phenotype_anemia_feasibility：K=3 每个 phenotype x anemia 格子的死亡事件数是否足够")
-print("6. phenotype_gcs_sensitivity_summary：去掉 total GCS 或 GCS motor、或用 GCS grade 替代后主分型是否仍稳定")
+print("6. phenotype_gcs_sensitivity_summary：加入 total GCS、仅用 total GCS、或用 GCS grade 替代后主分型是否仍稳定")
 print("7. phenotype_bootstrap_stability：bootstrap ARI 是否支持 K=3 assignment 的稳健性")
 print("8. phenotype_prediction_metrics：phenotype 是否比 GCS-only 提供预测增量")
 print("9. phenotype_regression_models：调整年龄、性别、入院类型、aneurysm evidence 和贫血后 phenotype 是否仍有关联")

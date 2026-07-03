@@ -26,13 +26,12 @@
 
 特征工程必须被视为临床设计产物，而不仅仅是模型输入的列表。
 
-当前已确定的8变量0-48小时低缺失率生理特征面板已在 `10_create_non_traumatic_sah_cohort.sql` 中实现，并由 `11_bigquery_notebook_non_traumatic_sah_analysis.py` 使用。
+当前已确定的7变量0-48小时低缺失率生理特征面板已在 `10_create_non_traumatic_sah_cohort.sql` 中实现，并由 `11_bigquery_notebook_non_traumatic_sah_analysis.py` 使用。
 
 | 领域 | 主要变量 | 聚合方式 | 恶化方向 | 在论文中的角色 |
 | --- | --- | --- | --- | --- |
 | 贫血/携氧能力 | `hb_min_48h_all` | ICU入院至48h最低Hb | 降低 | 核心聚类特征；贫血定义为Hb `<10 g/dL`；敏感性分析使用输血前Hb或无RBC队列 |
-| 神经损伤 | `gcs_min_48h` | ICU入院至48h最低总GCS | 降低 | 核心聚类特征；主要神经严重程度标志 |
-| 神经运动反应 | `gcs_motor_min_48h` | ICU入院至48h最低GCS motor component | 降低 | 核心聚类特征，用于表征神经运动严重程度；需与total-only和GCS grade替代方案比较 |
+| 神经运动反应 | `gcs_motor_min_48h` | ICU入院至48h最低GCS motor component | 降低 | 核心聚类特征，用于表征神经运动严重程度；需与total GCS和GCS grade替代方案比较 |
 | 血流动力学灌注 | `map_min_48h` | 最低MAP | 降低 | 核心聚类特征；反映低血压/灌注脆弱性 |
 | 血流动力学应激 | `shock_index_max_48h` | 最高HR/SBP | 升高 | 核心聚类特征；反映循环应激 |
 | 氧合 | `spo2_min_48h` | 最低SpO2 | 降低 | 核心聚类特征；选择SpO2而非PaO2/FiO2以避免FiO2驱动的数据缺失 |
@@ -51,6 +50,7 @@
 | `troponin_peak_48h` | 候选机制描述变量 | 检测方法和指征驱动缺失需审查 |
 | `sapsiii_24h`、`sofa_24h` | 预测比较/协变量（如有） | 与核心生理变量重叠，且当前表中不可用 |
 | `gcs_grade_min_48h` | 描述/敏感性分析比较 | 不纳入主要聚类，因为它直接由total GCS派生 |
+| `gcs_min_48h` | 描述/敏感性分析比较 | 不纳入主要聚类，以避免重复编码GCS motor已捕捉的信息 |
 
 特征循环通过标准：
 
@@ -76,7 +76,7 @@
 | --- | --- | --- |
 | 规模 | 表型、N、百分比 | 显示是否存在过小的亚组 |
 | 结局 | 住院死亡率、ICU死亡率（如可用）、ICU/住院LOS | 显示临床分离度 |
-| 核心生理 | 8个主要特征的中位数/IQR | 使表型在临床上可解释 |
+| 核心生理 | 7个主要特征的中位数/IQR | 使表型在临床上可解释 |
 | 贫血 | `early_anemia_all`、`early_anemia_pre_transfusion`、Hb分布 | 检验贫血负荷是否因表型而异 |
 | RBC暴露 | `any_rbc_transfusion_48h`、`rbc_events_48h`、`rbc_units_48h`（如可靠） | 描述治疗暴露而不夸大因果性 |
 | 病因特异性 | `nsah_evidence_level`、动脉瘤诊断/手术标志 | 处理非创伤性SAH异质性 |

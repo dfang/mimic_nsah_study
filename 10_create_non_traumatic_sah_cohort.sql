@@ -8,7 +8,7 @@
 -- 1. 先宽后严：先保留候选人群和筛选标记，再生成主分析 cohort。
 -- 2. 时间锚点：首次 ICU 入科时间 icu_intime。
 -- 3. 主窗口：ICU 入科后 0-48 小时；敏感性窗口可复用明细表改成 0-24 小时。
--- 4. 主聚类变量：Hb、total GCS、GCS motor、MAP、shock index、SpO2、creatinine、platelet。
+-- 4. 主聚类变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、platelet。
 --    Lactate 和 PaO2/FiO2 因当前 cohort 缺失率高，仅保留为描述/敏感性变量，不进入主聚类或 eligibility 缺失计数。
 -- 5. 每个关键步骤后都附带验证查询，便于检查样本量、唯一性、覆盖率和异常值。
 
@@ -482,8 +482,8 @@ SELECT
 FROM `mimic-study-498508.non_traumatic_sah_study.epvs_0_48h`;
 
 -- 目的：提取 0-48h total GCS、GCS grade 和 GCS motor 明细。
--- 原因：主聚类使用 total GCS 和 GCS motor 表征神经严重度；
---       GCS grade 保留为描述、分层和敏感性分析变量。
+-- 原因：主聚类仅使用 GCS motor 表征神经功能，以减少 total GCS 与其组分的重复编码；
+--       total GCS 和 GCS grade 保留为描述、分层和敏感性分析变量。
 --       derived.gcs 已统一 GCS components，优先于直接读取 chartevents itemid。
 CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.gcs_0_48h` AS
 SELECT
@@ -1284,7 +1284,6 @@ SELECT
     CASE WHEN rf.first_rbc_time_48h IS NOT NULL AND hb.hb_min_48h_all IS NOT NULL THEN 1 ELSE 0 END AS has_hb_and_rbc_48h,
     (
         IF(hb.hb_min_48h_all IS NULL, 1, 0)
-      + IF(gcs.gcs_min_48h IS NULL, 1, 0)
       + IF(gcs.gcs_motor_min_48h IS NULL, 1, 0)
       + IF(map_agg.map_min_48h IS NULL, 1, 0)
       + IF(si.shock_index_max_48h IS NULL, 1, 0)
@@ -1401,14 +1400,14 @@ SELECT
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`;
 
--- 验证：主分析样本中 8 个低缺失主聚类变量范围；高缺失血气变量仅作敏感性字段检查。
+-- 验证：主分析样本中 7 个低缺失主聚类变量范围；total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。
 SELECT
     MIN(hb_min_48h_all) AS min_hb_min_48h,
     MAX(hb_min_48h_all) AS max_hb_min_48h,
-    MIN(gcs_min_48h) AS min_gcs_min_48h,
-    MAX(gcs_min_48h) AS max_gcs_min_48h,
     MIN(gcs_motor_min_48h) AS min_gcs_motor_min_48h,
     MAX(gcs_motor_min_48h) AS max_gcs_motor_min_48h,
+    MIN(gcs_min_48h) AS min_gcs_min_48h_descriptive,
+    MAX(gcs_min_48h) AS max_gcs_min_48h_descriptive,
     MIN(gcs_grade_min_48h) AS min_gcs_grade_min_48h_descriptive,
     MAX(gcs_grade_min_48h) AS max_gcs_grade_min_48h_descriptive,
     MIN(map_min_48h) AS min_map_min_48h,
@@ -1489,7 +1488,7 @@ UNION ALL
 SELECT 'epvs_mean_48h_candidate', COUNTIF(epvs_mean_48h IS NULL), COUNT(*), COUNTIF(epvs_mean_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
-SELECT 'gcs_min_48h', COUNTIF(gcs_min_48h IS NULL), COUNT(*), COUNTIF(gcs_min_48h IS NULL) / COUNT(*)
+SELECT 'gcs_min_48h_descriptive', COUNTIF(gcs_min_48h IS NULL), COUNT(*), COUNTIF(gcs_min_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'gcs_grade_min_48h_descriptive', COUNTIF(gcs_grade_min_48h IS NULL), COUNT(*), COUNTIF(gcs_grade_min_48h IS NULL) / COUNT(*)
