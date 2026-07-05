@@ -49,23 +49,66 @@ CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.dx_sah_flags
 SELECT
     di.subject_id,
     di.hadm_id,
+    STRING_AGG(
+        DISTINCT CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE '430%' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I60%' THEN di.icd_code
+            ELSE NULL
+        END,
+        ', '
+        ORDER BY CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE '430%' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I60%' THEN di.icd_code
+            ELSE NULL
+        END
+    ) AS sah_dx_codes,
+    STRING_AGG(
+        DISTINCT CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN di.icd_code
+            ELSE NULL
+        END,
+        ', '
+        ORDER BY CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN di.icd_code
+            ELSE NULL
+        END
+    ) AS aneurysm_dx_codes,
+    STRING_AGG(
+        DISTINCT CASE
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'S066%' THEN di.icd_code
+            WHEN LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%' THEN NULL
+            WHEN LOWER(dd.long_title) LIKE '%non-traumatic%subarachnoid%' THEN NULL
+            WHEN LOWER(dd.long_title) LIKE '%traumatic%subarachnoid%' THEN di.icd_code
+            ELSE NULL
+        END,
+        ', '
+        ORDER BY CASE
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'S066%' THEN di.icd_code
+            WHEN LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%' THEN NULL
+            WHEN LOWER(dd.long_title) LIKE '%non-traumatic%subarachnoid%' THEN NULL
+            WHEN LOWER(dd.long_title) LIKE '%traumatic%subarachnoid%' THEN di.icd_code
+            ELSE NULL
+        END
+    ) AS traumatic_sah_dx_codes,
     MAX(
         CASE
-            WHEN di.icd_version = 9 AND di.icd_code LIKE '430%' THEN 1
-            WHEN di.icd_version = 10 AND di.icd_code LIKE 'I60%' THEN 1
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE '430%' THEN 1
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I60%' THEN 1
             ELSE 0
         END
     ) AS has_sah_dx,
     MAX(
         CASE
-            WHEN di.icd_version = 9 AND di.icd_code = '437.3' THEN 1
-            WHEN di.icd_version = 10 AND di.icd_code LIKE 'I67.1%' THEN 1
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN 1
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN 1
             ELSE 0
         END
     ) AS has_aneurysm_dx,
     MAX(
         CASE
-            WHEN di.icd_version = 10 AND di.icd_code LIKE 'S06.6%' THEN 1
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'S066%' THEN 1
             WHEN LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%' THEN 0
             WHEN LOWER(dd.long_title) LIKE '%non-traumatic%subarachnoid%' THEN 0
             WHEN LOWER(dd.long_title) LIKE '%traumatic%subarachnoid%' THEN 1
@@ -78,6 +121,18 @@ LEFT JOIN `physionet-data.mimiciv_3_1_hosp.d_icd_diagnoses` dd
    AND di.icd_version = dd.icd_version
 GROUP BY di.subject_id, di.hadm_id;
 
+-- 验证：确认 MIMIC-IV 3.1 字典中动脉瘤诊断代码为无小数点形式。
+-- 原因：BigQuery 诊断表常存储 `I671`/`4373`，不是 `I67.1`/`437.3`；此处固化审计，避免误判 has_aneurysm_dx 全 0。
+SELECT
+    icd_version,
+    icd_code,
+    REPLACE(UPPER(icd_code), '.', '') AS normalized_icd_code,
+    long_title
+FROM `physionet-data.mimiciv_3_1_hosp.d_icd_diagnoses`
+WHERE (icd_version = 9 AND REPLACE(UPPER(icd_code), '.', '') = '4373')
+   OR (icd_version = 10 AND REPLACE(UPPER(icd_code), '.', '') LIKE 'I671%')
+ORDER BY icd_version, icd_code;
+
 -- 验证：检查 SAH、动脉瘤和创伤性 SAH 诊断标记数量。
 SELECT
     COUNT(*) AS diagnosis_admissions,
@@ -86,6 +141,16 @@ SELECT
     COUNTIF(has_sah_dx = 1 AND has_aneurysm_dx = 1) AS sah_with_aneurysm_dx,
     COUNTIF(has_sah_dx = 1 AND has_traumatic_sah_dx = 1) AS sah_with_traumatic_flag
 FROM `mimic-study-498508.non_traumatic_sah_study.dx_sah_flags`;
+
+-- 验证：查看 SAH 候选住院中的动脉瘤诊断代码分布，确保 Level 2 证据不是空变量。
+SELECT
+    aneurysm_dx_codes,
+    COUNT(*) AS admissions
+FROM `mimic-study-498508.non_traumatic_sah_study.dx_sah_flags`
+WHERE has_sah_dx = 1
+  AND has_aneurysm_dx = 1
+GROUP BY aneurysm_dx_codes
+ORDER BY admissions DESC;
 
 -- 目的：从操作代码字典中识别 clipping/coiling/endovascular embolization 等动脉瘤处置候选。
 -- 原因：处置证据可作为更高特异性的 non-traumatic SAH 识别标准和敏感性分析依据。
@@ -143,6 +208,7 @@ SELECT
     COALESCE(dx.has_sah_dx, 0) AS has_sah_dx,
     COALESCE(dx.has_aneurysm_dx, 0) AS has_aneurysm_dx,
     COALESCE(proc.has_aneurysm_procedure, 0) AS has_aneurysm_procedure,
+    dx.aneurysm_dx_codes,
     COALESCE(dx.has_traumatic_sah_dx, 0) AS has_traumatic_sah_dx,
     proc.aneurysm_procedure_codes,
     CASE
@@ -226,6 +292,7 @@ WITH ranked AS (
         ca.nsah_evidence_level,
         ca.has_aneurysm_dx,
         ca.has_aneurysm_procedure,
+        ca.aneurysm_dx_codes,
         ie.intime AS icu_intime,
         ie.outtime AS icu_outtime,
         DATETIME_DIFF(ie.outtime, ie.intime, HOUR) AS icu_los_hours,
@@ -702,6 +769,74 @@ FROM (
 )
 WHERE rn = 1;
 
+-- 目的：提取 ICU 前 6 小时至 ICU 后 48 小时乳酸敏感性变量。
+-- 原因：部分 SAH 患者在急诊/入 ICU 前已完成乳酸检测，严格 0-48h 窗口会低估早期覆盖率。
+--       该扩展窗口仅作描述和敏感性分析，不替代主 0-48h 生理窗口。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.lactate_m6_48h` AS
+WITH bg_lactate AS (
+    SELECT
+        bg.subject_id,
+        COALESCE(bg.hadm_id, c.hadm_id) AS hadm_id,
+        c.stay_id,
+        bg.charttime,
+        DATETIME_DIFF(bg.charttime, c.icu_intime, MINUTE) / 60.0 AS hours_from_icu_intime,
+        'mimiciv_3_1_derived.bg' AS source_table,
+        CAST(NULL AS INT64) AS source_itemid,
+        bg.lactate AS lactate
+    FROM `physionet-data.mimiciv_3_1_derived.bg` bg
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON bg.subject_id = c.subject_id
+       AND (bg.hadm_id = c.hadm_id OR bg.hadm_id IS NULL)
+    WHERE bg.lactate > 0
+      AND bg.lactate < 30
+      AND bg.charttime >= DATETIME_SUB(c.icu_intime, INTERVAL 6 HOUR)
+      AND bg.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+),
+lab_lactate AS (
+    SELECT
+        le.subject_id,
+        COALESCE(le.hadm_id, c.hadm_id) AS hadm_id,
+        c.stay_id,
+        le.charttime,
+        DATETIME_DIFF(le.charttime, c.icu_intime, MINUTE) / 60.0 AS hours_from_icu_intime,
+        'labevents_50813' AS source_table,
+        le.itemid AS source_itemid,
+        le.valuenum AS lactate
+    FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON le.subject_id = c.subject_id
+       AND (le.hadm_id = c.hadm_id OR le.hadm_id IS NULL)
+    WHERE le.itemid = 50813
+      AND le.valuenum > 0
+      AND le.valuenum < 30
+      AND le.charttime >= DATETIME_SUB(c.icu_intime, INTERVAL 6 HOUR)
+      AND le.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+),
+all_lactate AS (
+    SELECT * FROM bg_lactate
+    UNION ALL
+    SELECT * FROM lab_lactate
+)
+SELECT * EXCEPT(source_priority, rn)
+FROM (
+    SELECT
+        *,
+        CASE
+            WHEN source_table = 'mimiciv_3_1_derived.bg' THEN 1
+            ELSE 2
+        END AS source_priority,
+        ROW_NUMBER() OVER (
+            PARTITION BY stay_id, charttime, FORMAT('%.4f', lactate)
+            ORDER BY
+                CASE
+                    WHEN source_table = 'mimiciv_3_1_derived.bg' THEN 1
+                    ELSE 2
+                END
+        ) AS rn
+    FROM all_lactate
+)
+WHERE rn = 1;
+
 -- 目的：提取 0-48h 肌钙蛋白峰值候选变量。
 -- 原因：SAH 可出现神经源性心肌损伤；肌钙蛋白用于描述/敏感性分析和覆盖率评估。
 --       不同 Troponin I/T assay 单位和量纲可能不同，未标准化前不进入主聚类。
@@ -737,6 +872,32 @@ WHERE le.valuenum IS NOT NULL
   AND le.valuenum >= 0
   AND le.charttime >= c.icu_intime
   AND le.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
+-- 目的：提取 ICU 前 6 小时至 ICU 后 48 小时肌钙蛋白敏感性变量。
+-- 原因：肌钙蛋白常在急诊或 ICU 前评估神经源性心肌损伤；扩展窗口仅用于描述/敏感性分析。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.troponin_m6_48h` AS
+SELECT
+    le.subject_id,
+    COALESCE(le.hadm_id, c.hadm_id) AS hadm_id,
+    c.stay_id,
+    le.charttime,
+    DATETIME_DIFF(le.charttime, c.icu_intime, MINUTE) / 60.0 AS hours_from_icu_intime,
+    'hosp.labevents_troponin' AS source_table,
+    le.itemid AS source_itemid,
+    li.label AS troponin_label,
+    le.valueuom AS valueuom,
+    le.valuenum AS troponin_value
+FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.troponin_labitems` li
+    ON le.itemid = li.itemid
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    ON le.subject_id = c.subject_id
+   AND (le.hadm_id = c.hadm_id OR le.hadm_id IS NULL)
+WHERE le.valuenum IS NOT NULL
+  AND le.valuenum >= 0
+  AND le.charttime >= DATETIME_SUB(c.icu_intime, INTERVAL 6 HOUR)
+  AND le.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
 
 -- 验证：肌钙蛋白 assay、单位、覆盖率和范围。
 SELECT
@@ -1221,6 +1382,15 @@ lactate AS (
     FROM `mimic-study-498508.non_traumatic_sah_study.lactate_0_48h`
     GROUP BY stay_id
 ),
+lactate_m6 AS (
+    SELECT
+        stay_id,
+        MAX(lactate) AS lactate_max_m6_48h,
+        AVG(lactate) AS lactate_mean_m6_48h,
+        COUNT(*) AS lactate_measurement_count_m6_48h
+    FROM `mimic-study-498508.non_traumatic_sah_study.lactate_m6_48h`
+    GROUP BY stay_id
+),
 oxygen AS (
     SELECT
         stay_id,
@@ -1268,6 +1438,16 @@ troponin AS (
     FROM `mimic-study-498508.non_traumatic_sah_study.troponin_0_48h`
     GROUP BY stay_id
 ),
+troponin_m6 AS (
+    SELECT
+        stay_id,
+        MAX(troponin_value) AS troponin_peak_m6_48h,
+        COUNT(*) AS troponin_measurement_count_m6_48h,
+        STRING_AGG(DISTINCT troponin_label, ', ' ORDER BY troponin_label) AS troponin_labels_m6_48h,
+        STRING_AGG(DISTINCT valueuom, ', ' ORDER BY valueuom) AS troponin_units_m6_48h
+    FROM `mimic-study-498508.non_traumatic_sah_study.troponin_m6_48h`
+    GROUP BY stay_id
+),
 creatinine AS (
     SELECT
         stay_id,
@@ -1303,6 +1483,114 @@ platelet AS (
         COUNT(*) AS platelet_measurement_count
     FROM `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h`
     GROUP BY stay_id
+),
+hb_24h AS (
+    SELECT
+        h.stay_id,
+        MIN(h.hb) AS hb_min_24h_all,
+        MIN(CASE
+            WHEN rf.first_rbc_time_48h IS NULL OR h.charttime < rf.first_rbc_time_48h THEN h.hb
+            ELSE NULL
+        END) AS hb_min_24h_pre_transfusion
+    FROM `mimic-study-498508.non_traumatic_sah_study.hb_0_48h` h
+    LEFT JOIN `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags` rf
+        ON h.stay_id = rf.stay_id
+    WHERE h.hours_from_icu_intime < 24
+    GROUP BY h.stay_id
+),
+gcs_24h AS (
+    SELECT
+        stay_id,
+        MIN(g.gcs_total) AS gcs_min_24h,
+        CASE
+            WHEN MIN(g.gcs_total) BETWEEN 3 AND 8 THEN 3
+            WHEN MIN(g.gcs_total) BETWEEN 9 AND 12 THEN 2
+            WHEN MIN(g.gcs_total) BETWEEN 13 AND 15 THEN 1
+            ELSE NULL
+        END AS gcs_grade_min_24h,
+        MIN(g.gcs_motor) AS gcs_motor_min_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.gcs_0_48h` g
+    WHERE g.hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+map_24h AS (
+    SELECT
+        stay_id,
+        MIN(map_value) AS map_min_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.map_0_48h`
+    WHERE hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+si_24h AS (
+    SELECT
+        si.stay_id,
+        MAX(si.shock_index) AS shock_index_max_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.shock_index_0_48h` si
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON si.stay_id = c.stay_id
+    WHERE si.hr_time < DATETIME_ADD(c.icu_intime, INTERVAL 24 HOUR)
+    GROUP BY si.stay_id
+),
+spo2_24h AS (
+    SELECT
+        stay_id,
+        MIN(spo2) AS spo2_min_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.spo2_0_48h`
+    WHERE hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+creatinine_24h AS (
+    SELECT
+        stay_id,
+        MAX(creatinine) AS creatinine_max_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.creatinine_0_48h`
+    WHERE hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+inr_24h AS (
+    SELECT
+        stay_id,
+        MAX(inr) AS inr_max_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.inr_0_48h`
+    WHERE hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+platelet_24h AS (
+    SELECT
+        stay_id,
+        MIN(platelet) AS platelet_min_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.platelet_0_48h`
+    WHERE hours_from_icu_intime < 24
+    GROUP BY stay_id
+),
+severity_scores AS (
+    SELECT
+        c.stay_id,
+        CAST(fs.sofa AS FLOAT64) AS sofa_24h,
+        CAST(fs.respiration AS FLOAT64) AS sofa_respiration_24h,
+        CAST(fs.coagulation AS FLOAT64) AS sofa_coagulation_24h,
+        CAST(fs.liver AS FLOAT64) AS sofa_liver_24h,
+        CAST(fs.cardiovascular AS FLOAT64) AS sofa_cardiovascular_24h,
+        CAST(fs.cns AS FLOAT64) AS sofa_cns_24h,
+        CAST(fs.renal AS FLOAT64) AS sofa_renal_24h,
+        CAST(saps.sapsii AS FLOAT64) AS sapsii_24h,
+        saps.sapsii_prob AS sapsii_prob_24h,
+        CAST(aps.apsiii AS FLOAT64) AS apsiii_24h,
+        aps.apsiii_prob AS apsiii_prob_24h,
+        CAST(oasis.oasis AS FLOAT64) AS oasis_24h,
+        oasis.oasis_prob AS oasis_prob_24h,
+        CAST(lods.lods AS FLOAT64) AS lods_24h
+    FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    LEFT JOIN `physionet-data.mimiciv_3_1_derived.first_day_sofa` fs
+        ON c.stay_id = fs.stay_id
+    LEFT JOIN `physionet-data.mimiciv_3_1_derived.sapsii` saps
+        ON c.stay_id = saps.stay_id
+    LEFT JOIN `physionet-data.mimiciv_3_1_derived.apsiii` aps
+        ON c.stay_id = aps.stay_id
+    LEFT JOIN `physionet-data.mimiciv_3_1_derived.oasis` oasis
+        ON c.stay_id = oasis.stay_id
+    LEFT JOIN `physionet-data.mimiciv_3_1_derived.lods` lods
+        ON c.stay_id = lods.stay_id
 )
 SELECT
     c.subject_id,
@@ -1316,6 +1604,7 @@ SELECT
     c.nsah_evidence_level,
     c.has_aneurysm_dx,
     c.has_aneurysm_procedure,
+    c.aneurysm_dx_codes,
     c.icu_intime,
     c.icu_outtime,
     c.icu_los_hours,
@@ -1332,6 +1621,8 @@ SELECT
     rf.rbc_units_48h,
     hb.hb_min_48h_all,
     hb.hb_min_48h_pre_transfusion,
+    hb_24h.hb_min_24h_all,
+    hb_24h.hb_min_24h_pre_transfusion,
     epvs.epvs_first_48h,
     epvs.epvs_mean_48h,
     epvs.epvs_min_48h,
@@ -1340,14 +1631,33 @@ SELECT
     gcs.gcs_grade_min_48h,
     gcs.gcs_motor_min_48h,
     gcs.wfns_gcs_grade_min_48h,
-    CAST(NULL AS FLOAT64) AS sapsiii_24h,
-    CAST(NULL AS FLOAT64) AS sofa_24h,
+    gcs_24h.gcs_min_24h,
+    gcs_24h.gcs_grade_min_24h,
+    gcs_24h.gcs_motor_min_24h,
+    severity_scores.sofa_24h,
+    severity_scores.sofa_respiration_24h,
+    severity_scores.sofa_coagulation_24h,
+    severity_scores.sofa_liver_24h,
+    severity_scores.sofa_cardiovascular_24h,
+    severity_scores.sofa_cns_24h,
+    severity_scores.sofa_renal_24h,
+    severity_scores.sapsii_24h,
+    severity_scores.sapsii_prob_24h,
+    severity_scores.apsiii_24h,
+    severity_scores.apsiii_prob_24h,
+    severity_scores.oasis_24h,
+    severity_scores.oasis_prob_24h,
+    severity_scores.lods_24h,
     map_agg.map_min_48h,
     map_agg.map_mean_48h,
+    map_24h.map_min_24h,
     si.shock_index_max_48h,
     si.shock_index_mean_48h,
+    si_24h.shock_index_max_24h,
     lactate.lactate_max_48h,
     lactate.lactate_mean_48h,
+    lactate_m6.lactate_max_m6_48h,
+    lactate_m6.lactate_mean_m6_48h,
     oxygen.oxygenation_min_48h,
     oxygen.oxygenation_mean_48h,
     oxygen.oxygenation_source_48h,
@@ -1357,17 +1667,24 @@ SELECT
     spo2_fio2.spo2_fio2_mean_48h,
     spo2.spo2_min_48h,
     spo2.spo2_mean_48h,
+    spo2_24h.spo2_min_24h,
     troponin.troponin_peak_48h,
     troponin.troponin_labels_48h,
     troponin.troponin_units_48h,
+    troponin_m6.troponin_peak_m6_48h,
+    troponin_m6.troponin_labels_m6_48h,
+    troponin_m6.troponin_units_m6_48h,
     creatinine.creatinine_max_48h,
     creatinine.creatinine_mean_48h,
+    creatinine_24h.creatinine_max_24h,
     sodium.sodium_max_48h,
     sodium.sodium_mean_48h,
     inr.inr_max_48h,
     inr.inr_mean_48h,
+    inr_24h.inr_max_24h,
     platelet.platelet_min_48h,
     platelet.platelet_mean_48h,
+    platelet_24h.platelet_min_24h,
     CASE WHEN hb.hb_min_48h_all < 10 THEN 1 ELSE 0 END AS early_anemia_all,
     CASE WHEN hb.hb_min_48h_pre_transfusion < 10 THEN 1 ELSE 0 END AS early_anemia_pre_transfusion,
     CASE WHEN rf.first_rbc_time_48h IS NOT NULL AND hb.hb_min_48h_all IS NOT NULL THEN 1 ELSE 0 END AS has_hb_and_rbc_48h,
@@ -1381,6 +1698,16 @@ SELECT
       + IF(inr.inr_max_48h IS NULL, 1, 0)
       + IF(platelet.platelet_min_48h IS NULL, 1, 0)
     ) AS core_feature_missing_count,
+    (
+        IF(hb_24h.hb_min_24h_all IS NULL, 1, 0)
+      + IF(gcs_24h.gcs_motor_min_24h IS NULL, 1, 0)
+      + IF(map_24h.map_min_24h IS NULL, 1, 0)
+      + IF(si_24h.shock_index_max_24h IS NULL, 1, 0)
+      + IF(spo2_24h.spo2_min_24h IS NULL, 1, 0)
+      + IF(creatinine_24h.creatinine_max_24h IS NULL, 1, 0)
+      + IF(inr_24h.inr_max_24h IS NULL, 1, 0)
+      + IF(platelet_24h.platelet_min_24h IS NULL, 1, 0)
+    ) AS core_feature_missing_count_24h,
     hb.hb_measurement_count,
     epvs.epvs_measurement_count,
     gcs.gcs_measurement_count,
@@ -1388,11 +1715,13 @@ SELECT
     map_agg.map_measurement_count,
     si.shock_index_measurement_count,
     lactate.lactate_measurement_count,
+    lactate_m6.lactate_measurement_count_m6_48h,
     oxygen.oxygenation_measurement_count,
     pao2_fio2.pao2_fio2_measurement_count,
     spo2_fio2.spo2_fio2_measurement_count,
     spo2.spo2_measurement_count,
     troponin.troponin_measurement_count,
+    troponin_m6.troponin_measurement_count_m6_48h,
     creatinine.creatinine_measurement_count,
     sodium.sodium_measurement_count,
     inr.inr_measurement_count,
@@ -1412,6 +1741,8 @@ LEFT JOIN si
     ON c.stay_id = si.stay_id
 LEFT JOIN lactate
     ON c.stay_id = lactate.stay_id
+LEFT JOIN lactate_m6
+    ON c.stay_id = lactate_m6.stay_id
 LEFT JOIN oxygen
     ON c.stay_id = oxygen.stay_id
 LEFT JOIN pao2_fio2
@@ -1422,6 +1753,8 @@ LEFT JOIN spo2
     ON c.stay_id = spo2.stay_id
 LEFT JOIN troponin
     ON c.stay_id = troponin.stay_id
+LEFT JOIN troponin_m6
+    ON c.stay_id = troponin_m6.stay_id
 LEFT JOIN creatinine
     ON c.stay_id = creatinine.stay_id
 LEFT JOIN sodium
@@ -1429,28 +1762,61 @@ LEFT JOIN sodium
 LEFT JOIN inr
     ON c.stay_id = inr.stay_id
 LEFT JOIN platelet
-    ON c.stay_id = platelet.stay_id;
+    ON c.stay_id = platelet.stay_id
+LEFT JOIN hb_24h
+    ON c.stay_id = hb_24h.stay_id
+LEFT JOIN gcs_24h
+    ON c.stay_id = gcs_24h.stay_id
+LEFT JOIN map_24h
+    ON c.stay_id = map_24h.stay_id
+LEFT JOIN si_24h
+    ON c.stay_id = si_24h.stay_id
+LEFT JOIN spo2_24h
+    ON c.stay_id = spo2_24h.stay_id
+LEFT JOIN creatinine_24h
+    ON c.stay_id = creatinine_24h.stay_id
+LEFT JOIN inr_24h
+    ON c.stay_id = inr_24h.stay_id
+LEFT JOIN platelet_24h
+    ON c.stay_id = platelet_24h.stay_id
+LEFT JOIN severity_scores
+    ON c.stay_id = severity_scores.stay_id;
 
 -- 验证：检查核心变量覆盖率、缺失计数和主分析可纳入样本数。
 SELECT
     COUNT(*) AS total_rows,
     COUNTIF(hb_min_48h_all IS NOT NULL) AS hb_nonmissing,
+    COUNTIF(hb_min_24h_all IS NOT NULL) AS hb_24h_nonmissing,
     COUNTIF(epvs_mean_48h IS NOT NULL) AS epvs_nonmissing,
     COUNTIF(gcs_min_48h IS NOT NULL) AS gcs_nonmissing,
     COUNTIF(gcs_grade_min_48h IS NOT NULL) AS gcs_grade_nonmissing,
     COUNTIF(gcs_motor_min_48h IS NOT NULL) AS gcs_motor_nonmissing,
+    COUNTIF(gcs_motor_min_24h IS NOT NULL) AS gcs_motor_24h_nonmissing,
     COUNTIF(map_min_48h IS NOT NULL) AS map_nonmissing,
+    COUNTIF(map_min_24h IS NOT NULL) AS map_24h_nonmissing,
     COUNTIF(shock_index_max_48h IS NOT NULL) AS shock_index_nonmissing,
+    COUNTIF(shock_index_max_24h IS NOT NULL) AS shock_index_24h_nonmissing,
     COUNTIF(lactate_max_48h IS NOT NULL) AS lactate_nonmissing,
+    COUNTIF(lactate_max_m6_48h IS NOT NULL) AS lactate_m6_48h_nonmissing,
     COUNTIF(oxygenation_min_48h IS NOT NULL) AS oxygenation_nonmissing,
     COUNTIF(pao2_fio2_min_48h IS NOT NULL) AS pao2_fio2_nonmissing,
     COUNTIF(spo2_fio2_min_48h IS NOT NULL) AS spo2_fio2_only_nonmissing,
     COUNTIF(spo2_min_48h IS NOT NULL) AS spo2_nonmissing,
+    COUNTIF(spo2_min_24h IS NOT NULL) AS spo2_24h_nonmissing,
     COUNTIF(troponin_peak_48h IS NOT NULL) AS troponin_nonmissing,
+    COUNTIF(troponin_peak_m6_48h IS NOT NULL) AS troponin_m6_48h_nonmissing,
     COUNTIF(creatinine_max_48h IS NOT NULL) AS creatinine_nonmissing,
+    COUNTIF(creatinine_max_24h IS NOT NULL) AS creatinine_24h_nonmissing,
     COUNTIF(sodium_max_48h IS NOT NULL) AS sodium_nonmissing,
     COUNTIF(inr_max_48h IS NOT NULL) AS inr_nonmissing,
+    COUNTIF(inr_max_24h IS NOT NULL) AS inr_24h_nonmissing,
     COUNTIF(platelet_min_48h IS NOT NULL) AS platelet_nonmissing,
+    COUNTIF(platelet_min_24h IS NOT NULL) AS platelet_24h_nonmissing,
+    COUNTIF(sofa_24h IS NOT NULL) AS sofa_nonmissing,
+    COUNTIF(sapsii_24h IS NOT NULL) AS sapsii_nonmissing,
+    COUNTIF(apsiii_24h IS NOT NULL) AS apsiii_nonmissing,
+    COUNTIF(oasis_24h IS NOT NULL) AS oasis_nonmissing,
+    COUNTIF(lods_24h IS NOT NULL) AS lods_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND any_rbc_transfusion_48h = 0) AS eligible_no_rbc_sensitivity_rows
@@ -1462,6 +1828,13 @@ SELECT
 FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`
 GROUP BY core_feature_missing_count
 ORDER BY core_feature_missing_count;
+
+SELECT
+    core_feature_missing_count_24h,
+    COUNT(*) AS rows_count
+FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`
+GROUP BY core_feature_missing_count_24h
+ORDER BY core_feature_missing_count_24h;
 
 -- 目的：生成主分析最终宽表。
 -- 原因：Python 聚类和结局分析直接读取该表；仍保留敏感性分析所需标记。
@@ -1491,6 +1864,10 @@ FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`;
 SELECT
     COUNT(*) AS all_feature_rows,
     COUNTIF(eligible_primary_analysis = 1) AS primary_analysis_rows,
+    COUNTIF(eligible_primary_analysis = 1 AND has_aneurysm_dx = 1) AS primary_has_aneurysm_dx_rows,
+    COUNTIF(eligible_primary_analysis = 1 AND has_aneurysm_procedure = 1) AS primary_has_aneurysm_procedure_rows,
+    COUNTIF(eligible_primary_analysis = 1 AND nsah_evidence_level = 2) AS primary_evidence_level_2_rows,
+    COUNTIF(eligible_primary_analysis = 1 AND nsah_evidence_level = 3) AS primary_evidence_level_3_rows,
     COUNTIF(eligible_sensitivity_48h_los = 1) AS sensitivity_48h_los_rows,
     COUNTIF(eligible_no_transfusion_sensitivity = 1) AS no_transfusion_sensitivity_rows,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(hospital_mortality AS FLOAT64) ELSE NULL END) AS primary_hospital_mortality_rate,
@@ -1520,6 +1897,8 @@ SELECT
     MAX(troponin_peak_48h) AS max_troponin_peak_48h_candidate,
     MIN(lactate_max_48h) AS min_lactate_max_48h,
     MAX(lactate_max_48h) AS max_lactate_max_48h,
+    MIN(lactate_max_m6_48h) AS min_lactate_max_m6_48h,
+    MAX(lactate_max_m6_48h) AS max_lactate_max_m6_48h,
     MIN(oxygenation_min_48h) AS min_oxygenation_min_48h,
     MAX(oxygenation_min_48h) AS max_oxygenation_min_48h,
     MIN(pao2_fio2_min_48h) AS min_pao2_fio2_min_48h,
@@ -1533,7 +1912,23 @@ SELECT
     MIN(inr_max_48h) AS min_inr_max_48h,
     MAX(inr_max_48h) AS max_inr_max_48h,
     MIN(platelet_min_48h) AS min_platelet_min_48h,
-    MAX(platelet_min_48h) AS max_platelet_min_48h
+    MAX(platelet_min_48h) AS max_platelet_min_48h,
+    MIN(hb_min_24h_all) AS min_hb_min_24h,
+    MAX(hb_min_24h_all) AS max_hb_min_24h,
+    MIN(gcs_motor_min_24h) AS min_gcs_motor_min_24h,
+    MAX(gcs_motor_min_24h) AS max_gcs_motor_min_24h,
+    MIN(map_min_24h) AS min_map_min_24h,
+    MAX(map_min_24h) AS max_map_min_24h,
+    MIN(shock_index_max_24h) AS min_shock_index_max_24h,
+    MAX(shock_index_max_24h) AS max_shock_index_max_24h,
+    MIN(spo2_min_24h) AS min_spo2_min_24h,
+    MAX(spo2_min_24h) AS max_spo2_min_24h,
+    MIN(creatinine_max_24h) AS min_creatinine_max_24h,
+    MAX(creatinine_max_24h) AS max_creatinine_max_24h,
+    MIN(inr_max_24h) AS min_inr_max_24h,
+    MAX(inr_max_24h) AS max_inr_max_24h,
+    MIN(platelet_min_24h) AS min_platelet_min_24h,
+    MAX(platelet_min_24h) AS max_platelet_min_24h
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`
 WHERE eligible_primary_analysis = 1;
 
@@ -1587,6 +1982,9 @@ CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.feature_miss
 SELECT 'hb_min_48h_all' AS feature, COUNTIF(hb_min_48h_all IS NULL) AS missing_n, COUNT(*) AS total_n, COUNTIF(hb_min_48h_all IS NULL) / COUNT(*) AS missing_rate
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
+SELECT 'hb_min_24h_all_sensitivity', COUNTIF(hb_min_24h_all IS NULL), COUNT(*), COUNTIF(hb_min_24h_all IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
 SELECT 'epvs_mean_48h_candidate', COUNTIF(epvs_mean_48h IS NULL), COUNT(*), COUNTIF(epvs_mean_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
@@ -1599,13 +1997,25 @@ UNION ALL
 SELECT 'gcs_motor_min_48h', COUNTIF(gcs_motor_min_48h IS NULL), COUNT(*), COUNTIF(gcs_motor_min_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
+SELECT 'gcs_motor_min_24h_sensitivity', COUNTIF(gcs_motor_min_24h IS NULL), COUNT(*), COUNTIF(gcs_motor_min_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
 SELECT 'map_min_48h', COUNTIF(map_min_48h IS NULL), COUNT(*), COUNTIF(map_min_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'map_min_24h_sensitivity', COUNTIF(map_min_24h IS NULL), COUNT(*), COUNTIF(map_min_24h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'shock_index_max_48h', COUNTIF(shock_index_max_48h IS NULL), COUNT(*), COUNTIF(shock_index_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
+SELECT 'shock_index_max_24h_sensitivity', COUNTIF(shock_index_max_24h IS NULL), COUNT(*), COUNTIF(shock_index_max_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
 SELECT 'spo2_min_48h', COUNTIF(spo2_min_48h IS NULL), COUNT(*), COUNTIF(spo2_min_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'spo2_min_24h_sensitivity', COUNTIF(spo2_min_24h IS NULL), COUNT(*), COUNTIF(spo2_min_24h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'troponin_peak_48h_candidate', COUNTIF(troponin_peak_48h IS NULL), COUNT(*), COUNTIF(troponin_peak_48h IS NULL) / COUNT(*)
@@ -1614,10 +2024,16 @@ UNION ALL
 SELECT 'lactate_max_48h_sensitivity', COUNTIF(lactate_max_48h IS NULL), COUNT(*), COUNTIF(lactate_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
+SELECT 'lactate_max_m6_48h_sensitivity', COUNTIF(lactate_max_m6_48h IS NULL), COUNT(*), COUNTIF(lactate_max_m6_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
 SELECT 'oxygenation_min_48h_sensitivity', COUNTIF(oxygenation_min_48h IS NULL), COUNT(*), COUNTIF(oxygenation_min_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'creatinine_max_48h', COUNTIF(creatinine_max_48h IS NULL), COUNT(*), COUNTIF(creatinine_max_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'creatinine_max_24h_sensitivity', COUNTIF(creatinine_max_24h IS NULL), COUNT(*), COUNTIF(creatinine_max_24h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
 SELECT 'sodium_max_48h_descriptive', COUNTIF(sodium_max_48h IS NULL), COUNT(*), COUNTIF(sodium_max_48h IS NULL) / COUNT(*)
@@ -1626,7 +2042,31 @@ UNION ALL
 SELECT 'inr_max_48h', COUNTIF(inr_max_48h IS NULL), COUNT(*), COUNTIF(inr_max_48h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
 UNION ALL
+SELECT 'inr_max_24h_sensitivity', COUNTIF(inr_max_24h IS NULL), COUNT(*), COUNTIF(inr_max_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'troponin_peak_m6_48h_candidate', COUNTIF(troponin_peak_m6_48h IS NULL), COUNT(*), COUNTIF(troponin_peak_m6_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
 SELECT 'platelet_min_48h', COUNTIF(platelet_min_48h IS NULL), COUNT(*), COUNTIF(platelet_min_48h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'platelet_min_24h_sensitivity', COUNTIF(platelet_min_24h IS NULL), COUNT(*), COUNTIF(platelet_min_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'sofa_24h_descriptive', COUNTIF(sofa_24h IS NULL), COUNT(*), COUNTIF(sofa_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'sapsii_24h_descriptive', COUNTIF(sapsii_24h IS NULL), COUNT(*), COUNTIF(sapsii_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'apsiii_24h_descriptive', COUNTIF(apsiii_24h IS NULL), COUNT(*), COUNTIF(apsiii_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'oasis_24h_descriptive', COUNTIF(oasis_24h IS NULL), COUNT(*), COUNTIF(oasis_24h IS NULL) / COUNT(*)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1
+UNION ALL
+SELECT 'lods_24h_descriptive', COUNTIF(lods_24h IS NULL), COUNT(*), COUNTIF(lods_24h IS NULL) / COUNT(*)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h` WHERE eligible_primary_analysis = 1;
 
 -- 验证：查看缺失率汇总。
