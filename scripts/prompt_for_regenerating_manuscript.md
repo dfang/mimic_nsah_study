@@ -44,6 +44,22 @@ claude ./scripts/prompt_for_regenerating_manuscript.md
   - `phenotype_epvs_sensitivity_summary`
   - `phenotype_candidate_feature_audit`
   - `phenotype_k3_k4_refinement_crosstab`
+  - eICU 外部验证结果表：
+    - `mimic-study-498508.eicu_sah_validation.eicu_analysis_features_48h`
+    - `eicu_external_phenotype_assignments`
+    - `eicu_external_outcome_summary_by_phenotype`
+    - `eicu_external_feature_summary_by_phenotype`
+    - `eicu_external_assignment_quality`
+    - `eicu_external_lightweight_tests`
+    - `eicu_external_sensitivity_summary`
+    - `eicu_external_severity_validation`
+    - `eicu_de_novo_k3_summary`
+    - `eicu_de_novo_k3_metrics`
+    - `eicu_hb_free_anemia_regression`
+    - `eicu_feature_missingness_summary`
+    - `eicu_cohort_flowchart_counts`
+    - `eicu_inr_missingness_audit`
+- eICU 外部验证设计、结果和解释边界记录在 `docs/eicu_external_validation.md`。生成论文前必须阅读该文件，并以其中数字为准；若 BigQuery 表与文档冲突，以 BigQuery 最新表为准，并在 final report 中说明。
 
 除非结果表已明确更新，不得编造数据。所有数字必须与最新 `analysis_result.md` 或 BigQuery 表一致。
 
@@ -52,6 +68,10 @@ claude ./scripts/prompt_for_regenerating_manuscript.md
 这篇论文的主定位是：
 
 > 在 critically ill adults with non-traumatic SAH 中，利用 ICU 入科后 0-48 小时常规多模态生理数据识别早期临床可解释 phenotype，并评估其死亡风险、贫血负担和外部严重度一致性。
+
+当前论文还必须纳入 eICU Collaborative Research Database 的外部验证：
+
+> MIMIC-IV 为开发队列，eICU 为外部验证队列。主外部验证采用冻结 MIMIC 预处理、填补、标准化、PCA 和 K-means 质心的 Frozen Transport；eICU 原位 K=3 聚类只作为 structural sensitivity analysis。
 
 必须避免以下过度表述：
 - 不要声称早期贫血是独立因果危险因素。
@@ -67,6 +87,7 @@ claude ./scripts/prompt_for_regenerating_manuscript.md
 - 早期贫血明显富集于高危 phenotype；“调整 phenotype 后是否独立”必须优先引用 `phenotype_hb_free_anemia_regression`，因为主 phenotype 本身包含 Hb，直接调整主 phenotype 会产生过度调整/循环论证。
 - 贫血更适合解释为多系统生理失衡 phenotype 的组成特征和风险标志。
 - 过程性治疗和器官支持变量必须作为重要结果报告：nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC transfusion、CRRT、fluid balance 及过程性治疗调整模型。它们只能解释为 severity/treatment-selection/context markers，不得作为治疗效果结论。
+- eICU 外部验证的结论边界：Frozen Transport 成功验证了风险分层的可转运性；eICU de novo clustering 只能说明存在类似风险梯度，不能说复现了相同患者级聚类边界，因为当前 ARI 接近 0。
 
 ## 0.1 高分论文写作标准
 
@@ -119,7 +140,8 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 - `fig_s4_k4_refinement.png`：K=3/K=4 交叉分布。
 - `fig_s5_pca_loadings.png`：PC1-PC3 loadings，突出 INR、creatinine、Hb、GCS、shock index 等贡献。
 - `fig_s6_forest_plot.png`：调整后死亡 OR，包括 phenotype、early anemia、SOFA-adjusted 模型（若已生成）。
-- 如作图脚本支持，新增 `fig_s7_hospital_survival.png` 或同等图：按 phenotype 展示住院期 Kaplan-Meier/累积死亡曲线，并在图例或正文报告 pairwise log-rank。若脚本暂不支持，正文和表格仍必须报告 `phenotype_survival_logrank` / `phenotype_survival_cox_models` 的关键结果。
+- `fig_s7_eicu_external_validation.png`：eICU Frozen Transport 外部验证。建议展示 eICU P1/P2/P3 的住院死亡率、ICU 死亡率、早期贫血率和 APACHE predicted mortality 梯度；若作图脚本暂不支持，正文和表格仍必须报告 eICU 结果。
+- 如作图脚本支持，新增 `fig_s8_hospital_survival.png` 或同等图：按 phenotype 展示住院期 Kaplan-Meier/累积死亡曲线，并在图例或正文报告 pairwise log-rank。若脚本暂不支持，正文和表格仍必须报告 `phenotype_survival_logrank` / `phenotype_survival_cox_models` 的关键结果。
 
 若脚本暂时只支持旧 8 图，请至少更新旧图中的数据和标题，确保主方案写成 log-PCA K=3，不再把 raw K-means 当主方案。
 
@@ -129,11 +151,13 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 - Table 2：Early physiological profiles by phenotype。
 - Table 3：Outcome models。
 - Table 4：Process-of-care and hospital-course models。必须汇总 `phenotype_process_of_care_adjusted_models` 与 `phenotype_survival_cox_models` 的核心 phenotype OR/HR，不得只写主 logistic 模型。Cox 表中 `cox_phenotype_process_of_care_exploratory` 必须标注 immortal time bias 风险和 exploratory sensitivity association。
+- Table 5：eICU external validation。必须包含 eICU cohort flow、Frozen Transport P1/P2/P3 mortality/anemia/RBC、APACHE 外部效标、主要敏感性分析、de novo ARI/NMI/silhouette。若版面过长，可在正文放核心表，完整表放补充表。
 - Supplementary Table 1：K selection and clustering diagnostics。
 - Supplementary Table 2：Sensitivity analyses。
 - Supplementary Table 3：Process-of-care distribution by phenotype。来自 `phenotype_process_of_care_audit`，至少包含 nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC transfusion、CRRT、fluid balance。
 - Supplementary Table 4：PCA loadings。
 - Supplementary Table 5：Cohort definition / ICD code and exclusion algorithm。若当前结果没有 ICD code 明细，应在 Methods 明确代码定义位于 SQL/pipeline，并在补充表中写“code list to be supplied from cohort SQL”，不要伪造 ICD code。
+- Supplementary Table 6：eICU feature mapping and missingness audit。必须包含 shock index HR/SBP 15 分钟配对规则、INR 缺失率和 INR missingness audit。
 
 ## 3. 更新英文论文
 
@@ -185,15 +209,16 @@ Methods：
 - PCA 取 3 个 PC；
 - K-means K=3；
 - primary outcome = hospital mortality；
-- sensitivity analyses = raw K-means、complete-case、Hb-free、Hb-free anemia regression、INR-free、no-RBC、ICU LOS >=48h、GCS alternatives、K=4、process-of-care adjustment、hospital-course Cox/KM。
+- internal sensitivity analyses = raw K-means、complete-case、Hb-free、Hb-free anemia regression、INR-free、no-RBC、ICU LOS >=48h、GCS alternatives、K=4、process-of-care adjustment、hospital-course Cox/KM；
+- external validation = eICU Frozen Transport using fixed MIMIC imputation, scaling, PCA, and phenotype centroids, with eICU de novo clustering as structural sensitivity。
 
 Results：
 
 - N 必须使用最新结果，目前为 `1,186`；
 - hospital deaths 目前为 `235`，overall mortality `19.8%`；
 - P1/P2/P3 当前主 log-PCA 结果：
-  - P1: n=696, hospital mortality 6.5%, early anemia 12.1%
-  - P2: n=382, hospital mortality 32.5%, early anemia 41.6%
+  - P1: n=694, hospital mortality 6.3%, early anemia 12.1%
+  - P2: n=384, hospital mortality 32.6%, early anemia 41.4%
   - P3: n=108, hospital mortality 61.1%, early anemia 66.7%
 - log-PCA K=3 silhouette 约 0.334；
 - raw K-means K=3 silhouette 约 0.224；
@@ -203,6 +228,12 @@ Results：
 - SOFA/SAPSII/OASIS/LODS 随 phenotype 递增。
 - process-of-care adjusted logistic models attenuate but do not remove phenotype mortality associations；
 - hospital-course log-rank and Cox models show persistent phenotype gradients；必须明确 alive discharges censored at hospital discharge。
+- eICU Frozen Transport external validation:
+  - eICU validation N = 843；
+  - P1/P2/P3 hospital mortality = 5.4%、25.7%、42.7%；
+  - APACHE score 和 predicted mortality 随 transported phenotype 单调升高；
+  - eICU transport sensitivities preserve the monotonic mortality gradient；
+  - eICU de novo clustering recovers a risk gradient but has low agreement with frozen labels, ARI approximately -0.003。
 
 Conclusions：
 
@@ -217,9 +248,10 @@ Conclusions：
 1. non-traumatic SAH ICU 患者死亡风险高，异质性大，预后不仅取决于神经损伤，也受循环、氧合、肾功能、凝血、贫血影响。
 2. 传统 GCS/WFNS/SOFA 有用，但不能表达 ICU 早期多系统生理组合；早期贫血在 SAH 中常见，但其是否为独立危险因素或高危状态标志不清楚。
 3. 本研究目标：
-   - 识别 early multimodal physiological phenotypes；
-   - 比较 mortality 和 severity score；
-   - 探索 early anemia 在 phenotype 中的分布和预后意义。
+- 识别 early multimodal physiological phenotypes；
+- 比较 mortality 和 severity score；
+- 探索 early anemia 在 phenotype 中的分布和预后意义；
+- 在 eICU 中进行外部验证，评估 MIMIC-derived phenotypes 的可转运性和结构稳健性。
 
 ### 3.5 Methods 写作要点
 
@@ -228,6 +260,7 @@ Conclusions：
 **Data source**
 
 - MIMIC-IV 3.1；
+- eICU Collaborative Research Database for external validation；
 - BigQuery；
 - retrospective cohort；
 - de-identified data。
@@ -250,6 +283,22 @@ Conclusions：
 - primary physiology window = 0-48h；
 - ICU LOS >=48h 敏感性；
 - 24h window 如未完成，列为 future sensitivity / planned analysis，不要编造结果。
+
+**eICU external validation cohort**
+
+必须新增 Methods 小节，标题建议为 “External validation in eICU”。
+
+写清楚：
+
+- 数据源：eICU Collaborative Research Database through BigQuery；
+- adult first ICU stays with non-traumatic SAH evidence；
+- SAH evidence from eICU diagnosis text, ICD-9 code 430, or `apacheadmissiondx`；
+- trauma/head injury/traumatic SAH text excluded；
+- ICU LOS >=24h；
+- primary eligibility = eight core features with <=2 missing；
+- eICU 不把 massive transfusion 作为主排除，因为 transfusion 记录单位在 `infusiondrug` 和 `intakeoutput` 中不统一；记录 RBC exposure 用于描述和 sensitivity；
+- strict-SAH sensitivity 要求 diagnosis ICD/text evidence，而不是 admissionDx-only；
+- ICU LOS >=48h、no recorded RBC、low-missing、complete-case、INR-free transport 作为 eICU 外部验证敏感性分析。
 
 **Feature selection**
 表格列出 8 个变量、聚合方式和生理维度：
@@ -282,6 +331,26 @@ Conclusions：
 - raw K-means 为敏感性参照；
 - 3 个 PC 的解释方差必须报告，当前约 56.4%。
 
+**Frozen transport external validation**
+
+必须写清楚 eICU 主外部验证不是重新聚类，而是：
+
+- 在 MIMIC 开发队列中固定 median imputer；
+- 固定 creatinine/INR `log1p` 处理；
+- 固定 MIMIC StandardScaler mean/std；
+- 固定 MIMIC PCA eigenvectors；
+- 固定 MIMIC K=3 phenotype centroids in 3-PC space；
+- 将 eICU 患者投影到同一空间；
+- 按最近 MIMIC centroid 分配 P1/P2/P3；
+- 报告 nearest-centroid distance、assignment margin、低 margin 比例；
+- eICU de novo log-PCA K=3 只用于 structural sensitivity，并用 ARI/NMI/same ordered label rate/silhouette 与 frozen labels 比较。
+
+写作边界：
+
+- Frozen Transport 是主外部验证，因为它模拟新中心/新患者应用固定分类器；
+- de novo eICU clustering 不能作为主外部验证，因为它在验证集上重新拟合了分布和边界；
+- de novo ARI 接近 0 时，必须写“risk gradient reproduced, exact patient-level boundaries not reproduced”，不得写“clusters replicated”。
+
 **Anemia definition**
 
 - Early anemia = minimum Hb <10 g/dL within 0-48h after ICU admission。
@@ -300,6 +369,7 @@ Conclusions：
 - SOFA-adjusted exploratory models，如已正式生成结果表则报告；若只是临时分析，应写为 exploratory and not prespecified。
 - process-of-care adjusted logistic models：必须说明这些变量包括 aneurysm securing、nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC transfusion、CRRT、fluid balance；必须写明这些变量可能是 downstream markers/mediators，模型仅为 sensitivity adjustment，不是 causal control。
 - hospital-course survival analyses：必须说明 Kaplan-Meier / log-rank / Cox 的时间尺度、结局、删失规则（alive discharge censored at discharge）和模型层级（unadjusted、clinical adjusted、process-of-care adjusted）。
+- eICU external validation statistical analyses：必须说明 Frozen Transport、transported phenotype outcome summaries、APACHE external criterion validation、transport sensitivity analyses、de novo ARI/NMI/silhouette、Hb-free anemia regression。
 
 Methods 中还必须明确：
 
@@ -309,6 +379,7 @@ Methods 中还必须明确：
 - K=3 不是单纯按 silhouette 最大选择；选择理由是临床可解释性、最小簇样本量、风险梯度、bootstrap 稳定性和敏感性分析综合判断。
 - K=2 代表粗略低/高风险二分，K=4 代表高分辨率探索但小簇较小；二者均不作为主方案。
 - 任何 SOFA-adjusted 模型如果未被 pipeline 正式写入结果表，必须标记为 exploratory post hoc，不得作为主验证结论。
+- MIMIC 中的 SOFA/SAPSII/OASIS/LODS 是 internal external-severity validation；eICU 中的 APACHE score/predicted mortality 是 external-database criterion validation。二者要区分，不能混写成同一个数据源。
 - 参考文献不能只有 MIMIC/STROBE/TRIPOD。必须补充 SAH 临床分级/预后、贫血与 SAH/ICU、ICU phenotyping/unsupervised clustering、K-means/PCA 或 cluster reporting 相关文献。若无法联网核对，不得伪造具体文献；应保留“references to be completed”标记并在 final report 中说明。
 
 ### 3.6 Results 写作顺序
@@ -367,12 +438,12 @@ Methods 中还必须明确：
 7. Process-of-care, organ support, and hospital-course survival analyses
    - 这一节必须写入正文，不得只放补充材料。
    - 使用 `phenotype_process_of_care_audit` 报告过程性治疗/器官支持分布：
-     - nimodipine 48h：overall 675/1186 (56.9%)；P1 434/696 (62.4%)；P2 224/382 (58.6%)；P3 17/108 (15.7%)。
-     - EVD/ICP 48h：overall 322/1186 (27.2%)；P1 121/696 (17.4%)；P2 186/382 (48.7%)；P3 15/108 (13.9%)。
-     - vasopressor 48h：overall 252/1186 (21.2%)；P1 43/696 (6.2%)；P2 154/382 (40.3%)；P3 55/108 (50.9%)。
-     - mechanical ventilation 48h：overall 431/1186 (36.3%)；P1 122/696 (17.5%)；P2 247/382 (64.7%)；P3 62/108 (57.4%)。
-     - RBC transfusion 48h：overall 24/1186 (2.0%)；P1 3/696 (0.4%)；P2 13/382 (3.4%)；P3 8/108 (7.4%)。
-     - CRRT 48h：overall 10/1186 (0.8%)；P1 0/696 (0.0%)；P2 1/382 (0.3%)；P3 9/108 (8.3%)。
+     - nimodipine 48h：overall 675/1186 (56.9%)；P1 434/694 (62.5%)；P2 224/384 (58.3%)；P3 17/108 (15.7%)。
+     - EVD/ICP 48h：overall 322/1186 (27.2%)；P1 121/694 (17.4%)；P2 186/384 (48.4%)；P3 15/108 (13.9%)。
+     - vasopressor 48h：overall 252/1186 (21.2%)；P1 43/694 (6.2%)；P2 154/384 (40.1%)；P3 55/108 (50.9%)。
+     - mechanical ventilation 48h：overall 431/1186 (36.3%)；P1 122/694 (17.6%)；P2 247/384 (64.3%)；P3 62/108 (57.4%)。
+     - RBC transfusion 48h：overall 24/1186 (2.0%)；P1 3/694 (0.4%)；P2 13/384 (3.4%)；P3 8/108 (7.4%)。
+     - CRRT 48h：overall 10/1186 (0.8%)；P1 0/694 (0.0%)；P2 1/384 (0.3%)；P3 9/108 (8.3%)。
      - fluid balance 48h median：overall 1.38 L [-0.45, 2.96]；P1 0.94 [-0.65, 2.26]；P2 2.26 [0.21, 3.80]；P3 2.41 [-0.04, 6.19]。
    - 使用 `phenotype_process_of_care_adjusted_models` 报告递进模型：
      - process_model_3_specialty_care：P2 vs P1 OR 6.25 (95% CI 4.11-9.49)；P3 vs P1 OR 17.39 (95% CI 9.87-30.65)；nimodipine OR 0.48 (95% CI 0.31-0.74)；EVD/ICP OR 1.81 (95% CI 1.15-2.83)。
@@ -388,7 +459,70 @@ Methods 中还必须明确：
      - process-of-care adjusted Cox：P2 HR 2.99 (95% CI 2.03-4.40)；P3 HR 5.14 (95% CI 3.20-8.26)；nimodipine HR 0.60 (95% CI 0.41-0.86)；vasopressor HR 2.14 (95% CI 1.56-2.92)；mechanical ventilation HR 1.82 (95% CI 1.31-2.53)；RBC transfusion HR 0.41 (95% CI 0.17-1.01)。
    - Cox/KM 结果必须写成 “hospital-course association / time-to-event sensitivity analysis”，不要写成长期生存或出院后生存。
 
-8. Sensitivity analyses
+8. eICU external validation
+   - 这一节必须写入正文，不得只放补充材料。
+   - 先明确：MIMIC-derived frozen classifier was transported to eICU without refitting preprocessing, PCA, or centroids。
+   - eICU cohort flow 必须报告：
+     - SAH candidate unit stays 2,880；patients 2,571；
+     - adult 2,863/2,554；
+     - non-traumatic 1,314/1,158；
+     - first ICU stay 1,153；
+     - ICU LOS >=24h 903；
+     - primary validation eligible 843；
+     - ICU LOS >=48h sensitivity 626；
+     - no recorded RBC sensitivity 819；
+     - strict SAH sensitivity 605；
+     - <=1 missing sensitivity 819；
+     - complete-case sensitivity 428。
+   - eICU feature missingness 必须报告：
+     - INR missing 446/903 (49.4%)；
+     - platelet missing 75/903 (8.3%)；
+     - Hb missing 64/903 (7.1%)；
+     - creatinine missing 31/903 (3.4%)；
+     - shock index/MAP/SpO2 missing each 10/903 (1.1%)；
+     - GCS motor missing 5/903 (0.6%)。
+   - 必须说明 shock index extraction was improved by matching HR to nearest periodic/aperiodic SBP within 15 minutes；893 patients had matched HR/SBP pairs，median matched pairs 440，mean median pairing gap 2.83 minutes。
+   - Frozen Transport 结果必须报告：
+     - eICU N=843；
+     - P1 n=539, hospital mortality 5.4%, ICU mortality 2.8%, early anemia 11.4%, RBC 0-48h 0.4%；
+     - P2 n=222, hospital mortality 25.7%, ICU mortality 16.2%, early anemia 34.5%, RBC 0-48h 5.9%；
+     - P3 n=82, hospital mortality 42.7%, ICU mortality 29.3%, early anemia 58.0%, RBC 0-48h 11.0%。
+   - eICU physiological profiles 必须简要报告：
+     - P1: Hb 11.9, GCS motor 6, MAP 62.0, shock index 0.88, SpO2 90.0, creatinine 0.75, INR 1.1, platelet 207.0；
+     - P2: Hb 10.7, GCS motor 4, MAP 51.0, shock index 1.14, SpO2 92.0, creatinine 0.81, INR 1.1, platelet 202.5；
+     - P3: Hb 9.5, GCS motor 4, MAP 51.5, shock index 1.26, SpO2 74.5, creatinine 1.54, INR 1.5, platelet 146.0。
+   - Assignment quality 必须报告：
+     - median nearest-centroid distance 1.337；
+     - median assignment margin 1.050；
+     - low margin <0.10 = 4.4%；
+     - low margin <0.25 = 12.0%。
+   - eICU APACHE external criterion validation 必须报告：
+     - acute physiology score median P1/P2/P3 = 27/49/67, Spearman rho 0.508, p=2.29e-51；
+     - APACHE score median P1/P2/P3 = 36/57/79, rho 0.480, p=3.58e-45；
+     - predicted hospital mortality median P1/P2/P3 = 0.069/0.243/0.426, rho 0.445, p=2.00e-38；
+     - predicted ICU mortality median P1/P2/P3 = 0.039/0.175/0.299, rho 0.453, p=6.15e-40。
+   - eICU transport sensitivities 必须报告方向：
+     - primary frozen transport mortality P1/P2/P3 = 5.4%/25.7%/42.7%；
+     - ICU LOS >=48h = 6.9%/24.2%/33.9%；
+     - no recorded RBC = 5.4%/25.8%/39.7%；
+     - strict SAH = 6.6%/30.5%/45.6%；
+     - <=1 missing = 5.4%/25.9%/40.5%；
+     - complete case = 7.2%/33.6%/43.1%；
+     - INR-free transport = 4.6%/24.4%/38.7%。
+   - INR missingness audit 必须解释：
+     - INR measured patients were sicker: mortality 19.0%, APACHE mean 52.7, predicted hospital mortality 21.7%；
+     - INR missing patients: mortality 9.0%, APACHE mean 43.1, predicted hospital mortality 13.1%；
+     - 因此 INR 缺失不是 MCAR，INR-free transport 必须作为重要敏感性分析。
+   - eICU de novo clustering 必须报告但降级解释：
+     - de novo P1/P2/P3 mortality = 5.8%/18.1%/42.0%；
+     - ARI -0.003，NMI 0.002，same ordered label rate 43.9%，silhouette 0.269；
+     - 结论只能是 “risk gradient emerged de novo, but exact frozen patient-level boundaries did not replicate”。
+   - eICU Hb-free anemia sensitivity 必须报告：
+     - P2 vs P1 OR 6.16 (95% CI 3.74-10.13), p=8.30e-13；
+     - P3 vs P1 OR 10.27 (95% CI 5.68-18.57), p=1.22e-14；
+     - early anemia OR 1.47 (95% CI 0.92-2.36), p=0.105。
+
+9. Internal sensitivity analyses
    - raw K-means 方向一致；
    - complete-case 方向一致；
    - Hb-free 方向一致，反驳 Hb 循环论证；
@@ -400,7 +534,7 @@ Methods 中还必须明确：
 
 ### 3.7 Discussion 必须包含的论点
 
-按 6 段组织：
+按 7 段组织：
 
 1. Principal findings：
    - 3 个早期 phenotype；
@@ -432,7 +566,14 @@ Methods 中还必须明确：
    - KM/log-rank/Cox results support hospital-course risk separation；
    - because these variables are downstream and treatment-selected, they are descriptive sensitivity analyses, not causal intervention evidence.
 
-6. Methodological robustness：
+6. eICU external validation：
+   - eICU Frozen Transport is the main external validation and supports transportability of the MIMIC-derived risk-stratifying phenotype classifier；
+   - eICU APACHE score and predicted mortality gradients provide external criterion validation；
+   - eICU transport sensitivities show robustness to LOS >=48h, no recorded RBC, strict SAH definition, missingness restrictions, complete case, and INR-free transport；
+   - eICU de novo clustering produced a mortality gradient but did not reproduce exact frozen patient-level labels；this argues for transportable risk structure rather than discrete universally identical subtype boundaries；
+   - INR missingness in eICU is informative and must be acknowledged.
+
+7. Methodological robustness：
    - log transform + PCA；
    - bootstrap；
    - complete-case；
@@ -443,7 +584,7 @@ Methods 中还必须明确：
 
 ### 3.8 Limitations 必须包含
 
-- Single database retrospective study。
+- Retrospective database study；虽然已加入 eICU 外部验证，仍缺少前瞻性、影像确认和多国队列验证。
 - ICD-defined non-traumatic SAH，不等同完整影像确认的 aSAH。
 - 缺少 Hunt-Hess、WFNS、modified Fisher、影像特征。
 - 0-48h 生理变量可能受治疗影响。
@@ -453,7 +594,10 @@ Methods 中还必须明确：
 - K-means 依赖变量选择和预处理。
 - RBC transfusion rate low，不能评估输血获益。
 - 贫血与死亡可能有残余混杂。
-- 需要外部验证。
+- eICU 外部验证依赖 diagnosis text、ICD-9 430 和 admissionDx，仍可能存在 SAH 误分类。
+- eICU INR 缺失率高且具有 informative missingness；INR-free sensitivity 缓解但不能完全消除该问题。
+- eICU de novo clustering 与 frozen labels 的 ARI 接近 0，说明不同数据库中的患者级边界并不稳定；论文应表述为 transportable risk-stratifying phenotypes，而不是固定生物亚型实体。
+- 仍需要影像确认、临床分级齐全的外部队列进一步验证。
 
 ### 3.9 审稿防守和语言风格
 
@@ -475,6 +619,10 @@ Methods 中还必须明确：
 - Methods 是否足够可复现；必须写清 PCA/K-means/logistic regression/cross-validation/bootstrap 的关键参数。
 - Table 1 是否过薄；必须扩展 baseline/severity/process-of-care variables，避免只有少数变量。
 - 最后的过程性治疗和住院期 survival 分析是否遗漏；必须在 Results 主文、Table 4 和 Supplementary Table 中呈现，而不是只留在 `analysis_result.md`。
+- eICU 外部验证是否遗漏；必须在 Abstract、Methods、Results、Discussion、Limitations、Table 5 或 Supplementary Table 中呈现。
+- eICU Frozen Transport 和 eICU de novo clustering 是否被混淆；必须明确 Frozen Transport 是主外部验证，de novo 只是 structural sensitivity。
+- eICU de novo ARI 接近 0 是否被过度包装；不得写成“replicated clusters”，只能写成“replicated risk gradient but not patient-level boundaries”。
+- eICU INR 缺失是否被忽略；必须报告 49.4% missing、informative missingness audit 和 INR-free sensitivity。
 - References 是否过少；必须补充 SAH、贫血、ICU phenotyping、unsupervised learning/reporting 相关文献。
 
 ## 4. 更新中文论文
@@ -536,6 +684,16 @@ DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert
 - [ ] `phenotype_survival_logrank` 的 pairwise log-rank p 值已报告。
 - [ ] `phenotype_survival_cox_models` 的 unadjusted、clinical adjusted、process-of-care adjusted Cox HR 已报告，并说明 alive discharges censored at hospital discharge。
 - [ ] 没有把 nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC、CRRT 或 fluid balance 的关联解释为干预获益/伤害。
+- [ ] eICU 外部验证已进入 Abstract、Methods、Results、Discussion、Limitations，而不是只放在补充材料。
+- [ ] eICU 主验证写成 Frozen Transport：固定 MIMIC median imputer、log transform、StandardScaler、PCA eigenvectors 和 K=3 centroids 后投影到 eICU。
+- [ ] eICU 结果使用最新值：N=843；P1/P2/P3 hospital mortality = 5.4%/25.7%/42.7%；ICU mortality = 2.8%/16.2%/29.3%；early anemia = 11.4%/34.5%/58.0%。
+- [ ] eICU APACHE 外部效标已报告：APACHE score median 36/57/79；predicted hospital mortality median 0.069/0.243/0.426。
+- [ ] eICU 敏感性分析已报告：LOS >=48h、no recorded RBC、strict SAH、<=1 missing、complete case、INR-free transport 均保留单调死亡率梯度。
+- [ ] eICU de novo clustering 明确作为 structural sensitivity，且写清 ARI 约 -0.003、NMI 0.002、silhouette 0.269；没有写成 exact cluster replication。
+- [ ] eICU INR 缺失已报告：446/903 (49.4%)，并说明 INR measured patients were sicker；INR-free transport 被保留为重要敏感性分析。
+- [ ] eICU shock index 提取逻辑已写明：HR 与 15 分钟内最近 periodic/aperiodic SBP 配对；shock index missing 10/903 (1.1%)。
+- [ ] eICU Hb-free anemia sensitivity 已报告：phenotype OR 显著，early anemia OR 1.47 (95% CI 0.92-2.36), p=0.105。
+- [ ] Limitations 不再写“需要外部验证”作为主要空缺；应写“已有 eICU 外部验证，但仍需前瞻性、影像确认和临床分级完整队列验证”。
 - [ ] 调整后 OR、95% CI、p 值与结果表一致。
 - [ ] Prediction AUROC/Brier 与结果表一致。
 - [ ] Bootstrap ARI、complete-case、Hb-free、INR-free、no-RBC、ICU LOS >=48h、GCS alternatives 的数字一致。

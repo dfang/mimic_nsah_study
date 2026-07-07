@@ -2,7 +2,7 @@
 """
 Generate manuscript figures for the non-traumatic SAH phenotype manuscript.
 
-The values in this script are synchronized with dist/20260706/analysis_result.md.
+The values in this script are synchronized with dist/20260707/analysis_result.md.
 Pass a YYYYMMDD directory name as argv[1]; output is written to dist/YYYYMMDD/figures.
 """
 from __future__ import annotations
@@ -140,6 +140,7 @@ def fig4_external_severity_validation() -> None:
     scores = {
         "SOFA": [2.0, 4.0, 8.0],
         "SAPS II": [26.0, 37.0, 45.5],
+        "APS III": [28.0, 41.0, 59.5],
         "OASIS": [26.0, 36.0, 37.0],
         "LODS": [2.0, 4.0, 7.0],
     }
@@ -302,6 +303,27 @@ def fig_s6_forest_plot() -> None:
     savefig("fig_s6_forest_plot.png")
 
 
+def fig_s7_eicu_external_validation() -> None:
+    phenotype_ticks = ["P1", "P2", "P3"]
+    metrics = [
+        ("Hospital mortality", [5.4, 25.7, 42.7], "%"),
+        ("ICU mortality", [2.8, 16.2, 29.3], "%"),
+        ("Early anemia", [11.4, 34.5, 58.0], "%"),
+        ("APACHE predicted\nhospital mortality", [6.9, 24.3, 42.6], "%"),
+    ]
+    fig, axes = plt.subplots(1, 4, figsize=(13, 3.9))
+    for ax, (title, values, suffix) in zip(axes, metrics):
+        bars = ax.bar(phenotype_ticks, values, color=COLORS, edgecolor="black", linewidth=0.7)
+        ax.set_title(title, fontweight="bold", fontsize=10)
+        ax.set_ylim(0, max(values) * 1.25 + 2)
+        ax.set_ylabel("Percent")
+        for bar, val in zip(bars, values):
+            ax.text(bar.get_x() + bar.get_width() / 2, val + 1, f"{val:.1f}{suffix}", ha="center", fontsize=8.5, fontweight="bold")
+    fig.suptitle("Figure S7. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
+    fig.tight_layout()
+    savefig("fig_s7_eicu_external_validation.png")
+
+
 if __name__ == "__main__":
     fig1_cohort_flowchart()
     fig2_primary_log_pca_heatmap()
@@ -314,4 +336,5 @@ if __name__ == "__main__":
     fig_s4_k4_refinement()
     fig_s5_pca_loadings()
     fig_s6_forest_plot()
+    fig_s7_eicu_external_validation()
     print(f"\nAll figures saved to {figures_dir}/")
