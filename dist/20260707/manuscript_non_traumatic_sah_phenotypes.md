@@ -63,7 +63,7 @@ Missing values in the development cohort were extremely low: INR max had a missi
 ### Dimensionality Reduction and Clustering
 To mitigate collinearity and noise among physiological features, we performed Principal Component Analysis (PCA) on the standardized eight-dimensional feature space. The number of principal components (PCs) retained was set to three based on eigenvalues and scree plot inspection. These 3 PCs accounted for 56.41% of the total explained variance (PC1: 30.27%, PC2: 13.77%, PC3: 12.36%).
 
-Unsupervised clustering was performed in the 3-PC space using the K-means algorithm with a fixed random seed to guarantee reproducibility. The optimal number of clusters ($K$) was determined by evaluating the silhouette width, Calinski-Harabasz index, Davies-Bouldin index, minimum cluster size, and clinical interpretability. A $K=3$ solution was selected as the primary phenotyping model. The resulting phenotypes were ordered P1, P2, and P3 by ascending overall severity and in-hospital mortality.
+Unsupervised clustering was performed in the 3-PC space using the K-means algorithm with a fixed random seed to guarantee reproducibility. The optimal number of clusters ($K$) was determined by evaluating the silhouette width, Calinski-Harabasz index, Davies-Bouldin index, minimum cluster size, and clinical interpretability. A $K=3$ solution was selected as the primary phenotyping model (the evaluation of alternative $K$ selections is provided in Supplementary Figure 1). The resulting phenotypes were ordered P1, P2, and P3 by ascending overall severity and in-hospital mortality.
 
 ### Statistical Analysis
 Continuous baseline characteristics were described using medians with interquartile ranges (IQRs) and compared using the Kruskal-Wallis test. Categorical variables were expressed as frequencies (percentages) and compared using the Chi-square test or Fisher's exact test. 
@@ -82,7 +82,7 @@ To evaluate the robustness of the primary clustering partition, we performed sev
 4. **Alternative Feature Windows**: Utilizing a 0–24 hour physiological window instead of 0–48 hours to reduce potential treatment contamination.
 5. **Hemoglobin-Free and INR-Free Clustering**: Independently re-clustering after dropping hemoglobin or INR from the inputs to assess circularity in anemia adjustments and the impact of the most missing validation variable.
 6. **High-Resolution Subtyping**: Exploring a $K=4$ partition to examine whether P3 could be refined further.
-7. **Bootstrap Stability**: Re-sampling the development cohort 200 times to assess cluster assignment stability using the Adjusted Rand Index (ARI).
+7. **Bootstrap Stability**: Re-sampling the development cohort 200 times to assess cluster assignment stability using the Adjusted Rand Index (ARI) (detailed in Supplementary Table 3 and visualized in Supplementary Figure 2).
 
 ### External Validation (Frozen Transport)
 External validation was performed in the eICU cohort (N = 843). Rather than refitting the clustering model, we applied a **Frozen Transport** approach:
@@ -104,10 +104,10 @@ In MIMIC-IV, a total of 1,186 adult NSAH patients met all eligibility criteria a
 ![Cohort Flowchart](figures/fig1_cohort_flowchart.png)
 **Figure 1.** Flowchart of cohort selection for the development (MIMIC-IV) and external validation (eICU) cohorts, detailing inclusion and exclusion criteria at each step.
 
-Core physiological data missingness was extremely low in the development cohort: INR max was missing in 5.48% (65/1,186) of patients, creatinine max in 0.08% (1/1,186), and all other features (hemoglobin, GCS motor, MAP, shock index, SpO2, platelets) had 0.0% missingness.
+Core physiological data missingness was extremely low in the development cohort: INR max was missing in 5.48% (65/1,186) of patients, creatinine max in 0.08% (1/1,186), and all other features (hemoglobin, GCS motor, MAP, shock index, SpO2, platelets) had 0.0% missingness (feature missingness rates in both cohorts are detailed in Supplementary Table 1).
 
 ### Primary PCA and Phenotype Profiles
-PCA identified three principal components explaining 30.27%, 13.77%, and 12.36% of the variance, respectively (cumulative variance: 56.41%). The loadings of the eight physiological variables on the three PCs are detailed in Supplementary Table 2.
+PCA identified three principal components explaining 30.27%, 13.77%, and 12.36% of the variance, respectively (cumulative variance: 56.41%). The loadings of the eight physiological variables on the three PCs are detailed in Supplementary Table 2 and visualized in Supplementary Figure 5.
 
 The primary $K=3$ solution partition separated the cohort into three distinct physiological phenotypes (Figure 2):
 1. **Phenotype 1 (P1: n = 694, 58.5%)**: Characterized by mild neurologic and systemic physiological impairment. Patients had a median GCS motor score of 6.0 [IQR 5.0–6.0], median MAP of 64.0 mmHg [IQR 58.0–70.0], median hemoglobin of 11.70 g/dL [IQR 10.80–12.80], and normal renal and coagulation markers.
@@ -156,7 +156,7 @@ To address the potential circularity of adjusting for anemia using a phenotype t
 - P3 vs. P1: OR = 10.27 (95% CI 5.68–18.57, p = 1.22e-14)
 - Early anemia: OR = 1.47 (95% CI 0.92–2.36, p = 0.105)
 
-Independent *de novo* K-means ($K=3$) clustering in the eICU cohort recovered a similar risk gradient (hospital mortality: cluster 1 = 5.8%, cluster 2 = 18.1%, cluster 3 = 42.0%). However, patient-level concordance between transported and *de novo* labels was extremely low (Adjusted Rand Index [ARI] = -0.003, Normalized Mutual Information [NMI] = 0.002, same ordered label rate = 43.9%). This structural sensitivity analysis confirms that while the underlying risk structure is highly reproducible, the exact patient partition boundaries are sensitive to database-specific feature distributions.
+Independent *de novo* K-means ($K=3$) clustering in the eICU cohort recovered a similar risk gradient (hospital mortality: cluster 1 = 5.8%, cluster 2 = 18.1%, cluster 3 = 42.0%). However, patient-level concordance between transported and *de novo* labels was extremely low (Adjusted Rand Index [ARI] = -0.003, Normalized Mutual Information [NMI] = 0.002, same ordered label rate = 43.9%). This structural sensitivity analysis confirms that while the underlying risk structure is highly reproducible, the exact patient partition boundaries are sensitive to database-specific feature distributions (detailed calibration and comparison metrics are in Supplementary Figure 7).
 
 ### Model Incremental Prediction and SHAP Importance
 Logistic regression models demonstrated that incorporating the phenotypes significantly improved the prediction of in-hospital mortality compared with a GCS-only model (Figure 5). The 8-variable model achieved an AUROC of 0.842 in cross-validation (Brier score: 0.119), compared to just 0.539 for the GCS-only model (Brier score: 0.150). The phenotype-only model achieved an AUROC of 0.754.
@@ -164,16 +164,16 @@ Logistic regression models demonstrated that incorporating the phenotypes signif
 ![Prediction Performance](figures/fig5_prediction_performance.png)
 **Figure 5.** Incremental prediction of in-hospital mortality in MIMIC-IV, comparing GCS-only, phenotype-only, and multivariable physiological models.
 
-SHAP-style attribution analysis from the standardized mortality logistic model identified the minimum GCS motor score as the most influential predictor (coefficient = -0.97, SHAP rank 1), followed by maximum creatinine (coefficient = 0.38, rank 2) and minimum platelets (coefficient = -0.21, rank 3). 
+SHAP-style attribution analysis from the standardized mortality logistic model identified the minimum GCS motor score as the most influential predictor (coefficient = -0.97, SHAP rank 1), followed by maximum creatinine (coefficient = 0.38, rank 2) and minimum platelets (coefficient = -0.21, rank 3) (see Supplementary Figure 6 for the odds and hazard ratios across models). 
 
 ### Sensitivity and Robustness Analyses
 The phenotype risk gradient was remarkably stable across all pre-specified sensitivity analyses (Table 6).
 - In the **complete-case subcohort** (N = 1,120), mortality rates remained P1 (6.53%), P2 (38.58%), and P3 (65.07%).
 - In the **strict aneurysm subgroup** (N = 763), mortality rates were P1 (5.73%), P2 (30.82%), and P3 (50.00%).
 - Excluding patients with early RBC transfusions or restricting to ICU stays $\ge$ 48 hours did not alter the monotonic risk separation.
-- drops in hemoglobin and INR (INR-free and Hb-free clustering) preserved the mortality gradients, with ARI concordance rates of 0.631 and 0.736 against the primary model.
-- High-resolution $K=4$ clustering partitioned P3 into two smaller, extremely high-risk subgroups (P3: n = 39, mortality 61.54%; P4: n = 39, mortality 56.41%), showing that the $K=3$ severe phenotype represents the unified tail of the risk distribution.
-- Bootstrap validation over 200 iterations yielded a mean ARI of 0.920 (std = 0.048, min = 0.745), indicating high mathematical stability.
+- drops in hemoglobin and INR (INR-free and Hb-free clustering) preserved the mortality gradients, with ARI concordance rates of 0.631 and 0.736 against the primary model (with cluster profiles illustrated in Supplementary Figure 3).
+- High-resolution $K=4$ clustering partitioned P3 into two smaller, extremely high-risk subgroups (P3: n = 39, mortality 61.54%; P4: n = 39, mortality 56.41%), showing that the $K=3$ severe phenotype represents the unified tail of the risk distribution (Supplementary Figure 4).
+- Bootstrap validation over 200 iterations yielded a mean ARI of 0.920 (std = 0.048, min = 0.745), indicating high mathematical stability (Supplementary Table 3 and Supplementary Figure 2).
 
 ---
 
@@ -376,8 +376,8 @@ Using unsupervised machine learning on routine early ICU data, we identified and
 | - APACHE Score, median | 43.0 | 36.0 | 57.0 | 79.0 |
 | - APS Score, median | 33.0 | 27.0 | 49.0 | 67.0 |
 | - Predicted Hosp Mortality, med| 0.112 | 0.069 | 0.243 | 0.426 |
-| - Early Anemia (0-48h), n (%) | 185 (21.9%) | 61 (11.4%) | 77 (34.5%) | 47 (58.0%) |
-| - RBC Transfusion (0-48h), n (%)| 19 (2.3%) | 2 (0.4%) | 13 (5.9%) | 4 (11.0%) |
+| - Early Anemia (0-48h), n (%) | 183 (21.7%) | 60 (11.4%) | 76 (34.5%) | 47 (58.0%) |
+| - RBC Transfusion (0-48h), n (%)| 24 (2.8%) | 2 (0.4%) | 13 (5.9%) | 9 (11.0%) |
 | - Hospital Mortality, n (%) | 121 (14.35%) | 29 (5.38%) | 57 (25.68%) | 35 (42.68%) |
 | - ICU Mortality, n (%) | 65 (7.71%) | 15 (2.78%) | 36 (16.22%) | 24 (29.27%) |
 
