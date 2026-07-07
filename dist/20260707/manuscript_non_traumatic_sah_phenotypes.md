@@ -99,7 +99,7 @@ We assessed the external validity of the transported phenotypes by evaluating: (
 ## Results
 
 ### Cohort Selection and Missingness
-In MIMIC-IV, a total of 1,186 adult NSAH patients met all eligibility criteria and were included in the primary analysis. The flowchart of patient selection is illustrated in Figure 1.
+In MIMIC-IV, a total of 1,186 adult NSAH patients met all eligibility criteria and were included in the primary analysis (the baseline characteristics are presented in Table 1). The flowchart of patient selection is illustrated in Figure 1.
 
 ![Cohort Flowchart](figures/fig1_cohort_flowchart.png)
 **Figure 1.** Flowchart of cohort selection for the development (MIMIC-IV) and external validation (eICU) cohorts, detailing inclusion and exclusion criteria at each step.
@@ -109,7 +109,7 @@ Core physiological data missingness was extremely low in the development cohort:
 ### Primary PCA and Phenotype Profiles
 PCA identified three principal components explaining 30.27%, 13.77%, and 12.36% of the variance, respectively (cumulative variance: 56.41%). The loadings of the eight physiological variables on the three PCs are detailed in Supplementary Table 2 and visualized in Supplementary Figure 5.
 
-The primary $K=3$ solution partition separated the cohort into three distinct physiological phenotypes (Figure 2):
+The primary $K=3$ solution partition separated the cohort into three distinct physiological phenotypes (Figure 2 and Table 2):
 1. **Phenotype 1 (P1: n = 694, 58.5%)**: Characterized by mild neurologic and systemic physiological impairment. Patients had a median GCS motor score of 6.0 [IQR 5.0–6.0], median MAP of 64.0 mmHg [IQR 58.0–70.0], median hemoglobin of 11.70 g/dL [IQR 10.80–12.80], and normal renal and coagulation markers.
 2. **Phenotype 2 (P2: n = 384, 32.4%)**: Characterized by severe neurological impairment but relatively mild systemic organ dysfunction. The median GCS motor score was 1.0 [IQR 1.0–4.0], but circulatory parameters, renal function (creatinine median 0.9 mg/dL), and coagulation (INR median 1.2) were only mildly deranged. Early anemia was moderately enriched (41.41%).
 3. **Phenotype 3 (P3: n = 108, 9.1%)**: Characterized by severe neurological impairment combined with severe multisystem shock, hypoxemia, renal failure, and coagulopathy. The median GCS motor score was 1.0 [IQR 1.0–5.0], the median MAP was 55.0 mmHg [IQR 47.5–61.0], the median shock index was 1.16 [IQR 0.93–1.42], the median SpO2 was 88.5% [IQR 78.0–92.0], the median creatinine was 1.9 mg/dL [IQR 1.18–3.20], the median INR was 1.8 [IQR 1.40–2.30], and the median platelet count was 92.0 $\times 10^3$/µL [IQR 40.75–160.25]. Early anemia was highly prevalent (66.67%).
@@ -137,7 +137,7 @@ These relationships were fully mirrored in the adjusted Cox proportional hazards
 ### External Validation in eICU
 The validation cohort from the eICU database comprised 843 eligible NSAH patients. Applying the frozen MIMIC-IV preprocessing parameters and cluster centroids projected the validation patients into the three phenotypes: P1 (n = 539, 63.9%), P2 (n = 222, 26.3%), and P3 (n = 82, 9.7%).
 
-The external validation cohort demonstrated an outstanding, monotonic outcome gradient across the transported phenotypes:
+The external validation cohort demonstrated an outstanding, monotonic outcome gradient across the transported phenotypes (Table 5):
 - **Hospital Mortality**: P1 (5.4%), P2 (25.7%), P3 (42.7%)
 - **ICU Mortality**: P1 (2.8%), P2 (16.2%), P3 (29.3%)
 - **Early Anemia**: P1 (11.4%), P2 (34.5%), P3 (58.0%)
