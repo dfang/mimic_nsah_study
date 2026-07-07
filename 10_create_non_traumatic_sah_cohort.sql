@@ -77,6 +77,19 @@ SELECT
     ) AS aneurysm_dx_codes,
     STRING_AGG(
         DISTINCT CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN di.icd_code
+            ELSE NULL
+        END,
+        ', '
+        ORDER BY CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN di.icd_code
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN di.icd_code
+            ELSE NULL
+        END
+    ) AS unruptured_aneurysm_dx_codes,
+    STRING_AGG(
+        DISTINCT CASE
             WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'S066%' THEN di.icd_code
             WHEN LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%' THEN NULL
             WHEN LOWER(dd.long_title) LIKE '%non-traumatic%subarachnoid%' THEN NULL
@@ -108,6 +121,21 @@ SELECT
     ) AS has_aneurysm_dx,
     MAX(
         CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') = '4373' THEN 1
+            WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'I671%' THEN 1
+            ELSE 0
+        END
+    ) AS has_unruptured_aneurysm_dx,
+    MAX(
+        CASE
+            WHEN di.icd_version = 9 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE '430%' THEN 1
+            WHEN di.icd_version = 10
+             AND REGEXP_CONTAINS(REPLACE(UPPER(di.icd_code), '.', ''), r'^I60[0-6]') THEN 1
+            ELSE 0
+        END
+    ) AS has_ruptured_aneurysmal_sah_dx,
+    MAX(
+        CASE
             WHEN di.icd_version = 10 AND REPLACE(UPPER(di.icd_code), '.', '') LIKE 'S066%' THEN 1
             WHEN LOWER(dd.long_title) LIKE '%nontraumatic%subarachnoid%' THEN 0
             WHEN LOWER(dd.long_title) LIKE '%non-traumatic%subarachnoid%' THEN 0
@@ -121,8 +149,9 @@ LEFT JOIN `physionet-data.mimiciv_3_1_hosp.d_icd_diagnoses` dd
    AND di.icd_version = dd.icd_version
 GROUP BY di.subject_id, di.hadm_id;
 
--- 验证：确认 MIMIC-IV 3.1 字典中动脉瘤诊断代码为无小数点形式。
--- 原因：BigQuery 诊断表常存储 `I671`/`4373`，不是 `I67.1`/`437.3`；此处固化审计，避免误判 has_aneurysm_dx 全 0。
+-- 验证：确认 MIMIC-IV 3.1 字典中未破裂脑动脉瘤诊断代码为无小数点形式。
+-- 原因：BigQuery 诊断表常存储 `I671`/`4373`，不是 `I67.1`/`437.3`；这些代码只代表未破裂动脉瘤，
+--       不应作为破裂 aSAH 的唯一诊断证据。
 SELECT
     icd_version,
     icd_code,
@@ -207,15 +236,23 @@ SELECT
     p.gender,
     COALESCE(dx.has_sah_dx, 0) AS has_sah_dx,
     COALESCE(dx.has_aneurysm_dx, 0) AS has_aneurysm_dx,
+    COALESCE(dx.has_unruptured_aneurysm_dx, dx.has_aneurysm_dx, 0) AS has_unruptured_aneurysm_dx,
+    COALESCE(dx.has_ruptured_aneurysmal_sah_dx, 0) AS has_ruptured_aneurysmal_sah_dx,
     COALESCE(proc.has_aneurysm_procedure, 0) AS has_aneurysm_procedure,
     dx.aneurysm_dx_codes,
+    dx.unruptured_aneurysm_dx_codes,
     COALESCE(dx.has_traumatic_sah_dx, 0) AS has_traumatic_sah_dx,
     proc.aneurysm_procedure_codes,
+    CASE
+        WHEN COALESCE(dx.has_ruptured_aneurysmal_sah_dx, 0) = 1
+          OR COALESCE(proc.has_aneurysm_procedure, 0) = 1 THEN 1
+        ELSE 0
+    END AS has_ruptured_aneurysmal_sah_evidence,
     CASE
         WHEN COALESCE(dx.has_sah_dx, 0) = 1
          AND COALESCE(proc.has_aneurysm_procedure, 0) = 1 THEN 3
         WHEN COALESCE(dx.has_sah_dx, 0) = 1
-         AND COALESCE(dx.has_aneurysm_dx, 0) = 1 THEN 2
+         AND COALESCE(dx.has_ruptured_aneurysmal_sah_dx, 0) = 1 THEN 2
         WHEN COALESCE(dx.has_sah_dx, 0) = 1 THEN 1
         ELSE 0
     END AS nsah_evidence_level,
@@ -291,8 +328,13 @@ WITH ranked AS (
         ca.gender,
         ca.nsah_evidence_level,
         ca.has_aneurysm_dx,
+        ca.has_unruptured_aneurysm_dx,
+        ca.has_ruptured_aneurysmal_sah_dx,
+        ca.has_ruptured_aneurysmal_sah_evidence,
         ca.has_aneurysm_procedure,
         ca.aneurysm_dx_codes,
+        ca.unruptured_aneurysm_dx_codes,
+        ca.aneurysm_procedure_codes,
         ie.intime AS icu_intime,
         ie.outtime AS icu_outtime,
         DATETIME_DIFF(ie.outtime, ie.intime, HOUR) AS icu_los_hours,
@@ -459,7 +501,261 @@ SELECT
 FROM `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags`;
 
 -- -----------------------------------------------------------------------------
--- 4. 0-48h 核心生理指标明细表
+-- 4. 0-48h 过程性治疗/专科干预标记
+-- -----------------------------------------------------------------------------
+
+-- 目的：提取 0-48h 生命支持、神经专科干预、尼莫地平和液体平衡。
+-- 原因：这些变量是 Table 1 和扩展敏感性模型中的 process-of-care markers；
+--       它们与疾病严重程度和治疗决策相互交织，不进入主聚类，也不作为主因果调整变量。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.process_of_care_0_48h` AS
+WITH vasopressor_events AS (
+    SELECT
+        ie.stay_id,
+        MIN(ie.starttime) AS first_vasopressor_time_48h,
+        COUNT(*) AS vasopressor_events_48h,
+        STRING_AGG(DISTINCT di.label, ', ' ORDER BY di.label) AS vasopressor_labels_48h
+    FROM `physionet-data.mimiciv_3_1_icu.inputevents` ie
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON ie.stay_id = c.stay_id
+    INNER JOIN `physionet-data.mimiciv_3_1_icu.d_items` di
+        ON ie.itemid = di.itemid
+    WHERE ie.itemid IN (
+        221906, -- Norepinephrine
+        221749, 229630, 229631, 229632, -- Phenylephrine variants
+        222315, -- Vasopressin
+        221289, 229617, -- Epinephrine variants
+        221662, -- Dopamine
+        221653, -- Dobutamine
+        221986  -- Milrinone
+    )
+      AND ie.starttime >= c.icu_intime
+      AND ie.starttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND ie.statusdescription != 'Rewritten'
+      AND COALESCE(ie.amount, ie.rate, 0) > 0
+    GROUP BY ie.stay_id
+),
+vent_events AS (
+    SELECT
+        pe.stay_id,
+        MIN(pe.starttime) AS first_mech_vent_time_48h,
+        COUNTIF(pe.itemid IN (225792, 224385, 225448, 226237)) AS invasive_vent_events_48h,
+        COUNTIF(pe.itemid = 225794) AS noninvasive_vent_events_48h,
+        STRING_AGG(DISTINCT di.label, ', ' ORDER BY di.label) AS ventilation_labels_48h
+    FROM `physionet-data.mimiciv_3_1_icu.procedureevents` pe
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON pe.stay_id = c.stay_id
+    INNER JOIN `physionet-data.mimiciv_3_1_icu.d_items` di
+        ON pe.itemid = di.itemid
+    WHERE pe.itemid IN (
+        225792, -- Invasive Ventilation
+        225794, -- Non-invasive Ventilation
+        224385, -- Intubation
+        225448, -- Percutaneous Tracheostomy
+        226237  -- Open Tracheostomy
+    )
+      AND pe.starttime >= c.icu_intime
+      AND pe.starttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND pe.statusdescription != 'Rewritten'
+    GROUP BY pe.stay_id
+),
+evd_icp_proc_events AS (
+    SELECT
+        pe.stay_id,
+        MIN(pe.starttime) AS first_evd_icp_proc_time_48h,
+        COUNT(*) AS evd_icp_proc_events_48h,
+        STRING_AGG(DISTINCT di.label, ', ' ORDER BY di.label) AS evd_icp_proc_labels_48h
+    FROM `physionet-data.mimiciv_3_1_icu.procedureevents` pe
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON pe.stay_id = c.stay_id
+    INNER JOIN `physionet-data.mimiciv_3_1_icu.d_items` di
+        ON pe.itemid = di.itemid
+    WHERE pe.itemid IN (
+        225456, -- Ventricular Drain
+        226474, -- ICP Bolt Inserted
+        226475  -- Intraventricular Drain Inserted
+    )
+      AND pe.starttime >= c.icu_intime
+      AND pe.starttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND pe.statusdescription != 'Rewritten'
+    GROUP BY pe.stay_id
+),
+evd_icp_chart_events AS (
+    SELECT
+        ce.stay_id,
+        MIN(ce.charttime) AS first_evd_icp_chart_time_48h,
+        COUNT(*) AS evd_icp_chart_events_48h,
+        STRING_AGG(DISTINCT di.label, ', ' ORDER BY di.label) AS evd_icp_chart_labels_48h
+    FROM `physionet-data.mimiciv_3_1_icu.chartevents` ce
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON ce.stay_id = c.stay_id
+    INNER JOIN `physionet-data.mimiciv_3_1_icu.d_items` di
+        ON ce.itemid = di.itemid
+    WHERE ce.itemid IN (
+        229519, 229520, -- EVD #1/#2
+        229518, 229539, 229521, -- ICP devices
+        226124, 226128, 226129 -- ICP catheter/line insertion/outside facility
+    )
+      AND ce.charttime >= c.icu_intime
+      AND ce.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+    GROUP BY ce.stay_id
+),
+crrt_events AS (
+    SELECT
+        crrt.stay_id,
+        MIN(crrt.charttime) AS first_crrt_time_48h,
+        COUNT(*) AS crrt_events_48h,
+        STRING_AGG(DISTINCT crrt.crrt_mode, ', ' ORDER BY crrt.crrt_mode) AS crrt_modes_48h
+    FROM `physionet-data.mimiciv_3_1_derived.crrt` crrt
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON crrt.stay_id = c.stay_id
+    WHERE crrt.charttime >= c.icu_intime
+      AND crrt.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND (crrt.system_active = 1 OR crrt.crrt_mode IS NOT NULL)
+    GROUP BY crrt.stay_id
+),
+nimodipine_events AS (
+    SELECT
+        pr.subject_id,
+        pr.hadm_id,
+        MIN(pr.starttime) AS first_nimodipine_time_48h,
+        COUNT(*) AS nimodipine_orders_48h,
+        STRING_AGG(DISTINCT pr.drug, ', ' ORDER BY pr.drug) AS nimodipine_drugs_48h,
+        STRING_AGG(DISTINCT pr.route, ', ' ORDER BY pr.route) AS nimodipine_routes_48h
+    FROM `physionet-data.mimiciv_3_1_hosp.prescriptions` pr
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON pr.subject_id = c.subject_id
+       AND pr.hadm_id = c.hadm_id
+    WHERE (LOWER(pr.drug) LIKE '%nimodipine%' OR LOWER(pr.drug) LIKE '%nimotop%')
+      AND pr.starttime IS NOT NULL
+      AND pr.starttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND (pr.stoptime IS NULL OR pr.stoptime >= c.icu_intime)
+    GROUP BY pr.subject_id, pr.hadm_id
+),
+fluid_input AS (
+    SELECT
+        ie.stay_id,
+        SUM(ie.amount) AS fluid_input_ml_48h,
+        COUNT(*) AS fluid_input_events_48h
+    FROM `physionet-data.mimiciv_3_1_icu.inputevents` ie
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON ie.stay_id = c.stay_id
+    WHERE ie.starttime >= c.icu_intime
+      AND ie.starttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND LOWER(COALESCE(ie.amountuom, '')) IN ('ml', 'mL')
+      AND ie.statusdescription != 'Rewritten'
+      AND ie.amount > 0
+      AND ie.amount < 100000
+    GROUP BY ie.stay_id
+),
+fluid_output AS (
+    SELECT
+        oe.stay_id,
+        SUM(oe.value) AS fluid_output_ml_48h,
+        COUNT(*) AS fluid_output_events_48h
+    FROM `physionet-data.mimiciv_3_1_icu.outputevents` oe
+    INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+        ON oe.stay_id = c.stay_id
+    WHERE oe.charttime >= c.icu_intime
+      AND oe.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR)
+      AND LOWER(COALESCE(oe.valueuom, '')) IN ('ml', 'mL')
+      AND oe.value > 0
+      AND oe.value < 100000
+    GROUP BY oe.stay_id
+)
+SELECT
+    c.subject_id,
+    c.hadm_id,
+    c.stay_id,
+    CASE WHEN ve.vasopressor_events_48h > 0 THEN 1 ELSE 0 END AS vasopressor_48h,
+    ve.first_vasopressor_time_48h,
+    COALESCE(ve.vasopressor_events_48h, 0) AS vasopressor_events_48h,
+    ve.vasopressor_labels_48h,
+    CASE WHEN COALESCE(vnt.invasive_vent_events_48h, 0) > 0 THEN 1 ELSE 0 END AS mech_vent_48h,
+    CASE WHEN COALESCE(vnt.noninvasive_vent_events_48h, 0) > 0 THEN 1 ELSE 0 END AS noninvasive_vent_48h,
+    vnt.first_mech_vent_time_48h,
+    COALESCE(vnt.invasive_vent_events_48h, 0) AS invasive_vent_events_48h,
+    COALESCE(vnt.noninvasive_vent_events_48h, 0) AS noninvasive_vent_events_48h,
+    vnt.ventilation_labels_48h,
+    CASE
+        WHEN COALESCE(ep.evd_icp_proc_events_48h, 0) + COALESCE(ec.evd_icp_chart_events_48h, 0) > 0 THEN 1
+        ELSE 0
+    END AS evd_or_icp_48h,
+    CASE
+        WHEN ep.first_evd_icp_proc_time_48h IS NULL THEN ec.first_evd_icp_chart_time_48h
+        WHEN ec.first_evd_icp_chart_time_48h IS NULL THEN ep.first_evd_icp_proc_time_48h
+        ELSE LEAST(ep.first_evd_icp_proc_time_48h, ec.first_evd_icp_chart_time_48h)
+    END AS first_evd_or_icp_time_48h,
+    COALESCE(ep.evd_icp_proc_events_48h, 0) AS evd_icp_proc_events_48h,
+    COALESCE(ec.evd_icp_chart_events_48h, 0) AS evd_icp_chart_events_48h,
+    ep.evd_icp_proc_labels_48h,
+    ec.evd_icp_chart_labels_48h,
+    CASE WHEN ce.crrt_events_48h > 0 THEN 1 ELSE 0 END AS crrt_48h,
+    ce.first_crrt_time_48h,
+    COALESCE(ce.crrt_events_48h, 0) AS crrt_events_48h,
+    ce.crrt_modes_48h,
+    CASE WHEN ne.nimodipine_orders_48h > 0 THEN 1 ELSE 0 END AS nimodipine_48h,
+    ne.first_nimodipine_time_48h,
+    COALESCE(ne.nimodipine_orders_48h, 0) AS nimodipine_orders_48h,
+    ne.nimodipine_drugs_48h,
+    ne.nimodipine_routes_48h,
+    c.has_aneurysm_procedure AS aneurysm_securing_hosp,
+    c.aneurysm_procedure_codes AS aneurysm_securing_codes_hosp,
+    fi.fluid_input_ml_48h,
+    fo.fluid_output_ml_48h,
+    fi.fluid_input_events_48h,
+    fo.fluid_output_events_48h,
+    CASE
+        WHEN fi.fluid_input_ml_48h IS NOT NULL OR fo.fluid_output_ml_48h IS NOT NULL
+        THEN COALESCE(fi.fluid_input_ml_48h, 0) - COALESCE(fo.fluid_output_ml_48h, 0)
+        ELSE NULL
+    END AS fluid_balance_ml_48h,
+    CASE
+        WHEN fi.fluid_input_ml_48h IS NOT NULL OR fo.fluid_output_ml_48h IS NOT NULL
+        THEN (COALESCE(fi.fluid_input_ml_48h, 0) - COALESCE(fo.fluid_output_ml_48h, 0)) / 1000.0
+        ELSE NULL
+    END AS fluid_balance_l_48h,
+    CASE
+        WHEN fi.fluid_input_ml_48h IS NOT NULL
+         AND fo.fluid_output_ml_48h IS NOT NULL THEN 1
+        ELSE 0
+    END AS fluid_balance_complete_48h
+FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+LEFT JOIN vasopressor_events ve
+    ON c.stay_id = ve.stay_id
+LEFT JOIN vent_events vnt
+    ON c.stay_id = vnt.stay_id
+LEFT JOIN evd_icp_proc_events ep
+    ON c.stay_id = ep.stay_id
+LEFT JOIN evd_icp_chart_events ec
+    ON c.stay_id = ec.stay_id
+LEFT JOIN crrt_events ce
+    ON c.stay_id = ce.stay_id
+LEFT JOIN nimodipine_events ne
+    ON c.subject_id = ne.subject_id
+   AND c.hadm_id = ne.hadm_id
+LEFT JOIN fluid_input fi
+    ON c.stay_id = fi.stay_id
+LEFT JOIN fluid_output fo
+    ON c.stay_id = fo.stay_id;
+
+-- 验证：process-of-care 变量覆盖率和极端液体平衡。
+SELECT
+    COUNT(*) AS cohort_stays,
+    COUNTIF(vasopressor_48h = 1) AS vasopressor_stays,
+    COUNTIF(mech_vent_48h = 1) AS mech_vent_stays,
+    COUNTIF(noninvasive_vent_48h = 1) AS noninvasive_vent_stays,
+    COUNTIF(evd_or_icp_48h = 1) AS evd_or_icp_stays,
+    COUNTIF(crrt_48h = 1) AS crrt_stays,
+    COUNTIF(nimodipine_48h = 1) AS nimodipine_stays,
+    COUNTIF(aneurysm_securing_hosp = 1) AS aneurysm_securing_hosp_stays,
+    COUNTIF(fluid_balance_ml_48h IS NOT NULL) AS fluid_balance_nonmissing,
+    APPROX_QUANTILES(fluid_balance_l_48h, 4)[OFFSET(2)] AS median_fluid_balance_l_48h,
+    MIN(fluid_balance_l_48h) AS min_fluid_balance_l_48h,
+    MAX(fluid_balance_l_48h) AS max_fluid_balance_l_48h
+FROM `mimic-study-498508.non_traumatic_sah_study.process_of_care_0_48h`;
+
+-- -----------------------------------------------------------------------------
+-- 5. 0-48h 核心生理指标明细表
 -- -----------------------------------------------------------------------------
 
 -- 目的：提取 0-48h Hb 明细，并标记是否发生在首次 RBC 输血前。
@@ -1563,6 +1859,10 @@ platelet_24h AS (
     WHERE hours_from_icu_intime < 24
     GROUP BY stay_id
 ),
+process_of_care AS (
+    SELECT *
+    FROM `mimic-study-498508.non_traumatic_sah_study.process_of_care_0_48h`
+),
 severity_scores AS (
     SELECT
         c.stay_id,
@@ -1603,8 +1903,12 @@ SELECT
     c.insurance,
     c.nsah_evidence_level,
     c.has_aneurysm_dx,
+    c.has_unruptured_aneurysm_dx,
+    c.has_ruptured_aneurysmal_sah_dx,
+    c.has_ruptured_aneurysmal_sah_evidence,
     c.has_aneurysm_procedure,
     c.aneurysm_dx_codes,
+    c.unruptured_aneurysm_dx_codes,
     c.icu_intime,
     c.icu_outtime,
     c.icu_los_hours,
@@ -1619,6 +1923,40 @@ SELECT
     rf.rbc_events_48h,
     rf.rbc_units_24h,
     rf.rbc_units_48h,
+    poc.vasopressor_48h,
+    poc.first_vasopressor_time_48h,
+    poc.vasopressor_events_48h,
+    poc.vasopressor_labels_48h,
+    poc.mech_vent_48h,
+    poc.noninvasive_vent_48h,
+    poc.first_mech_vent_time_48h,
+    poc.invasive_vent_events_48h,
+    poc.noninvasive_vent_events_48h,
+    poc.ventilation_labels_48h,
+    poc.evd_or_icp_48h,
+    poc.first_evd_or_icp_time_48h,
+    poc.evd_icp_proc_events_48h,
+    poc.evd_icp_chart_events_48h,
+    poc.evd_icp_proc_labels_48h,
+    poc.evd_icp_chart_labels_48h,
+    poc.crrt_48h,
+    poc.first_crrt_time_48h,
+    poc.crrt_events_48h,
+    poc.crrt_modes_48h,
+    poc.nimodipine_48h,
+    poc.first_nimodipine_time_48h,
+    poc.nimodipine_orders_48h,
+    poc.nimodipine_drugs_48h,
+    poc.nimodipine_routes_48h,
+    poc.aneurysm_securing_hosp,
+    poc.aneurysm_securing_codes_hosp,
+    poc.fluid_input_ml_48h,
+    poc.fluid_output_ml_48h,
+    poc.fluid_input_events_48h,
+    poc.fluid_output_events_48h,
+    poc.fluid_balance_ml_48h,
+    poc.fluid_balance_l_48h,
+    poc.fluid_balance_complete_48h,
     hb.hb_min_48h_all,
     hb.hb_min_48h_pre_transfusion,
     hb_24h.hb_min_24h_all,
@@ -1729,6 +2067,8 @@ SELECT
 FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
 LEFT JOIN `mimic-study-498508.non_traumatic_sah_study.rbc_transfusion_flags` rf
     ON c.stay_id = rf.stay_id
+LEFT JOIN process_of_care poc
+    ON c.stay_id = poc.stay_id
 LEFT JOIN hb
     ON c.stay_id = hb.stay_id
 LEFT JOIN epvs
@@ -1817,6 +2157,13 @@ SELECT
     COUNTIF(apsiii_24h IS NOT NULL) AS apsiii_nonmissing,
     COUNTIF(oasis_24h IS NOT NULL) AS oasis_nonmissing,
     COUNTIF(lods_24h IS NOT NULL) AS lods_nonmissing,
+    COUNTIF(vasopressor_48h = 1) AS vasopressor_48h_rows,
+    COUNTIF(mech_vent_48h = 1) AS mech_vent_48h_rows,
+    COUNTIF(evd_or_icp_48h = 1) AS evd_or_icp_48h_rows,
+    COUNTIF(crrt_48h = 1) AS crrt_48h_rows,
+    COUNTIF(nimodipine_48h = 1) AS nimodipine_48h_rows,
+    COUNTIF(aneurysm_securing_hosp = 1) AS aneurysm_securing_hosp_rows,
+    COUNTIF(fluid_balance_l_48h IS NOT NULL) AS fluid_balance_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND any_rbc_transfusion_48h = 0) AS eligible_no_rbc_sensitivity_rows
@@ -1872,7 +2219,13 @@ SELECT
     COUNTIF(eligible_no_transfusion_sensitivity = 1) AS no_transfusion_sensitivity_rows,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(hospital_mortality AS FLOAT64) ELSE NULL END) AS primary_hospital_mortality_rate,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(early_anemia_all AS FLOAT64) ELSE NULL END) AS primary_early_anemia_rate,
-    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(vasopressor_48h AS FLOAT64) ELSE NULL END) AS primary_vasopressor_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(mech_vent_48h AS FLOAT64) ELSE NULL END) AS primary_mech_vent_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(evd_or_icp_48h AS FLOAT64) ELSE NULL END) AS primary_evd_or_icp_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(crrt_48h AS FLOAT64) ELSE NULL END) AS primary_crrt_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(nimodipine_48h AS FLOAT64) ELSE NULL END) AS primary_nimodipine_rate,
+    AVG(CASE WHEN eligible_primary_analysis = 1 THEN fluid_balance_l_48h ELSE NULL END) AS primary_mean_fluid_balance_l_48h
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`;
 
 -- 验证：主分析样本中 8 个主聚类变量范围；sodium、total GCS、GCS grade 和高缺失血气变量仅作描述/敏感性字段检查。

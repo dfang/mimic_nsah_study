@@ -136,6 +136,7 @@ data/physiology_features_48h.csv
 - 审稿补强分析：主表现在采用 `log1p(creatinine/inr) + PCA(3PC) + K-means K=3` assignment，并写入 `phenotype_cluster_assignments`、`phenotype_outcome_summary`、`phenotype_baseline_characteristics`、`phenotype_bootstrap_stability`、`phenotype_prediction_metrics`、`phenotype_regression_models`、`phenotype_severity_score_adjusted_models` 等主结果表。原始 8 维 K-means 另写入 `phenotype_raw_kmeans_*_sensitivity`，用于敏感性参照。
 - 新增审稿敏感性分析：`phenotype_log_pca_complete_case_sensitivity` 使用主 log-PCA 流程但不做中位数填补；`phenotype_24h_window_sensitivity` 使用 0-24h 同源核心变量复用主 log-PCA 流程；`phenotype_external_severity_validation` 使用 SOFA/SAPS II/OASIS/LODS 作为外部严重程度验证，而不是聚类输入。
 - 病因异质性补强分析：`phenotype_strict_aneurysm_subgroup_*` 仅保留 `nsah_evidence_level >= 2` 或有动脉瘤诊断/处置证据者，重复主 log-PCA K=3 聚类，并同步输出亚组结局、外部严重程度验证和调整后死亡模型。该分析用于回应“主 non-traumatic SAH 队列是否过杂”，不替代主真实世界队列。
+- Model-based clustering 补强分析：`phenotype_lpa_*_sensitivity` 在同一 log-PCA 3PC 空间运行 Gaussian mixture 近似 LPA，比较 K=2-5 的 BIC、AIC、entropy、最小类比例和相对主 K-means 的 ARI。只有当 BIC 支持 K=3、entropy `>=0.80`、ARI `>=0.70` 且最小类比例 `>=5%` 时，才考虑把 LPA/GMM 升级为主方案；否则保留为补充敏感性分析。
 - Notebook 运行时同步显示可视化图表：K 选择指标图、K=3/K=4 标准化中心热图、各 phenotype 住院死亡率柱状图、phenotype x anemia 死亡率图、K=3 到 K=4 交叉热图、bootstrap 稳定性直方图、候选增强变量缺失率图和预测性能比较图。
 
 在 BigQuery Notebook / Colab Enterprise 中运行：
@@ -162,29 +163,42 @@ data/physiology_features_48h.csv
 5. `phenotype_baseline_characteristics`
 6. `phenotype_cluster_stability`
 7. `phenotype_bootstrap_stability`
-8. `phenotype_gcs_sensitivity_summary`
-9. `phenotype_prediction_metrics`
-10. `phenotype_regression_models`
-11. `phenotype_severity_score_adjusted_models`
-12. `phenotype_anemia_stratified_models`
-13. `phenotype_candidate_feature_audit`
-14. `phenotype_sensitivity_cohort_summary`
-15. `phenotype_epvs_sensitivity_summary`
-16. `phenotype_hb_free_sensitivity`
-17. `phenotype_inr_free_sensitivity`
-18. `phenotype_complete_case_sensitivity`
-19. `phenotype_log_pca_kmeans_sensitivity`
-20. `phenotype_log_pca_kmeans_bootstrap_stability`
-21. `phenotype_log_pca_complete_case_sensitivity`
-22. `phenotype_24h_window_sensitivity`
-23. `phenotype_external_severity_validation`
-24. `phenotype_strict_aneurysm_subgroup_summary`
-25. `phenotype_strict_aneurysm_subgroup_outcomes`
-26. `phenotype_strict_aneurysm_subgroup_severity_validation`
-27. `phenotype_strict_aneurysm_subgroup_regression`
-28. `phenotype_strict_aneurysm_subgroup_severity_score_adjusted_models`
-29. `phenotype_raw_kmeans_outcome_summary_sensitivity`
-30. `phenotype_raw_kmeans_bootstrap_stability_sensitivity`
+8. `phenotype_gcs_motor_distribution`
+9. `phenotype_gcs_sensitivity_summary`
+10. `phenotype_prediction_metrics`
+11. `phenotype_shap_feature_importance`
+12. `phenotype_shap_phenotype_contributions`
+13. `phenotype_survival_km_curve`
+14. `phenotype_survival_logrank`
+15. `phenotype_survival_cox_models`
+16. `phenotype_feature_heatmap`
+17. `phenotype_process_of_care_audit`
+18. `phenotype_process_of_care_adjusted_models`
+19. `phenotype_regression_models`
+20. `phenotype_severity_score_adjusted_models`
+21. `phenotype_anemia_stratified_models`
+22. `phenotype_candidate_feature_audit`
+23. `phenotype_sensitivity_cohort_summary`
+24. `phenotype_epvs_sensitivity_summary`
+25. `phenotype_hb_free_sensitivity`
+26. `phenotype_inr_free_sensitivity`
+27. `phenotype_complete_case_sensitivity`
+28. `phenotype_log_pca_kmeans_sensitivity`
+29. `phenotype_log_pca_kmeans_bootstrap_stability`
+30. `phenotype_log_pca_complete_case_sensitivity`
+31. `phenotype_24h_window_sensitivity`
+32. `phenotype_external_severity_validation`
+33. `phenotype_strict_aneurysm_subgroup_summary`
+34. `phenotype_strict_aneurysm_subgroup_outcomes`
+35. `phenotype_strict_aneurysm_subgroup_severity_validation`
+36. `phenotype_strict_aneurysm_subgroup_regression`
+37. `phenotype_strict_aneurysm_subgroup_severity_score_adjusted_models`
+38. `phenotype_lpa_fit_indices`
+39. `phenotype_lpa_outcome_summary_sensitivity`
+40. `phenotype_lpa_centers_zscore_sensitivity`
+41. `phenotype_lpa_severity_validation_sensitivity`
+42. `phenotype_raw_kmeans_outcome_summary_sensitivity`
+43. `phenotype_raw_kmeans_bootstrap_stability_sensitivity`
 
 再看 K=4 高分辨率敏感性结果：
 
@@ -203,8 +217,10 @@ Notebook 中对应的主文/补充图建议：
 - Supplementary Figure：bootstrap ARI/min cluster size 和 GCS 敏感性结果，回应审稿人对聚类稳定性和神经功能变量选择的质疑。
 - Supplementary Figure：候选变量缺失率图，支持乳酸、PaO2/FiO2、troponin 不进入主聚类的理由。
 - Supplementary Figure：死亡预测 AUROC/Brier 图，说明 phenotype 的风险分层价值不只等同于单个 GCS 指标。
+- Supplementary Figure：住院期 Kaplan-Meier 曲线和 Cox forest plot，说明 phenotype 的死亡时间分布差异；需注明活着出院者按出院时间删失。
+- Supplementary Figure：SHAP-style feature importance，解释 8 变量死亡预测模型的 log-odds 贡献；不要解释为聚类因果机制。
 - Supplementary Table：`phenotype_anemia_stratified_models`，用于报告各 phenotype 内贫血 aOR；稀疏格子只报告事件数，不做强解释。
-- Supplementary Table：`phenotype_sensitivity_cohort_summary`、`phenotype_epvs_sensitivity_summary`、`phenotype_hb_free_sensitivity`、`phenotype_log_pca_kmeans_sensitivity`、`phenotype_log_pca_complete_case_sensitivity`、`phenotype_24h_window_sensitivity`、`phenotype_strict_aneurysm_subgroup_*`、`phenotype_external_severity_validation`、`phenotype_severity_score_adjusted_models` 和 `phenotype_log_pca_kmeans_bootstrap_stability`，用于回应输血、ICU 停留时间、病因异质性、ePVS、Hb 循环论证、右偏极端值、PCA 几何空间、缺失值填补、时间窗选择和传统严重程度评分复核的审稿质疑。
+- Supplementary Table：`phenotype_feature_heatmap`、`phenotype_survival_*`、`phenotype_shap_*`、`phenotype_process_of_care_*`、`phenotype_sensitivity_cohort_summary`、`phenotype_epvs_sensitivity_summary`、`phenotype_hb_free_sensitivity`、`phenotype_log_pca_kmeans_sensitivity`、`phenotype_log_pca_complete_case_sensitivity`、`phenotype_24h_window_sensitivity`、`phenotype_strict_aneurysm_subgroup_*`、`phenotype_lpa_*_sensitivity`、`phenotype_external_severity_validation`、`phenotype_severity_score_adjusted_models` 和 `phenotype_log_pca_kmeans_bootstrap_stability`，用于回应可解释性、死亡时间分布、过程性治疗/专科干预、输血、ICU 停留时间、病因异质性、model-based clustering/LPA、ePVS、Hb 循环论证、右偏极端值、PCA 几何空间、缺失值填补、时间窗选择和传统严重程度评分复核的审稿质疑。
 
 ## 5. 如何解释 K=3 和 K=4
 
@@ -241,7 +257,7 @@ ORDER BY variable_type, variable, level, phenotype;
 
 - 这张表是论文 Table 1 的主要来源，包含 Overall 和 K=3 phenotype 分层。
 - 连续变量报告 median [Q1, Q3]，分类变量报告 n (%)，并给出 phenotype 间 Kruskal-Wallis 或卡方检验 p 值。
-- 年龄、性别、入院类型、aneurysm evidence、贫血、输血、ICU/住院时长、GCS motor、total GCS、GCS grade 和候选严重程度评分如 SAPS II/SOFA/APS III/OASIS/LODS 都应先在这张表里审查。total GCS 和 GCS grade 可放在敏感性或补充材料中，不作为主聚类神经功能代表。若某些变量缺失率高，只能作为描述或敏感性变量，不应作为主回归强制协变量。
+- 年龄、性别、合并后的 `race_group`、入院类型、aneurysm evidence、贫血、输血、ICU/住院时长、GCS motor、total GCS、GCS grade、过程性治疗/专科干预和候选严重程度评分如 SAPS II/SOFA/APS III/OASIS/LODS 都应先在这张表里审查。原始 race 亚类 cell size 小，建议放入补充表，不作为主 Table 1 的主要展示项。total GCS 和 GCS grade 可放在敏感性或补充材料中，不作为主聚类神经功能代表。过程性治疗变量只用于资源使用描述和扩展敏感性调整；若某些变量缺失率高，只能作为描述或敏感性变量，不应作为主回归强制协变量。
 
 ### GCS 敏感性
 
@@ -249,12 +265,17 @@ ORDER BY variable_type, variable, level, phenotype;
 
 ```sql
 SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_gcs_motor_distribution`
+ORDER BY phenotype, gcs_motor_min_48h;
+
+SELECT *
 FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_gcs_sensitivity_summary`
 ORDER BY feature_set, phenotype;
 ```
 
 判断：
 
+- `phenotype_gcs_motor_distribution` 用于回应“P2/P3 的 GCS motor 中位数同为 1，为什么仍使用 GCS motor”的质疑。若 P2/P3 中位数相同，主文应说明 P3 的额外死亡风险主要由 creatinine、INR、platelet 和 SpO2 等非神经维度驱动，而不是把 P3 写成单纯更重神经损伤。
 - `add_total_gcs`、`gcs_total_only` 和 `gcs_grade_alternative` 相对 `primary_gcs_motor` 的 ARI 如果仍较高，说明更简洁的 GCS motor 主方案足以支撑主要表型结构。
 - 如果加入或替换 GCS 指标后样本重新分配明显、死亡率模式改变，主文需明确主聚类变量选择对结果有影响，并将替代方案作为敏感性结果报告。
 
@@ -291,7 +312,111 @@ ORDER BY model;
 
 - 重点比较 `gcs_only`、`features_8`、`phenotype_only`、`phenotype_anemia_covariates`。
 - 期望看到 phenotype 或 phenotype+协变量相对 GCS-only 有 AUROC、Brier 或校准改善。
-- 如果 phenotype-only 不如 8 个原始变量，这不是失败；phenotype 的价值是压缩信息和增强可解释性。真正关键是 phenotype+贫血+协变量是否形成稳定、可解释的风险分层模型。
+- 如果 phenotype-only 不如 8 个原始变量，这不是失败；从连续变量压缩为 3 个表型必然损失部分预测信息。主文应弱化“预测模型”叙事，强调 phenotype 的价值是压缩多模态信息、增强临床解释和描述亚组。若 8-feature AUROC 明显高于 phenotype-only，不要声称 phenotype 是最优预测器。
+
+### SHAP-style 死亡预测解释
+
+查看：
+
+```sql
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_shap_feature_importance`
+ORDER BY rank_by_mean_abs;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_shap_phenotype_contributions`
+ORDER BY phenotype, mean_abs_shap_log_odds DESC;
+```
+
+判断：
+
+- 当前脚本不新增 SHAP 依赖，而是对 8 个主聚类变量拟合 `log1p(creatinine/INR) + Z-score` 后的 logistic mortality model，并输出线性 log-odds 贡献近似，字段中标注为 `linear_logistic_shap_approximation`。
+- `mean_abs_shap_log_odds` 用于排序死亡预测模型中最有解释贡献的变量；正负方向看 `mean_shap_log_odds` 和 phenotype 内 `mean_shap_log_odds`。
+- 该结果解释的是死亡预测模型，不是 K-means assignment，也不是因果机制。主文可写作“feature contribution in the mortality prediction model”，不要写作“SHAP proved the cause of phenotype membership”。
+
+### 生存曲线和 Cox 模型
+
+查看：
+
+```sql
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_survival_km_curve`
+ORDER BY phenotype, time_days;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_survival_logrank`
+ORDER BY phenotype_a, phenotype_b;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_survival_cox_models`
+ORDER BY model, term;
+```
+
+判断：
+
+- 该分析使用 `hospital_los_days` 作为时间，`hospital_mortality` 作为事件；活着出院按出院时间删失。因此它是住院期 time-to-event 分析，不是长期随访生存分析。
+- KM 曲线和 log-rank 主要用于可视化死亡时间分布是否随 phenotype 分离。
+- Cox HR 用于补充 logistic OR。若 Cox 与 logistic 方向一致，可增强“表型与不良结局关联稳健”的论证；若不一致，优先解释为院内删失和 LOS 竞争结构导致的时间尺度差异。
+
+### Feature heatmap 长表
+
+查看：
+
+```sql
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_feature_heatmap`
+ORDER BY phenotype, feature;
+```
+
+判断：
+
+- 这张表同时包含 `z_center` 和原始 `median/q1/q3/display_value`，适合生成主文 heatmap。
+- 主图建议用颜色表示标准化中心，用格内文字展示 median [IQR]，这样既保留聚类几何，也便于临床读者理解绝对数值。
+
+### 过程性治疗和专科干预
+
+查看：
+
+```sql
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_process_of_care_audit`
+ORDER BY variable_type, variable, group;
+
+SELECT
+    model,
+    term,
+    odds_ratio,
+    ci_lower,
+    ci_upper,
+    p_value,
+    n,
+    events,
+    note
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_process_of_care_adjusted_models`
+WHERE term LIKE 'C(phenotype)%'
+ORDER BY model, term;
+
+SELECT
+    model,
+    term,
+    hazard_ratio,
+    ci_lower,
+    ci_upper,
+    p_value,
+    n,
+    events
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_survival_cox_models`
+WHERE model = 'cox_phenotype_process_of_care_exploratory'
+  AND term LIKE 'phenotype%'
+ORDER BY term;
+```
+
+判断：
+
+- `phenotype_process_of_care_audit` 用于 Table 1 扩展展示：动脉瘤处置、尼莫地平、EVD/ICP、血管活性药、机械通气、RBC、CRRT 和 fluid balance。
+- `phenotype_process_of_care_adjusted_models` 是递进扩展模型，不是主因果调整模型。过程性治疗变量可能是疾病严重程度的下游结果或中介，不能写成“完全排除治疗偏倚”。
+- 推荐主文表述是：`the phenotype-outcome association was directionally preserved after additional process-of-care adjustment`。如果 OR/HR 明显衰减，应如实写成“partly attenuated”，这反而更可信。
+- `fluid_balance_l_48h` 来自 ICU input/output 记录，需先看 missingness 和极端值；如果分布异常或缺失高，只放补充材料，不进入主文核心结论。
 
 ### 多变量回归
 
@@ -356,6 +481,7 @@ ORDER BY phenotype;
 - 这张表用于报告各 K=3 phenotype 内贫血与住院死亡的调整后 OR。
 - 如果 `note` 提示格子稀疏，不要解释 aOR；主文只报告贫血/非贫血事件数和死亡率。
 - 若 P3 中贫血组死亡率低于非贫血组，不应解释为贫血保护作用，更可能是极重症组内残余混杂、输血/治疗选择和小样本格子共同造成。
+- 当前若各 phenotype 内贫血/非贫血死亡率接近，且 interaction p 值不显著，应明确写成阴性结果：贫血是高危表型的组成或下游伴随特征，但当前样本没有证据支持贫血在任一 phenotype 内具有独立或异质性死亡关联。
 
 ### 预设敏感性子队列
 
@@ -535,6 +661,55 @@ ORDER BY variable, phenotype;
 - SOFA、SAPS II、OASIS 和 LODS 只用于外部验证，不进入聚类输入。
 - 重点看各评分中位数是否从 phenotype 1 到 3 递增，以及 `kruskal_p_value`、`spearman_rho_vs_ordered_phenotype` 是否支持严重程度梯度。
 
+### LPA/GMM model-based clustering 敏感性
+
+查看：
+
+```sql
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_lpa_fit_indices`
+ORDER BY covariance_type, k;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_lpa_outcome_summary_sensitivity`
+ORDER BY phenotype;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_lpa_centers_zscore_sensitivity`
+ORDER BY phenotype;
+
+SELECT *
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_lpa_severity_validation_sensitivity`
+ORDER BY variable, phenotype;
+```
+
+重点查看预设升级规则：
+
+```sql
+SELECT
+    covariance_type,
+    k,
+    bic,
+    aic,
+    entropy,
+    min_cluster_n,
+    min_cluster_frac,
+    ari_vs_primary_log_pca_kmeans,
+    same_ordered_label_rate_vs_primary,
+    best_bic_model,
+    selected_k3_model,
+    upgrade_to_primary_candidate
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_lpa_fit_indices`
+ORDER BY bic;
+```
+
+判断：
+
+- 当前 Python 实现使用 `GaussianMixture` 作为 LPA 的 model-based clustering 近似，在主 log-PCA 3PC 空间运行，避免把 GCS motor 和 SpO2 这类离散/边界变量直接当作正态连续变量建模。
+- 只有当 BIC 最优模型为 K=3、selected K=3 模型 entropy `>=0.80`、ARI vs 主 log-PCA K-means `>=0.70` 且最小类比例 `>=5%` 时，才考虑把 LPA/GMM 升级为主方案。
+- 如果 LPA/GMM 倾向 K=2 或 K=4，或 K=3 entropy/ARI/最小类比例不足，应把 LPA/GMM 放在补充材料，主文继续采用 log-PCA K-means，并解释为偏态、边界值和离散评分条件下中心型 K-means 更稳健、更易临床展示。
+- 表中的 `lrt_vs_k_minus_1_p_value_approx` 只是普通 chi-square 近似，不是正式 LMR-LRT。若投稿需要把 LPA 作为主方案，应再用 R `tidyLPA/mclust` 或 Mplus 复核 LMR-LRT/BLRT。
+
 ### log-PCA K-means 敏感性聚类
 
 当前该方案已升级为主几何空间；本节保留为审计查询，用于核对 PCA 解释方差、载荷和 bootstrap 稳定性。
@@ -615,8 +790,8 @@ ORDER BY icd_version, icd_code;
 
 判断：
 
-- MIMIC-IV 3.1 的动脉瘤诊断字典代码为 `4373` 和 `I671`，不是带小数点的展示形式。
-- 若 `has_aneurysm_dx` 再次出现全 0，优先检查是否运行了旧 SQL 或读取了旧宽表。
+- MIMIC-IV 3.1 的未破裂脑动脉瘤诊断字典代码为 `4373` 和 `I671`，不是带小数点的展示形式。
+- 这些代码不能单独定义破裂 aSAH。主表应优先使用 `has_ruptured_aneurysmal_sah_evidence` 或 `has_aneurysm_procedure`；若这些字段缺失，优先检查是否运行了旧 SQL 或读取了旧宽表。
 
 ### ePVS/troponin 候选变量审计
 

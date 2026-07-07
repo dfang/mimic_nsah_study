@@ -23,6 +23,14 @@
 #   phenotype_prediction_metrics                  (mortality prediction increment)
 #   phenotype_regression_models                   (adjusted outcome models)
 #   phenotype_severity_score_adjusted_models      (phenotype adjusted for SOFA/SAPSII/OASIS/LODS)
+#   phenotype_process_of_care_audit               (process-of-care and fluid balance audit)
+#   phenotype_process_of_care_adjusted_models     (process-of-care adjusted sensitivity models)
+#   phenotype_survival_km_curve                   (Kaplan-Meier hospital survival curve by phenotype)
+#   phenotype_survival_logrank                    (pairwise log-rank tests by phenotype)
+#   phenotype_survival_cox_models                 (phenotype Cox models for in-hospital death timing)
+#   phenotype_feature_heatmap                     (reviewer-facing phenotype feature heatmap data)
+#   phenotype_shap_feature_importance             (linear logistic SHAP-style feature importance)
+#   phenotype_shap_phenotype_contributions        (SHAP-style contributions summarized by phenotype)
 #   phenotype_anemia_stratified_models            (anemia OR within each K=3 phenotype)
 #   phenotype_candidate_feature_audit             (ePVS/troponin/blood gas audit)
 #   phenotype_baseline_characteristics            (Table 1 baseline by phenotype)
@@ -30,6 +38,7 @@
 #   phenotype_epvs_sensitivity_summary            (candidate ePVS clustering sensitivity)
 #   phenotype_hb_free_sensitivity                 (Hb-free clustering sensitivity)
 #   phenotype_hb_free_centers_zscore              (Hb-free standardized centers)
+#   phenotype_hb_free_anemia_regression           (anemia model adjusted by Hb-free phenotype)
 #   phenotype_inr_free_sensitivity                (INR-free clustering sensitivity)
 #   phenotype_inr_free_centers_zscore             (INR-free standardized centers)
 #   phenotype_complete_case_sensitivity           (complete-case clustering sensitivity)
@@ -38,6 +47,7 @@
 #   phenotype_24h_window_sensitivity              (0-24h log-PCA sensitivity)
 #   phenotype_external_severity_validation        (SOFA/SAPSII/OASIS/LODS validation)
 #   phenotype_strict_aneurysm_*                   (high-specificity aneurysm evidence subgroup)
+#   phenotype_lpa_*_sensitivity                   (model-based LPA/GMM sensitivity in log-PCA space)
 #   phenotype_raw_kmeans_*_sensitivity            (raw standardized 8-variable K-means sensitivity)
 #   phenotype_log_pca_kmeans_sensitivity          (primary log1p + PCA K-means audit copy)
 #   phenotype_log_pca_kmeans_centers_zscore       (log1p + PCA standardized centers)
@@ -56,6 +66,7 @@ import pandas as pd
 from google.cloud import bigquery
 from scipy import stats
 from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.mixture import GaussianMixture
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -110,6 +121,20 @@ def collapse_admission_type(value: object) -> str:
     if "EMER" in text or text.startswith("EW"):
         return "emergency"
     return "other"
+
+
+def collapse_race(value: object) -> str:
+    """Collapse sparse MIMIC race labels for stable descriptive Table 1 reporting."""
+    text = str(value).upper()
+    if not text or text in {"NAN", "NONE"}:
+        return "Unknown"
+    if "WHITE" in text:
+        return "White"
+    if "BLACK" in text or "AFRICAN" in text:
+        return "Black"
+    if "UNKNOWN" in text or "UNABLE" in text or "DECLINED" in text or "PATIENT DECLINED" in text:
+        return "Unknown"
+    return "Other"
 
 
 def fit_logit_quiet(smf, formula: str, data: pd.DataFrame):
@@ -319,6 +344,36 @@ EPVS_SENSITIVITY_FEATURE_SETS = {
     "add_epvs_mean": [*FEATURES, "epvs_mean_48h"],
 }
 
+PROCESS_OF_CARE_BINARY_FEATURES = [
+    "aneurysm_securing_hosp",
+    "nimodipine_48h",
+    "evd_or_icp_48h",
+    "vasopressor_48h",
+    "mech_vent_48h",
+    "noninvasive_vent_48h",
+    "any_rbc_transfusion_48h",
+    "crrt_48h",
+    "fluid_balance_complete_48h",
+]
+
+PROCESS_OF_CARE_CONTINUOUS_FEATURES = [
+    "fluid_input_ml_48h",
+    "fluid_output_ml_48h",
+    "fluid_balance_ml_48h",
+    "fluid_balance_l_48h",
+]
+
+PROCESS_OF_CARE_MODEL_FEATURES = [
+    "aneurysm_securing_hosp",
+    "nimodipine_48h",
+    "evd_or_icp_48h",
+    "vasopressor_48h",
+    "mech_vent_48h",
+    "any_rbc_transfusion_48h",
+    "crrt_48h",
+    "fluid_balance_l_48h",
+]
+
 BASELINE_CONTINUOUS_FEATURES = [
     "age",
     "icu_los_days",
@@ -350,22 +405,27 @@ BASELINE_CONTINUOUS_FEATURES = [
     "oasis_24h",
     "oasis_prob_24h",
     "lods_24h",
+    *PROCESS_OF_CARE_CONTINUOUS_FEATURES,
     *FEATURES,
 ]
 BASELINE_CONTINUOUS_FEATURES = list(dict.fromkeys(BASELINE_CONTINUOUS_FEATURES))
 
 BASELINE_CATEGORICAL_FEATURES = [
     "gender",
-    "race",
+    "race_group",
     "admission_type",
     "insurance",
     "nsah_evidence_level",
     "has_aneurysm_dx",
+    "has_unruptured_aneurysm_dx",
+    "has_ruptured_aneurysmal_sah_dx",
+    "has_ruptured_aneurysmal_sah_evidence",
     "has_aneurysm_procedure",
     "early_anemia_all",
     "early_anemia_pre_transfusion",
     "any_rbc_transfusion_48h",
     "massive_transfusion_24h",
+    *PROCESS_OF_CARE_BINARY_FEATURES,
 ]
 
 OUTPUT_TABLES = {
@@ -375,6 +435,7 @@ OUTPUT_TABLES = {
     "feature_summary": f"{PROJECT_ID}.{DATASET_ID}.phenotype_feature_summary_raw",
     "outcome_summary": f"{PROJECT_ID}.{DATASET_ID}.phenotype_outcome_summary",
     "anemia_feasibility": f"{PROJECT_ID}.{DATASET_ID}.phenotype_anemia_feasibility",
+    "gcs_motor_distribution": f"{PROJECT_ID}.{DATASET_ID}.phenotype_gcs_motor_distribution",
     "tests": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lightweight_tests",
     "stability": f"{PROJECT_ID}.{DATASET_ID}.phenotype_cluster_stability",
     "bootstrap_stability": f"{PROJECT_ID}.{DATASET_ID}.phenotype_bootstrap_stability",
@@ -382,6 +443,14 @@ OUTPUT_TABLES = {
     "prediction_metrics": f"{PROJECT_ID}.{DATASET_ID}.phenotype_prediction_metrics",
     "regression_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_regression_models",
     "severity_score_adjusted_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_severity_score_adjusted_models",
+    "process_of_care_audit": f"{PROJECT_ID}.{DATASET_ID}.phenotype_process_of_care_audit",
+    "process_of_care_adjusted_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_process_of_care_adjusted_models",
+    "survival_km_curve": f"{PROJECT_ID}.{DATASET_ID}.phenotype_survival_km_curve",
+    "survival_logrank": f"{PROJECT_ID}.{DATASET_ID}.phenotype_survival_logrank",
+    "survival_cox_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_survival_cox_models",
+    "feature_heatmap": f"{PROJECT_ID}.{DATASET_ID}.phenotype_feature_heatmap",
+    "shap_feature_importance": f"{PROJECT_ID}.{DATASET_ID}.phenotype_shap_feature_importance",
+    "shap_phenotype_contributions": f"{PROJECT_ID}.{DATASET_ID}.phenotype_shap_phenotype_contributions",
     "anemia_stratified_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_anemia_stratified_models",
     "candidate_feature_audit": f"{PROJECT_ID}.{DATASET_ID}.phenotype_candidate_feature_audit",
     "baseline_characteristics": f"{PROJECT_ID}.{DATASET_ID}.phenotype_baseline_characteristics",
@@ -389,6 +458,7 @@ OUTPUT_TABLES = {
     "epvs_sensitivity": f"{PROJECT_ID}.{DATASET_ID}.phenotype_epvs_sensitivity_summary",
     "hb_free_sensitivity": f"{PROJECT_ID}.{DATASET_ID}.phenotype_hb_free_sensitivity",
     "hb_free_centers": f"{PROJECT_ID}.{DATASET_ID}.phenotype_hb_free_centers_zscore",
+    "hb_free_anemia_regression": f"{PROJECT_ID}.{DATASET_ID}.phenotype_hb_free_anemia_regression",
     "inr_free_sensitivity": f"{PROJECT_ID}.{DATASET_ID}.phenotype_inr_free_sensitivity",
     "inr_free_centers": f"{PROJECT_ID}.{DATASET_ID}.phenotype_inr_free_centers_zscore",
     "complete_case_sensitivity": f"{PROJECT_ID}.{DATASET_ID}.phenotype_complete_case_sensitivity",
@@ -405,6 +475,11 @@ OUTPUT_TABLES = {
     "strict_aneurysm_severity_validation": f"{PROJECT_ID}.{DATASET_ID}.phenotype_strict_aneurysm_subgroup_severity_validation",
     "strict_aneurysm_regression": f"{PROJECT_ID}.{DATASET_ID}.phenotype_strict_aneurysm_subgroup_regression",
     "strict_aneurysm_severity_score_adjusted_models": f"{PROJECT_ID}.{DATASET_ID}.phenotype_strict_aneurysm_subgroup_severity_score_adjusted_models",
+    "lpa_fit_indices": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lpa_fit_indices",
+    "lpa_assignments": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lpa_assignments_sensitivity",
+    "lpa_outcome_summary": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lpa_outcome_summary_sensitivity",
+    "lpa_centers": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lpa_centers_zscore_sensitivity",
+    "lpa_severity_validation": f"{PROJECT_ID}.{DATASET_ID}.phenotype_lpa_severity_validation_sensitivity",
     "log_pca_kmeans_sensitivity": f"{PROJECT_ID}.{DATASET_ID}.phenotype_log_pca_kmeans_sensitivity",
     "log_pca_kmeans_centers": f"{PROJECT_ID}.{DATASET_ID}.phenotype_log_pca_kmeans_centers_zscore",
     "log_pca_kmeans_loadings": f"{PROJECT_ID}.{DATASET_ID}.phenotype_log_pca_kmeans_loadings",
@@ -444,6 +519,9 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "insurance",
         "nsah_evidence_level",
         "has_aneurysm_dx",
+        "has_unruptured_aneurysm_dx",
+        "has_ruptured_aneurysmal_sah_dx",
+        "has_ruptured_aneurysmal_sah_evidence",
         "has_aneurysm_procedure",
         "icu_los_days",
         "hospital_los_days",
@@ -453,6 +531,40 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "early_anemia_pre_transfusion",
         "any_rbc_transfusion_48h",
         "massive_transfusion_24h",
+        "vasopressor_48h",
+        "first_vasopressor_time_48h",
+        "vasopressor_events_48h",
+        "vasopressor_labels_48h",
+        "mech_vent_48h",
+        "noninvasive_vent_48h",
+        "first_mech_vent_time_48h",
+        "invasive_vent_events_48h",
+        "noninvasive_vent_events_48h",
+        "ventilation_labels_48h",
+        "evd_or_icp_48h",
+        "first_evd_or_icp_time_48h",
+        "evd_icp_proc_events_48h",
+        "evd_icp_chart_events_48h",
+        "evd_icp_proc_labels_48h",
+        "evd_icp_chart_labels_48h",
+        "crrt_48h",
+        "first_crrt_time_48h",
+        "crrt_events_48h",
+        "crrt_modes_48h",
+        "nimodipine_48h",
+        "first_nimodipine_time_48h",
+        "nimodipine_orders_48h",
+        "nimodipine_drugs_48h",
+        "nimodipine_routes_48h",
+        "aneurysm_securing_hosp",
+        "aneurysm_securing_codes_hosp",
+        "fluid_input_ml_48h",
+        "fluid_output_ml_48h",
+        "fluid_input_events_48h",
+        "fluid_output_events_48h",
+        "fluid_balance_ml_48h",
+        "fluid_balance_l_48h",
+        "fluid_balance_complete_48h",
         "hb_min_48h_all",
         "hb_min_48h_pre_transfusion",
         "hb_min_24h_all",
@@ -508,6 +620,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
     print(f"读取 BigQuery 表：{INPUT_TABLE}")
     print(f"当前 cohort flag：{COHORT_FLAG} = 1")
     df = client.query(sql).to_dataframe(create_bqstorage_client=False)
+    df["race_group"] = df["race"].map(collapse_race)
     print(f"读取完成：{len(df):,} 行，{df.shape[1]} 列")
     return df
 
@@ -762,6 +875,45 @@ def build_anemia_feasibility(assignments: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["phenotype", "early_anemia_all"])
 
 
+def build_gcs_motor_distribution(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Summarize GCS motor distributions beyond medians for reviewer-facing diagnostics."""
+    rows = []
+    solution_label = (
+        str(assignments["phenotype_solution"].dropna().iloc[0])
+        if "phenotype_solution" in assignments.columns and assignments["phenotype_solution"].notna().any()
+        else "primary_log_pca_kmeans_k3"
+    )
+    with_values = assignments.copy()
+    with_values["gcs_motor_value"] = pd.to_numeric(with_values["gcs_motor_min_48h"], errors="coerce")
+    for phenotype, group in with_values.groupby("phenotype"):
+        total = int(len(group))
+        group_values = pd.to_numeric(group["gcs_motor_value"], errors="coerce")
+        nonmissing = group_values.dropna()
+        for motor_score in range(1, 7):
+            count = int((group_values == motor_score).sum())
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "phenotype_solution": solution_label,
+                    "phenotype": int(phenotype),
+                    "phenotype_n": total,
+                    "gcs_motor_min_48h": int(motor_score),
+                    "n": count,
+                    "pct_within_phenotype": float(count / total) if total else np.nan,
+                    "n_nonmissing": int(nonmissing.shape[0]),
+                    "missing_n": int(group_values.isna().sum()),
+                    "median": float(nonmissing.median()) if len(nonmissing) else np.nan,
+                    "q1": float(nonmissing.quantile(0.25)) if len(nonmissing) else np.nan,
+                    "q3": float(nonmissing.quantile(0.75)) if len(nonmissing) else np.nan,
+                    "note": (
+                        "Use this table to interpret GCS motor beyond median/IQR; P2 and P3 can share "
+                        "a median of 1 while differing in full distribution and non-neurologic physiology."
+                    ),
+                }
+            )
+    return pd.DataFrame(rows).sort_values(["phenotype", "gcs_motor_min_48h"])
+
+
 def run_lightweight_tests(assignments: pd.DataFrame) -> pd.DataFrame:
     """运行不依赖 statsmodels 的基础统计检验。"""
     rows = []
@@ -943,6 +1095,122 @@ def run_hb_free_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame)
 
     summary = pd.DataFrame(rows).sort_values("phenotype")
     return {"summary": summary, "centers": centers, "assignments": assignments}
+
+
+def run_hb_free_anemia_regression(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Re-test anemia after replacing primary phenotype with an Hb-free phenotype."""
+    try:
+        import statsmodels.formula.api as smf
+    except ImportError:
+        return pd.DataFrame(
+            [
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": "hb_free_phenotype_anemia_adjusted",
+                    "term": "statsmodels_unavailable",
+                    "formula": "",
+                    "odds_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(assignments)),
+                    "events": int((assignments["hospital_mortality"] == 1).sum()),
+                    "aic": np.nan,
+                    "bic": np.nan,
+                    "pseudo_r2": np.nan,
+                    "note": "statsmodels is required for Hb-free phenotype anemia regression output.",
+                }
+            ]
+        )
+
+    required_columns = [
+        "hospital_mortality",
+        "phenotype",
+        "early_anemia_all",
+        "age",
+        "gender",
+        "admission_type",
+        "nsah_evidence_level",
+        "has_aneurysm_dx",
+        "has_aneurysm_procedure",
+    ]
+    available_columns = [col for col in required_columns if col in assignments.columns]
+    model_df = prepare_logit_dataframe(
+        assignments[available_columns],
+        numeric_columns=[
+            col
+            for col in [
+                "hospital_mortality",
+                "phenotype",
+                "early_anemia_all",
+                "age",
+                "nsah_evidence_level",
+                "has_aneurysm_dx",
+                "has_aneurysm_procedure",
+            ]
+            if col in available_columns
+        ],
+        categorical_columns=[col for col in ["gender", "admission_type"] if col in available_columns],
+        required_columns=[
+            col
+            for col in ["hospital_mortality", "phenotype", "early_anemia_all", "age", "gender", "admission_type"]
+            if col in available_columns
+        ],
+    )
+    model_df["admission_type_group"] = model_df["admission_type"].map(collapse_admission_type)
+
+    formulas = build_adjusted_regression_formulas(model_df)
+    formula_note = formulas.pop("_note")
+    rows = []
+    for model_name, formula in formulas.items():
+        sensitivity_model_name = f"hb_free_phenotype_{model_name}"
+        try:
+            fitted = fit_logit_quiet(smf, formula, model_df)
+            conf = fitted.conf_int()
+            for term, coef in fitted.params.items():
+                rows.append(
+                    {
+                        "cohort_flag": COHORT_FLAG,
+                        "model": sensitivity_model_name,
+                        "term": term,
+                        "formula": formula,
+                        "odds_ratio": float(np.exp(coef)),
+                        "ci_lower": float(np.exp(conf.loc[term, 0])),
+                        "ci_upper": float(np.exp(conf.loc[term, 1])),
+                        "p_value": float(fitted.pvalues[term]),
+                        "n": int(fitted.nobs),
+                        "events": int(model_df["hospital_mortality"].sum()),
+                        "aic": float(fitted.aic),
+                        "bic": float(fitted.bic),
+                        "pseudo_r2": float(fitted.prsquared),
+                        "note": (
+                            "Sensitivity model adjusts anemia for Hb-free phenotype to avoid overadjusting "
+                            "for a phenotype that already contains Hb; "
+                            + formula_note
+                        ),
+                    }
+                )
+        except Exception as exc:
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": sensitivity_model_name,
+                    "term": "model_failed",
+                    "formula": formula,
+                    "odds_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(model_df)),
+                    "events": int(model_df["hospital_mortality"].sum()),
+                    "aic": np.nan,
+                    "bic": np.nan,
+                    "pseudo_r2": np.nan,
+                    "note": str(exc),
+                }
+            )
+
+    return pd.DataFrame(rows)
 
 
 def run_inr_free_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame):
@@ -1564,6 +1832,381 @@ def run_prediction_increment(assignments: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def build_survival_dataset(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Prepare in-hospital time-to-event data.
+
+    Alive discharges are censored at hospital discharge. This is a hospital-course
+    analysis, not post-discharge long-term survival.
+    """
+    survival_columns = [
+        "phenotype",
+        "hospital_los_days",
+        "hospital_mortality",
+        "age",
+        "gender",
+        "admission_type",
+        "early_anemia_all",
+        "nsah_evidence_level",
+        "has_aneurysm_dx",
+        "has_aneurysm_procedure",
+        *PROCESS_OF_CARE_MODEL_FEATURES,
+    ]
+    survival = assignments[[col for col in survival_columns if col in assignments.columns]].copy()
+    survival["time_days"] = pd.to_numeric(survival["hospital_los_days"], errors="coerce")
+    survival["event"] = pd.to_numeric(survival["hospital_mortality"], errors="coerce")
+    survival = survival.dropna(subset=["phenotype", "time_days", "event"])
+    survival = survival[survival["time_days"] > 0].copy()
+    survival["phenotype"] = survival["phenotype"].astype(int)
+    survival["event"] = survival["event"].astype(int)
+    survival["admission_type_group"] = survival["admission_type"].map(collapse_admission_type)
+    if "fluid_balance_l_48h" in survival:
+        median_fluid = survival["fluid_balance_l_48h"].median()
+        survival["fluid_balance_l_48h_imputed"] = survival["fluid_balance_l_48h"].fillna(median_fluid)
+        survival["fluid_balance_l_48h_missing"] = survival["fluid_balance_l_48h"].isna().astype(int)
+    return survival
+
+
+def build_km_curve(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Build Kaplan-Meier survival curve points by phenotype."""
+    survival = build_survival_dataset(assignments)
+    rows = []
+    for phenotype, group in survival.groupby("phenotype"):
+        group = group.sort_values("time_days")
+        at_risk_initial = int(len(group))
+        survival_prob = 1.0
+        cumulative_events = 0
+        rows.append(
+            {
+                "cohort_flag": COHORT_FLAG,
+                "phenotype": int(phenotype),
+                "time_days": 0.0,
+                "n_at_risk": at_risk_initial,
+                "events_at_time": 0,
+                "censored_at_time": 0,
+                "cumulative_events": 0,
+                "survival_probability": 1.0,
+                "failure_probability": 0.0,
+                "note": "Alive discharges are censored at hospital discharge; hospital-course analysis only.",
+            }
+        )
+        for time_value in np.sort(group["time_days"].unique()):
+            at_risk = int((group["time_days"] >= time_value).sum())
+            at_time = group[group["time_days"] == time_value]
+            events = int(at_time["event"].sum())
+            censored = int((at_time["event"] == 0).sum())
+            if at_risk > 0 and events > 0:
+                survival_prob *= max(0.0, 1.0 - events / at_risk)
+            cumulative_events += events
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "phenotype": int(phenotype),
+                    "time_days": float(time_value),
+                    "n_at_risk": at_risk,
+                    "events_at_time": events,
+                    "censored_at_time": censored,
+                    "cumulative_events": cumulative_events,
+                    "survival_probability": float(survival_prob),
+                    "failure_probability": float(1.0 - survival_prob),
+                    "note": "Alive discharges are censored at hospital discharge; hospital-course analysis only.",
+                }
+            )
+    return pd.DataFrame(rows).sort_values(["phenotype", "time_days"])
+
+
+def pairwise_logrank(group_a: pd.DataFrame, group_b: pd.DataFrame) -> dict[str, float]:
+    """Two-sample log-rank test without optional dependencies."""
+    combined = pd.concat([group_a.assign(_group=0), group_b.assign(_group=1)], ignore_index=True)
+    event_times = np.sort(combined.loc[combined["event"] == 1, "time_days"].unique())
+    observed_a = 0.0
+    expected_a = 0.0
+    variance_a = 0.0
+    for time_value in event_times:
+        risk_a = float(((group_a["time_days"] >= time_value)).sum())
+        risk_b = float(((group_b["time_days"] >= time_value)).sum())
+        events_a = float(((group_a["time_days"] == time_value) & (group_a["event"] == 1)).sum())
+        events_b = float(((group_b["time_days"] == time_value) & (group_b["event"] == 1)).sum())
+        risk_total = risk_a + risk_b
+        events_total = events_a + events_b
+        if risk_total <= 1 or events_total <= 0:
+            continue
+        observed_a += events_a
+        expected_a += events_total * risk_a / risk_total
+        variance_a += (
+            risk_a
+            * risk_b
+            * events_total
+            * (risk_total - events_total)
+            / (risk_total**2 * (risk_total - 1))
+        )
+    statistic = ((observed_a - expected_a) ** 2 / variance_a) if variance_a > 0 else np.nan
+    p_value = float(stats.chi2.sf(statistic, df=1)) if pd.notna(statistic) else np.nan
+    return {
+        "observed_events_a": float(observed_a),
+        "expected_events_a": float(expected_a),
+        "chi_square": float(statistic) if pd.notna(statistic) else np.nan,
+        "p_value": p_value,
+    }
+
+
+def run_survival_logrank(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Pairwise log-rank tests for in-hospital death timing by phenotype."""
+    survival = build_survival_dataset(assignments)
+    phenotypes = sorted(survival["phenotype"].dropna().unique())
+    rows = []
+    for idx, phenotype_a in enumerate(phenotypes):
+        for phenotype_b in phenotypes[idx + 1:]:
+            group_a = survival[survival["phenotype"] == phenotype_a]
+            group_b = survival[survival["phenotype"] == phenotype_b]
+            test = pairwise_logrank(group_a, group_b)
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "comparison": f"P{int(phenotype_a)} vs P{int(phenotype_b)}",
+                    "phenotype_a": int(phenotype_a),
+                    "phenotype_b": int(phenotype_b),
+                    "n_a": int(len(group_a)),
+                    "n_b": int(len(group_b)),
+                    "events_a": int(group_a["event"].sum()),
+                    "events_b": int(group_b["event"].sum()),
+                    **test,
+                    "note": "Pairwise log-rank test; alive discharges censored at hospital discharge.",
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def run_survival_cox_models(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Fit unadjusted and clinically adjusted Cox models for in-hospital death timing."""
+    survival = build_survival_dataset(assignments)
+    rows = []
+    try:
+        from statsmodels.duration.hazard_regression import PHReg
+    except ImportError:
+        return pd.DataFrame(
+            [
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": "statsmodels_phreg_unavailable",
+                    "term": "statsmodels_phreg_unavailable",
+                    "hazard_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(survival)),
+                    "events": int(survival["event"].sum()),
+                    "note": "statsmodels PHReg is required for Cox model output.",
+                }
+            ]
+        )
+
+    model_specs = {
+        "cox_phenotype_unadjusted": ["phenotype"],
+        "cox_phenotype_clinical": [
+            "phenotype",
+            "age",
+            "gender",
+            "admission_type_group",
+            "early_anemia_all",
+            "nsah_evidence_level",
+            "has_aneurysm_dx",
+            "has_aneurysm_procedure",
+        ],
+        "cox_phenotype_process_of_care_exploratory": [
+            "phenotype",
+            "age",
+            "gender",
+            "admission_type_group",
+            "early_anemia_all",
+            "nsah_evidence_level",
+            "has_aneurysm_dx",
+            "aneurysm_securing_hosp",
+            "nimodipine_48h",
+            "evd_or_icp_48h",
+            "vasopressor_48h",
+            "mech_vent_48h",
+            "any_rbc_transfusion_48h",
+            "crrt_48h",
+            "fluid_balance_l_48h_imputed",
+            "fluid_balance_l_48h_missing",
+        ],
+    }
+    for model_name, predictors in model_specs.items():
+        predictors = [col for col in predictors if col in survival.columns]
+        model_df = survival[["time_days", "event", *predictors]].copy()
+        model_df = model_df.dropna(subset=["time_days", "event", "phenotype"])
+        model_df["phenotype"] = model_df["phenotype"].map(lambda value: f"P{int(value)}")
+        categorical = [col for col in ["phenotype", "gender", "admission_type_group"] if col in model_df.columns]
+        design = pd.get_dummies(model_df[predictors], columns=categorical, drop_first=True)
+        for col in design.columns:
+            design[col] = pd.to_numeric(design[col], errors="coerce")
+            if design[col].isna().any():
+                design[col] = design[col].fillna(design[col].median())
+        constant_cols = [col for col in design.columns if design[col].nunique(dropna=True) <= 1]
+        design = design.drop(columns=constant_cols)
+        if design.empty:
+            continue
+        try:
+            fitted = PHReg(
+                endog=model_df["time_days"].astype(float),
+                exog=design.astype(float),
+                status=model_df["event"].astype(int),
+            ).fit(disp=False)
+            conf = fitted.conf_int()
+            for idx, term in enumerate(design.columns):
+                rows.append(
+                    {
+                        "cohort_flag": COHORT_FLAG,
+                        "model": model_name,
+                        "term": term,
+                        "hazard_ratio": float(np.exp(fitted.params[idx])),
+                        "ci_lower": float(np.exp(conf[idx, 0])),
+                        "ci_upper": float(np.exp(conf[idx, 1])),
+                        "p_value": float(fitted.pvalues[idx]),
+                        "n": int(len(model_df)),
+                        "events": int(model_df["event"].sum()),
+                        "note": (
+                            "Cox model for in-hospital death timing; alive discharges censored at discharge. "
+                            "Process-of-care variables measured over 0-48h are exploratory fixed covariates only; "
+                            "they may introduce immortal time bias and should be handled as time-varying covariates "
+                            "for formal survival adjustment."
+                        ),
+                    }
+                )
+        except Exception as exc:
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": model_name,
+                    "term": "model_failed",
+                    "hazard_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(model_df)),
+                    "events": int(model_df["event"].sum()),
+                    "note": str(exc),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def build_feature_heatmap_table(assignments: pd.DataFrame, centers: pd.DataFrame) -> pd.DataFrame:
+    """Build long-format heatmap data using raw medians and standardized centers."""
+    rows = []
+    center_lookup = centers.set_index("phenotype")
+    for phenotype, group in assignments.groupby("phenotype"):
+        for feature in FEATURES:
+            raw_values = pd.to_numeric(group[feature], errors="coerce")
+            z_center = (
+                float(center_lookup.loc[phenotype, feature])
+                if phenotype in center_lookup.index and feature in center_lookup.columns
+                else np.nan
+            )
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "phenotype": int(phenotype),
+                    "feature": feature,
+                    "feature_label": FEATURE_LABELS.get(feature, feature),
+                    "severity_direction": int(SEVERITY_DIRECTIONS.get(feature, 1)),
+                    "z_center": z_center,
+                    "median": float(raw_values.median()),
+                    "q1": float(raw_values.quantile(0.25)),
+                    "q3": float(raw_values.quantile(0.75)),
+                    "mean": float(raw_values.mean()),
+                    "n_nonmissing": int(raw_values.notna().sum()),
+                    "missing_rate": float(raw_values.isna().mean()),
+                    "display_value": f"{raw_values.median():.2f} [{raw_values.quantile(0.25):.2f}, {raw_values.quantile(0.75):.2f}]",
+                    "note": "Rows provide raw median [IQR] plus standardized phenotype center for heatmap display.",
+                }
+            )
+    return pd.DataFrame(rows).sort_values(["phenotype", "feature"])
+
+
+def run_linear_shap_analysis(assignments: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Approximate SHAP-style contributions for an interpretable logistic mortality model.
+
+    For a standardized linear logistic model, feature contribution to log-odds is
+    beta_j * (x_j - mean_j). Because standardized features have mean 0, this is
+    beta_j * z_j. We label this explicitly as an approximation and use it only
+    to explain the mortality prediction model, not the unsupervised clustering.
+    """
+    model_df = assignments[["phenotype", "hospital_mortality", *FEATURES]].copy()
+    y = pd.to_numeric(model_df["hospital_mortality"], errors="coerce").astype(float)
+    x_raw = model_df[FEATURES].apply(pd.to_numeric, errors="coerce")
+    x_transformed = x_raw.copy()
+    for feature in LOG_TRANSFORM_FEATURES:
+        if feature in x_transformed:
+            x_transformed[feature] = np.log1p(x_transformed[feature].clip(lower=0))
+
+    valid = y.notna()
+    y = y.loc[valid].astype(int)
+    x_transformed = x_transformed.loc[valid]
+    phenotypes = model_df.loc[valid, "phenotype"].astype(int)
+    imputer = SimpleImputer(strategy="median")
+    scaler = StandardScaler()
+    x_imputed = imputer.fit_transform(x_transformed)
+    x_scaled = scaler.fit_transform(x_imputed)
+    model = LogisticRegression(max_iter=2000, solver="liblinear", random_state=RANDOM_SEED)
+    model.fit(x_scaled, y)
+    coefficients = model.coef_[0]
+    contributions = x_scaled * coefficients
+    predicted_risk = model.predict_proba(x_scaled)[:, 1]
+
+    importance_rows = []
+    for idx, feature in enumerate(FEATURES):
+        values = contributions[:, idx]
+        importance_rows.append(
+            {
+                "cohort_flag": COHORT_FLAG,
+                "model": "features_8_log1p_standardized_logistic",
+                "explanation_method": "linear_logistic_shap_approximation",
+                "feature": feature,
+                "feature_label": FEATURE_LABELS.get(feature, feature),
+                "transform": "log1p" if feature in LOG_TRANSFORM_FEATURES else "none",
+                "coefficient": float(coefficients[idx]),
+                "mean_abs_shap_log_odds": float(np.mean(np.abs(values))),
+                "mean_shap_log_odds": float(np.mean(values)),
+                "median_abs_shap_log_odds": float(np.median(np.abs(values))),
+                "rank_by_mean_abs": 0,
+                "n": int(len(y)),
+                "events": int(y.sum()),
+                "auroc_apparent": float(roc_auc_score(y, predicted_risk)),
+                "note": "Linear SHAP-style log-odds contribution from a standardized logistic model; explains mortality prediction, not cluster assignment.",
+            }
+        )
+    importance = pd.DataFrame(importance_rows).sort_values("mean_abs_shap_log_odds", ascending=False)
+    importance["rank_by_mean_abs"] = np.arange(1, len(importance) + 1)
+
+    contribution_df = pd.DataFrame(contributions, columns=FEATURES)
+    contribution_df["phenotype"] = phenotypes.to_numpy()
+    phenotype_rows = []
+    for phenotype, group in contribution_df.groupby("phenotype"):
+        for feature in FEATURES:
+            values = group[feature].to_numpy(dtype=float)
+            phenotype_rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": "features_8_log1p_standardized_logistic",
+                    "explanation_method": "linear_logistic_shap_approximation",
+                    "phenotype": int(phenotype),
+                    "feature": feature,
+                    "feature_label": FEATURE_LABELS.get(feature, feature),
+                    "mean_shap_log_odds": float(np.mean(values)),
+                    "mean_abs_shap_log_odds": float(np.mean(np.abs(values))),
+                    "median_shap_log_odds": float(np.median(values)),
+                    "n": int(len(group)),
+                    "note": "Positive values increase predicted hospital mortality log-odds in the fitted mortality model.",
+                }
+            )
+    phenotype_contributions = pd.DataFrame(phenotype_rows).sort_values(["phenotype", "feature"])
+    return {
+        "importance": importance,
+        "phenotype_contributions": phenotype_contributions,
+    }
+
+
 def run_adjusted_regression(assignments: pd.DataFrame) -> pd.DataFrame:
     """用 statsmodels 输出 phenotype 与贫血相关的调整后死亡模型。"""
     try:
@@ -1834,6 +2477,236 @@ def run_severity_score_adjusted_models(assignments: pd.DataFrame) -> pd.DataFram
                 }
             )
 
+    return pd.DataFrame(rows)
+
+
+def build_process_of_care_audit(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Summarize process-of-care variables by phenotype and overall."""
+    rows = []
+    groups = [("Overall", None, assignments)]
+    groups.extend((f"Phenotype {int(p)}", int(p), g) for p, g in assignments.groupby("phenotype"))
+
+    for group_name, phenotype, group in groups:
+        for feature in PROCESS_OF_CARE_BINARY_FEATURES:
+            if feature not in group.columns:
+                continue
+            values = pd.to_numeric(group[feature], errors="coerce")
+            non_missing = values.dropna()
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "group": group_name,
+                    "phenotype": phenotype,
+                    "variable": feature,
+                    "variable_type": "binary_process_of_care",
+                    "n": int(len(group)),
+                    "n_nonmissing": int(non_missing.shape[0]),
+                    "missing_n": int(values.isna().sum()),
+                    "missing_rate": float(values.isna().mean()),
+                    "event_n": int((non_missing == 1).sum()),
+                    "event_rate": float((non_missing == 1).mean()) if len(non_missing) else np.nan,
+                    "median": np.nan,
+                    "q1": np.nan,
+                    "q3": np.nan,
+                    "mean": np.nan,
+                    "note": "Process-of-care marker; use for Table 1 and sensitivity adjustment, not as a causal mediator-free covariate.",
+                }
+            )
+        for feature in PROCESS_OF_CARE_CONTINUOUS_FEATURES:
+            if feature not in group.columns:
+                continue
+            values = pd.to_numeric(group[feature], errors="coerce")
+            non_missing = values.dropna()
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "group": group_name,
+                    "phenotype": phenotype,
+                    "variable": feature,
+                    "variable_type": "continuous_process_of_care",
+                    "n": int(len(group)),
+                    "n_nonmissing": int(non_missing.shape[0]),
+                    "missing_n": int(values.isna().sum()),
+                    "missing_rate": float(values.isna().mean()),
+                    "event_n": np.nan,
+                    "event_rate": np.nan,
+                    "median": float(non_missing.median()) if len(non_missing) else np.nan,
+                    "q1": float(non_missing.quantile(0.25)) if len(non_missing) else np.nan,
+                    "q3": float(non_missing.quantile(0.75)) if len(non_missing) else np.nan,
+                    "mean": float(non_missing.mean()) if len(non_missing) else np.nan,
+                    "note": "Fluid balance is derived from charted ICU inputs and outputs; interpret as a process-of-care marker with measurement-quality limits.",
+                }
+            )
+    return pd.DataFrame(rows).sort_values(["variable_type", "variable", "group"])
+
+
+def build_available_formula_terms(model_df: pd.DataFrame, candidate_terms: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
+    """Return formula terms whose underlying columns are available and nonconstant."""
+    terms = []
+    notes = []
+    for column, term in candidate_terms:
+        if column not in model_df.columns:
+            notes.append(f"skipped missing {column}")
+            continue
+        values = model_df[column]
+        if values.dropna().nunique() <= 1:
+            notes.append(f"skipped constant {column}")
+            continue
+        terms.append(term)
+    return terms, notes
+
+
+def run_process_of_care_adjusted_models(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Progressive mortality models including process-of-care variables as sensitivity adjustment."""
+    try:
+        import statsmodels.formula.api as smf
+    except ImportError:
+        return pd.DataFrame(
+            [
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": "statsmodels_unavailable",
+                    "term": "statsmodels_unavailable",
+                    "odds_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(assignments)),
+                    "events": int((assignments["hospital_mortality"] == 1).sum()),
+                    "aic": np.nan,
+                    "bic": np.nan,
+                    "note": "statsmodels is required for process-of-care adjusted models.",
+                }
+            ]
+        )
+
+    required = [
+        "hospital_mortality",
+        "phenotype",
+        "age",
+        "gender",
+        "admission_type",
+        "nsah_evidence_level",
+        "has_aneurysm_dx",
+        "has_aneurysm_procedure",
+        "early_anemia_all",
+        *PROCESS_OF_CARE_MODEL_FEATURES,
+    ]
+    available = [col for col in required if col in assignments.columns]
+    model_df = prepare_logit_dataframe(
+        assignments[available],
+        numeric_columns=[
+            col
+            for col in [
+                "hospital_mortality",
+                "phenotype",
+                "age",
+                "nsah_evidence_level",
+                "has_aneurysm_dx",
+                "has_aneurysm_procedure",
+                "early_anemia_all",
+                *PROCESS_OF_CARE_MODEL_FEATURES,
+            ]
+            if col in available
+        ],
+        categorical_columns=[col for col in ["gender", "admission_type"] if col in available],
+        required_columns=["hospital_mortality", "phenotype", "age"],
+    )
+    model_df["admission_type_group"] = model_df["admission_type"].map(collapse_admission_type)
+    if "fluid_balance_l_48h" in model_df:
+        median_fluid = model_df["fluid_balance_l_48h"].median()
+        model_df["fluid_balance_l_48h_imputed"] = model_df["fluid_balance_l_48h"].fillna(median_fluid)
+        model_df["fluid_balance_l_48h_missing"] = model_df["fluid_balance_l_48h"].isna().astype(int)
+
+    demographic_terms = [
+        ("age", "age"),
+        ("gender", "C(gender)"),
+        ("admission_type_group", "C(admission_type_group)"),
+        ("nsah_evidence_level", "C(nsah_evidence_level)"),
+        ("has_aneurysm_dx", "has_aneurysm_dx"),
+        ("early_anemia_all", "early_anemia_all"),
+    ]
+    specialty_terms = [
+        ("aneurysm_securing_hosp", "aneurysm_securing_hosp"),
+        ("nimodipine_48h", "nimodipine_48h"),
+        ("evd_or_icp_48h", "evd_or_icp_48h"),
+    ]
+    organ_support_terms = [
+        ("vasopressor_48h", "vasopressor_48h"),
+        ("mech_vent_48h", "mech_vent_48h"),
+        ("any_rbc_transfusion_48h", "any_rbc_transfusion_48h"),
+        ("crrt_48h", "crrt_48h"),
+        ("fluid_balance_l_48h_imputed", "fluid_balance_l_48h_imputed"),
+        ("fluid_balance_l_48h_missing", "fluid_balance_l_48h_missing"),
+    ]
+    demo, demo_notes = build_available_formula_terms(model_df, demographic_terms)
+    specialty, specialty_notes = build_available_formula_terms(model_df, specialty_terms)
+    organ_support, organ_support_notes = build_available_formula_terms(model_df, organ_support_terms)
+
+    model_terms = {
+        "process_model_1_phenotype_only": ["C(phenotype)"],
+        "process_model_2_demographic_etiology": ["C(phenotype)", *demo],
+        "process_model_3_specialty_care": ["C(phenotype)", *demo, *specialty],
+        "process_model_4_organ_support": ["C(phenotype)", *demo, *specialty, *organ_support],
+    }
+    formula_notes = "; ".join(
+        [
+            "process-of-care variables may be downstream markers or mediators; interpret as sensitivity adjustment, not causal control",
+            *demo_notes,
+            *specialty_notes,
+            *organ_support_notes,
+        ]
+    )
+    rows = []
+    for model_name, terms in model_terms.items():
+        formula = "hospital_mortality ~ " + " + ".join(dict.fromkeys(terms))
+        try:
+            fitted = fit_logit_quiet(smf, formula, model_df)
+            conf = fitted.conf_int()
+            converged = bool(fitted.mle_retvals.get("converged", True))
+            for term, coef in fitted.params.items():
+                rows.append(
+                    {
+                        "cohort_flag": COHORT_FLAG,
+                        "model": model_name,
+                        "formula": formula,
+                        "term": term,
+                        "odds_ratio": float(np.exp(coef)),
+                        "ci_lower": float(np.exp(conf.loc[term, 0])),
+                        "ci_upper": float(np.exp(conf.loc[term, 1])),
+                        "p_value": float(fitted.pvalues[term]),
+                        "n": int(fitted.nobs),
+                        "events": int(model_df["hospital_mortality"].sum()),
+                        "aic": float(fitted.aic),
+                        "bic": float(fitted.bic),
+                        "note": "; ".join(
+                            part
+                            for part in [
+                                formula_notes,
+                                "" if converged else "Maximum likelihood optimizer did not report convergence; interpret cautiously.",
+                            ]
+                            if part
+                        ),
+                    }
+                )
+        except Exception as exc:
+            rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "model": model_name,
+                    "formula": formula,
+                    "term": "model_failed",
+                    "odds_ratio": np.nan,
+                    "ci_lower": np.nan,
+                    "ci_upper": np.nan,
+                    "p_value": np.nan,
+                    "n": int(len(model_df)),
+                    "events": int(model_df["hospital_mortality"].sum()),
+                    "aic": np.nan,
+                    "bic": np.nan,
+                    "note": str(exc),
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -2155,17 +3028,204 @@ def run_log_pca_kmeans_sensitivity(df: pd.DataFrame, reference_assignments: pd.D
     }
 
 
+def normalized_classification_entropy(probabilities: np.ndarray) -> float:
+    """Return 0-1 normalized mixture-model classification entropy."""
+    if probabilities.size == 0 or probabilities.shape[1] <= 1:
+        return np.nan
+    clipped = np.clip(probabilities, 1e-12, 1.0)
+    uncertainty = -np.sum(clipped * np.log(clipped))
+    max_uncertainty = probabilities.shape[0] * np.log(probabilities.shape[1])
+    return float(1 - uncertainty / max_uncertainty) if max_uncertainty else np.nan
+
+
+def run_lpa_gmm_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame):
+    """Model-based LPA/GMM sensitivity in the same log-PCA score space as the primary solution."""
+    (
+        _x_raw,
+        _x_transformed,
+        x_scaled,
+        pc_scores,
+        pc_columns,
+        pca,
+        _imputer,
+        _scaler,
+        missing_summary,
+    ) = preprocess_log_pca_feature_matrix(df)
+
+    models: dict[tuple[str, int], GaussianMixture] = {}
+    fit_rows = []
+    previous_by_covariance: dict[str, dict[str, float]] = {}
+    n = int(pc_scores.shape[0])
+    n_dimensions = int(pc_scores.shape[1])
+
+    for covariance_type in ["diag", "full"]:
+        for k in range(K_MIN, K_MAX + 1):
+            if k >= n:
+                continue
+            model = GaussianMixture(
+                n_components=k,
+                covariance_type=covariance_type,
+                random_state=RANDOM_SEED,
+                n_init=20,
+                max_iter=500,
+                reg_covar=1e-6,
+            )
+            raw_labels = model.fit_predict(pc_scores)
+            probabilities = model.predict_proba(pc_scores)
+            counts = np.bincount(raw_labels, minlength=k)
+            entropy = normalized_classification_entropy(probabilities)
+            log_likelihood = float(model.score(pc_scores) * n)
+            n_parameters = int(model._n_parameters())
+            previous = previous_by_covariance.get(covariance_type)
+            if previous:
+                lrt_stat = max(0.0, 2 * (log_likelihood - previous["log_likelihood"]))
+                lrt_df = max(1, n_parameters - int(previous["n_parameters"]))
+                lrt_p = float(stats.chi2.sf(lrt_stat, lrt_df))
+            else:
+                lrt_stat = np.nan
+                lrt_df = np.nan
+                lrt_p = np.nan
+            previous_by_covariance[covariance_type] = {
+                "log_likelihood": log_likelihood,
+                "n_parameters": float(n_parameters),
+            }
+            models[(covariance_type, k)] = model
+            fit_rows.append(
+                {
+                    "cohort_flag": COHORT_FLAG,
+                    "analysis": "lpa_gmm_log_pca_sensitivity",
+                    "input_space": "log1p(creatinine/inr)+zscore+pca_scores",
+                    "covariance_type": covariance_type,
+                    "k": int(k),
+                    "n": n,
+                    "n_dimensions": n_dimensions,
+                    "converged": bool(model.converged_),
+                    "n_iter": int(model.n_iter_),
+                    "log_likelihood": log_likelihood,
+                    "n_parameters": n_parameters,
+                    "bic": float(model.bic(pc_scores)),
+                    "aic": float(model.aic(pc_scores)),
+                    "entropy": entropy,
+                    "silhouette_pc_space": float(silhouette_score(pc_scores, raw_labels)) if k > 1 else np.nan,
+                    "min_cluster_n": int(counts.min()),
+                    "min_cluster_frac": float(counts.min() / n),
+                    "max_cluster_n": int(counts.max()),
+                    "max_cluster_frac": float(counts.max() / n),
+                    "lrt_vs_k_minus_1_stat": lrt_stat,
+                    "lrt_vs_k_minus_1_df_approx": lrt_df,
+                    "lrt_vs_k_minus_1_p_value_approx": lrt_p,
+                    "note": "GaussianMixture is used as a Python LPA approximation in the primary log-PCA score space; likelihood-ratio p values are descriptive chi-square approximations, not LMR-adjusted tests.",
+                }
+            )
+
+    fit_indices = pd.DataFrame(fit_rows)
+    best_row = fit_indices.sort_values(["bic", "aic"]).iloc[0]
+    k3_candidates = fit_indices[fit_indices["k"] == PRIMARY_K].sort_values(["bic", "aic"])
+    selected_row = k3_candidates.iloc[0] if not k3_candidates.empty else best_row
+    selected_covariance = str(selected_row["covariance_type"])
+    selected_k = int(selected_row["k"])
+    selected_model = models[(selected_covariance, selected_k)]
+    raw_labels = selected_model.predict(pc_scores)
+    probabilities = selected_model.predict_proba(pc_scores)
+    centers, label_map = build_ordered_phenotype_labels(x_scaled, raw_labels, features=FEATURES)
+    assignments = build_assignments(df, raw_labels, label_map)
+    assignments["phenotype_solution"] = "lpa_gmm_log_pca_k3_sensitivity"
+    assignments["lpa_covariance_type"] = selected_covariance
+    assignments["lpa_selected_k"] = selected_k
+    assignments["lpa_posterior_max"] = probabilities.max(axis=1)
+    assignments["lpa_classification_uncertainty"] = 1 - assignments["lpa_posterior_max"]
+    for component_idx in range(probabilities.shape[1]):
+        phenotype_id = label_map[int(component_idx)]
+        assignments[f"lpa_posterior_phenotype_{phenotype_id}"] = probabilities[:, component_idx]
+    centers["phenotype_solution"] = "lpa_gmm_log_pca_k3_sensitivity"
+    centers["lpa_covariance_type"] = selected_covariance
+
+    phenotype = assignments["phenotype"].astype(int).to_numpy()
+    reference = primary_assignments["phenotype"].astype(int).to_numpy()
+    ari_vs_primary = float(adjusted_rand_score(reference, phenotype))
+    same_label_rate = float(np.mean(reference == phenotype))
+    selected_counts = assignments["phenotype"].value_counts()
+    selected_entropy = normalized_classification_entropy(probabilities)
+    best_k = int(best_row["k"])
+    best_covariance = str(best_row["covariance_type"])
+    upgrade_candidate = bool(
+        best_k == PRIMARY_K
+        and selected_entropy >= 0.80
+        and ari_vs_primary >= 0.70
+        and float(selected_counts.min() / len(assignments)) >= 0.05
+    )
+
+    fit_indices["best_bic_model"] = (
+        (fit_indices["k"] == best_k)
+        & (fit_indices["covariance_type"].astype(str) == best_covariance)
+    )
+    fit_indices["selected_k3_model"] = (
+        (fit_indices["k"] == selected_k)
+        & (fit_indices["covariance_type"].astype(str) == selected_covariance)
+    )
+    fit_indices["ari_vs_primary_log_pca_kmeans"] = np.where(
+        fit_indices["selected_k3_model"],
+        ari_vs_primary,
+        np.nan,
+    )
+    fit_indices["same_ordered_label_rate_vs_primary"] = np.where(
+        fit_indices["selected_k3_model"],
+        same_label_rate,
+        np.nan,
+    )
+    fit_indices["upgrade_to_primary_candidate"] = np.where(
+        fit_indices["selected_k3_model"],
+        upgrade_candidate,
+        False,
+    )
+    fit_indices["upgrade_rule"] = (
+        "Only consider LPA/GMM as primary if best BIC supports K=3, entropy>=0.80, "
+        "ARI vs primary log-PCA K-means>=0.70, and minimum phenotype fraction>=0.05."
+    )
+
+    outcome_summary = build_outcome_summary(assignments)
+    outcome_summary["phenotype_solution"] = "lpa_gmm_log_pca_k3_sensitivity"
+    outcome_summary["lpa_covariance_type"] = selected_covariance
+    outcome_summary["entropy"] = selected_entropy
+    outcome_summary["ari_vs_primary_log_pca_kmeans"] = ari_vs_primary
+    outcome_summary["same_ordered_label_rate_vs_primary"] = same_label_rate
+    outcome_summary["best_bic_k"] = best_k
+    outcome_summary["best_bic_covariance_type"] = best_covariance
+    outcome_summary["upgrade_to_primary_candidate"] = upgrade_candidate
+    outcome_summary["note"] = (
+        "Sensitivity analysis only unless the prespecified upgrade rule is satisfied; "
+        "clinical reporting should still use raw phenotype medians/IQRs."
+    )
+    severity_validation = build_external_severity_validation(assignments)
+
+    return {
+        "fit_indices": fit_indices.sort_values(["covariance_type", "k"]),
+        "assignments": assignments,
+        "outcome_summary": outcome_summary,
+        "centers": centers,
+        "severity_validation": severity_validation,
+        "selected_covariance": selected_covariance,
+        "selected_k": selected_k,
+        "best_k": best_k,
+        "best_covariance": best_covariance,
+        "upgrade_to_primary_candidate": upgrade_candidate,
+    }
+
+
 def strict_aneurysm_evidence_mask(df: pd.DataFrame) -> pd.Series:
     """High-specificity aneurysm evidence subgroup for etiology sensitivity analysis."""
     evidence_level = pd.to_numeric(df["nsah_evidence_level"], errors="coerce").fillna(0)
-    has_dx = pd.to_numeric(df["has_aneurysm_dx"], errors="coerce").fillna(0)
+    if "has_ruptured_aneurysmal_sah_evidence" in df:
+        has_dx = pd.to_numeric(df["has_ruptured_aneurysmal_sah_evidence"], errors="coerce").fillna(0)
+    else:
+        has_dx = pd.to_numeric(df["has_aneurysm_dx"], errors="coerce").fillna(0)
     has_procedure = pd.to_numeric(df["has_aneurysm_procedure"], errors="coerce").fillna(0)
     return (evidence_level >= 2) | (has_dx == 1) | (has_procedure == 1)
 
 
 def run_strict_aneurysm_subgroup_analysis(df: pd.DataFrame, primary_assignments: pd.DataFrame):
     """Re-run the primary log-PCA K=3 workflow in the aneurysm-evidence subgroup."""
-    strict_definition = "nsah_evidence_level>=2 OR has_aneurysm_dx=1 OR has_aneurysm_procedure=1"
+    strict_definition = "nsah_evidence_level>=2 OR has_ruptured_aneurysmal_sah_evidence=1 OR has_aneurysm_procedure=1"
     strict_df = df.loc[strict_aneurysm_evidence_mask(df)].copy()
     if len(strict_df) < PRIMARY_K * 20:
         note = (
@@ -2495,6 +3555,68 @@ def plot_prediction_metrics(prediction_metrics: pd.DataFrame) -> None:
     show_or_close_current_figure()
 
 
+def plot_survival_km(km_curve: pd.DataFrame) -> None:
+    """Plot in-hospital Kaplan-Meier survival curves by phenotype."""
+    if km_curve.empty:
+        return
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for phenotype, group in km_curve.groupby("phenotype"):
+        group = group.sort_values("time_days")
+        ax.step(
+            group["time_days"].astype(float),
+            group["survival_probability"].astype(float),
+            where="post",
+            linewidth=2,
+            label=f"P{int(phenotype)}",
+        )
+    ax.set_xlabel("Hospital day")
+    ax.set_ylabel("Survival probability")
+    ax.set_ylim(0, 1.02)
+    ax.set_title("In-hospital Kaplan-Meier survival by phenotype")
+    ax.grid(alpha=0.2)
+    ax.legend(title="Phenotype")
+    fig.tight_layout()
+    show_or_close_current_figure()
+
+
+def plot_feature_heatmap(feature_heatmap: pd.DataFrame) -> None:
+    """Plot phenotype heatmap with raw median labels."""
+    if feature_heatmap.empty:
+        return
+    matrix = feature_heatmap.pivot(index="phenotype", columns="feature", values="z_center")
+    labels = feature_heatmap.pivot(index="phenotype", columns="feature", values="display_value")
+    matrix = matrix[FEATURES]
+    labels = labels[FEATURES]
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    im = ax.imshow(matrix.to_numpy(dtype=float), aspect="auto", cmap="coolwarm", vmin=-2, vmax=2)
+    ax.set_yticks(np.arange(len(matrix.index)))
+    ax.set_yticklabels([f"P{int(value)}" for value in matrix.index])
+    ax.set_xticks(np.arange(len(matrix.columns)))
+    ax.set_xticklabels([FEATURE_LABELS.get(col, col) for col in matrix.columns], rotation=35, ha="right")
+    ax.set_title("Primary phenotype feature heatmap")
+    for i, phenotype in enumerate(matrix.index):
+        for j, feature in enumerate(matrix.columns):
+            ax.text(j, i, labels.loc[phenotype, feature], ha="center", va="center", fontsize=7)
+    fig.colorbar(im, ax=ax, label="Standardized center")
+    fig.tight_layout()
+    show_or_close_current_figure()
+
+
+def plot_shap_feature_importance(shap_importance: pd.DataFrame) -> None:
+    """Plot SHAP-style mean absolute log-odds contributions."""
+    if shap_importance.empty:
+        return
+    plot_df = shap_importance.sort_values("mean_abs_shap_log_odds", ascending=True)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.barh(plot_df["feature_label"], plot_df["mean_abs_shap_log_odds"], color="#4C78A8")
+    ax.set_xlabel("Mean absolute log-odds contribution")
+    ax.set_title("Mortality model SHAP-style feature importance")
+    ax.grid(axis="x", alpha=0.2)
+    fig.tight_layout()
+    show_or_close_current_figure()
+
+
 def plot_external_severity_validation(severity_validation: pd.DataFrame) -> None:
     """Plot established ICU severity scores across ordered phenotypes."""
     if severity_validation.empty:
@@ -2593,10 +3715,14 @@ ASSIGNMENT_COLUMNS = [
     "age",
     "gender",
     "race",
+    "race_group",
     "admission_type",
     "insurance",
     "nsah_evidence_level",
     "has_aneurysm_dx",
+    "has_unruptured_aneurysm_dx",
+    "has_ruptured_aneurysmal_sah_dx",
+    "has_ruptured_aneurysmal_sah_evidence",
     "has_aneurysm_procedure",
     "icu_los_days",
     "hospital_los_days",
@@ -2604,6 +3730,40 @@ ASSIGNMENT_COLUMNS = [
     "early_anemia_pre_transfusion",
     "any_rbc_transfusion_48h",
     "massive_transfusion_24h",
+    "vasopressor_48h",
+    "first_vasopressor_time_48h",
+    "vasopressor_events_48h",
+    "vasopressor_labels_48h",
+    "mech_vent_48h",
+    "noninvasive_vent_48h",
+    "first_mech_vent_time_48h",
+    "invasive_vent_events_48h",
+    "noninvasive_vent_events_48h",
+    "ventilation_labels_48h",
+    "evd_or_icp_48h",
+    "first_evd_or_icp_time_48h",
+    "evd_icp_proc_events_48h",
+    "evd_icp_chart_events_48h",
+    "evd_icp_proc_labels_48h",
+    "evd_icp_chart_labels_48h",
+    "crrt_48h",
+    "first_crrt_time_48h",
+    "crrt_events_48h",
+    "crrt_modes_48h",
+    "nimodipine_48h",
+    "first_nimodipine_time_48h",
+    "nimodipine_orders_48h",
+    "nimodipine_drugs_48h",
+    "nimodipine_routes_48h",
+    "aneurysm_securing_hosp",
+    "aneurysm_securing_codes_hosp",
+    "fluid_input_ml_48h",
+    "fluid_output_ml_48h",
+    "fluid_input_events_48h",
+    "fluid_output_events_48h",
+    "fluid_balance_ml_48h",
+    "fluid_balance_l_48h",
+    "fluid_balance_complete_48h",
     "core_feature_missing_count",
     "core_feature_missing_count_24h",
     "hb_min_48h_all",
@@ -2797,12 +3957,19 @@ display(log_pca_kmeans_sensitivity["summary"])
 print("\n主分析标准化中心：")
 display(primary["centers"])
 plot_cluster_centers(primary["centers"])
+feature_heatmap = build_feature_heatmap_table(primary["assignments"], primary["centers"])
+print("\n主分析 feature heatmap 长表：")
+display(feature_heatmap)
+plot_feature_heatmap(feature_heatmap)
 print("\n主分析结局汇总：")
 display(primary["outcome_summary"])
 plot_phenotype_mortality(primary["outcome_summary"], title_suffix=" (primary log-PCA K=3)")
 print("\n主分析 phenotype x anemia 可行性表：")
 display(primary["anemia_feasibility"])
 plot_anemia_mortality(primary["assignments"])
+gcs_motor_distribution = build_gcs_motor_distribution(primary["assignments"])
+print("\n主分析 GCS motor 分布审计表：")
+display(gcs_motor_distribution)
 print("\n主分析聚类稳定性：")
 display(primary["stability"])
 
@@ -2851,10 +4018,32 @@ baseline_characteristics = build_baseline_characteristics(primary["assignments"]
 print("\n基线特征表：总体与 K=3 phenotype 分层")
 display(baseline_characteristics)
 
+process_of_care_audit = build_process_of_care_audit(primary["assignments"])
+print("\n过程性治疗和液体平衡审计表：")
+display(process_of_care_audit)
+
 prediction_metrics = run_prediction_increment(primary["assignments"])
 print("\n死亡预测增量比较：")
 display(prediction_metrics)
 plot_prediction_metrics(prediction_metrics)
+
+shap_analysis = run_linear_shap_analysis(primary["assignments"])
+print("\n死亡预测模型 SHAP-style 特征重要性：")
+display(shap_analysis["importance"])
+plot_shap_feature_importance(shap_analysis["importance"])
+print("\n死亡预测模型 SHAP-style phenotype 内平均贡献：")
+display(shap_analysis["phenotype_contributions"])
+
+survival_km_curve = build_km_curve(primary["assignments"])
+survival_logrank = run_survival_logrank(primary["assignments"])
+survival_cox_models = run_survival_cox_models(primary["assignments"])
+print("\n住院期 Kaplan-Meier 生存曲线数据：")
+display(survival_km_curve.head(30))
+plot_survival_km(survival_km_curve)
+print("\n住院期 phenotype pairwise log-rank 检验：")
+display(survival_logrank)
+print("\n住院期 Cox 模型：")
+display(survival_cox_models)
 
 regression_models = run_adjusted_regression(primary["assignments"])
 print("\n调整后死亡回归模型：")
@@ -2864,6 +4053,10 @@ severity_score_adjusted_models = run_severity_score_adjusted_models(primary["ass
 print("\n严重程度评分调整后死亡回归模型：")
 display(severity_score_adjusted_models)
 plot_severity_score_adjusted_phenotype_or(severity_score_adjusted_models)
+
+process_of_care_adjusted_models = run_process_of_care_adjusted_models(primary["assignments"])
+print("\n过程性治疗扩展调整后死亡回归模型：")
+display(process_of_care_adjusted_models)
 
 anemia_stratified_models = run_anemia_stratified_regression(primary["assignments"])
 print("\n各 K=3 phenotype 内早期贫血调整后死亡模型：")
@@ -2882,6 +4075,9 @@ print("\n去除 Hb 后 K=3 敏感性聚类：")
 display(hb_free_sensitivity["summary"])
 print("\n去除 Hb 后标准化中心：")
 display(hb_free_sensitivity["centers"])
+hb_free_anemia_regression = run_hb_free_anemia_regression(hb_free_sensitivity["assignments"])
+print("\n去除 Hb 后 phenotype 调整的早期贫血死亡回归：")
+display(hb_free_anemia_regression)
 
 inr_free_sensitivity = run_inr_free_sensitivity(df, primary["assignments"])
 print("\n去除 INR 后 K=3 敏感性聚类：")
@@ -2917,6 +4113,16 @@ display(strict_aneurysm_subgroup["severity_validation"])
 print("\n严格动脉瘤证据亚组调整后死亡回归：")
 display(strict_aneurysm_subgroup["regression"])
 
+lpa_sensitivity = run_lpa_gmm_sensitivity(df, primary["assignments"])
+print("\nLPA/GMM model-based clustering 敏感性分析拟合指标：")
+display(lpa_sensitivity["fit_indices"])
+print("\nLPA/GMM K=3 敏感性分析结局汇总：")
+display(lpa_sensitivity["outcome_summary"])
+print("\nLPA/GMM K=3 标准化中心：")
+display(lpa_sensitivity["centers"])
+print("\nLPA/GMM K=3 外部严重程度验证：")
+display(lpa_sensitivity["severity_validation"])
+
 print("\nlog-PCA K-means 主分析审计副本：")
 display(log_pca_kmeans_sensitivity["summary"])
 print("\nlog-PCA loadings：")
@@ -2931,6 +4137,7 @@ write_dataframe(
 write_dataframe(primary["feature_summary"], OUTPUT_TABLES["feature_summary"])
 write_dataframe(primary["outcome_summary"], OUTPUT_TABLES["outcome_summary"])
 write_dataframe(primary["anemia_feasibility"], OUTPUT_TABLES["anemia_feasibility"])
+write_dataframe(gcs_motor_distribution, OUTPUT_TABLES["gcs_motor_distribution"])
 write_dataframe(primary["tests"], OUTPUT_TABLES["tests"])
 write_dataframe(primary["stability"], OUTPUT_TABLES["stability"])
 write_dataframe(bootstrap_stability, OUTPUT_TABLES["bootstrap_stability"])
@@ -2938,14 +4145,23 @@ write_dataframe(gcs_sensitivity, OUTPUT_TABLES["gcs_sensitivity"])
 write_dataframe(external_severity_validation, OUTPUT_TABLES["external_severity_validation"])
 write_dataframe(candidate_feature_audit, OUTPUT_TABLES["candidate_feature_audit"])
 write_dataframe(baseline_characteristics, OUTPUT_TABLES["baseline_characteristics"])
+write_dataframe(process_of_care_audit, OUTPUT_TABLES["process_of_care_audit"])
 write_dataframe(prediction_metrics, OUTPUT_TABLES["prediction_metrics"])
+write_dataframe(shap_analysis["importance"], OUTPUT_TABLES["shap_feature_importance"])
+write_dataframe(shap_analysis["phenotype_contributions"], OUTPUT_TABLES["shap_phenotype_contributions"])
+write_dataframe(survival_km_curve, OUTPUT_TABLES["survival_km_curve"])
+write_dataframe(survival_logrank, OUTPUT_TABLES["survival_logrank"])
+write_dataframe(survival_cox_models, OUTPUT_TABLES["survival_cox_models"])
+write_dataframe(feature_heatmap, OUTPUT_TABLES["feature_heatmap"])
 write_dataframe(regression_models, OUTPUT_TABLES["regression_models"])
 write_dataframe(severity_score_adjusted_models, OUTPUT_TABLES["severity_score_adjusted_models"])
+write_dataframe(process_of_care_adjusted_models, OUTPUT_TABLES["process_of_care_adjusted_models"])
 write_dataframe(anemia_stratified_models, OUTPUT_TABLES["anemia_stratified_models"])
 write_dataframe(sensitivity_cohort_summary, OUTPUT_TABLES["sensitivity_cohort_summary"])
 write_dataframe(epvs_sensitivity, OUTPUT_TABLES["epvs_sensitivity"])
 write_dataframe(hb_free_sensitivity["summary"], OUTPUT_TABLES["hb_free_sensitivity"])
 write_dataframe(hb_free_sensitivity["centers"], OUTPUT_TABLES["hb_free_centers"])
+write_dataframe(hb_free_anemia_regression, OUTPUT_TABLES["hb_free_anemia_regression"])
 write_dataframe(inr_free_sensitivity["summary"], OUTPUT_TABLES["inr_free_sensitivity"])
 write_dataframe(inr_free_sensitivity["centers"], OUTPUT_TABLES["inr_free_centers"])
 write_dataframe(complete_case_sensitivity["summary"], OUTPUT_TABLES["complete_case_sensitivity"])
@@ -2967,6 +4183,11 @@ write_dataframe(
     strict_aneurysm_subgroup["severity_score_adjusted_models"],
     OUTPUT_TABLES["strict_aneurysm_severity_score_adjusted_models"],
 )
+write_dataframe(lpa_sensitivity["fit_indices"], OUTPUT_TABLES["lpa_fit_indices"])
+write_dataframe(lpa_sensitivity["assignments"], OUTPUT_TABLES["lpa_assignments"])
+write_dataframe(lpa_sensitivity["outcome_summary"], OUTPUT_TABLES["lpa_outcome_summary"])
+write_dataframe(lpa_sensitivity["centers"], OUTPUT_TABLES["lpa_centers"])
+write_dataframe(lpa_sensitivity["severity_validation"], OUTPUT_TABLES["lpa_severity_validation"])
 write_dataframe(log_pca_kmeans_sensitivity["summary"], OUTPUT_TABLES["log_pca_kmeans_sensitivity"])
 write_dataframe(log_pca_kmeans_sensitivity["centers"], OUTPUT_TABLES["log_pca_kmeans_centers"])
 write_dataframe(log_pca_kmeans_sensitivity["loadings"], OUTPUT_TABLES["log_pca_kmeans_loadings"])
@@ -2997,21 +4218,28 @@ print("2. phenotype_outcome_summary：主 log-PCA K=3 是否形成低风险 + �
 print("3. phenotype_outcome_summary_k4_exploratory：K=4 是否切出小型极高危表型")
 print("4. phenotype_raw_kmeans_outcome_summary_sensitivity：原始 8 维 K-means 的死亡梯度是否与主分型方向一致")
 print("5. phenotype_anemia_feasibility：K=3 每个 phenotype x anemia 格子的死亡事件数是否足够")
-print("6. phenotype_gcs_sensitivity_summary：加入 total GCS、仅用 total GCS、或用 GCS grade 替代后主分型是否仍稳定")
+print("6. phenotype_gcs_motor_distribution / phenotype_gcs_sensitivity_summary：GCS motor 的完整分布及替代 GCS 方案是否支持主选择")
 print("7. phenotype_bootstrap_stability：主 log-PCA K=3 bootstrap ARI 是否支持 assignment 稳健性")
 print("8. phenotype_prediction_metrics：phenotype 是否比 GCS-only 提供预测增量")
-print("9. phenotype_regression_models：调整年龄、性别、入院类型、aneurysm evidence 和贫血后 phenotype 是否仍有关联；按关联解释，不作因果解释")
-print("10. phenotype_severity_score_adjusted_models：加入 SOFA/SAPS II/OASIS/LODS 后 phenotype 是否仍提供增量关联")
-print("11. phenotype_candidate_feature_audit：ePVS/troponin 是否适合作敏感性增强变量或仅描述")
-print("12. phenotype_baseline_characteristics：总体与 K=3 phenotype 分层基线特征是否平衡、是否可作为 Table 1")
-print("13. phenotype_anemia_stratified_models：各 phenotype 内贫血 aOR 是否稳定，稀疏格子仅作探索解释")
-print("14. phenotype_sensitivity_cohort_summary：排除 RBC 和 ICU LOS >=48h 后 K=3 结构是否保留")
-print("15. phenotype_epvs_sensitivity_summary：加入/替换 ePVS 后 assignment 是否明显改变")
-print("16. phenotype_hb_free_sensitivity：去除 Hb 后死亡率和贫血梯度是否仍保留")
-print("17. phenotype_inr_free_sensitivity：去除 INR 后几何指标是否改善、凝血表型是否削弱")
-print("18. phenotype_complete_case_sensitivity：不用中位数填补时 K=3 结构是否保留")
-print("19. phenotype_log_pca_kmeans_sensitivity / loadings：报告前三个 PC 的实际解释方差，不预设达到 85%")
-print("20. phenotype_log_pca_complete_case_sensitivity：主 log-PCA 流程在 complete-case 子集是否保留死亡梯度")
-print("21. phenotype_24h_window_sensitivity：0-24h 同源核心变量是否支持相近表型结构")
-print("22. phenotype_external_severity_validation：SOFA/SAPS II/OASIS/LODS 是否随 phenotype 呈严重程度梯度")
-print("23. phenotype_strict_aneurysm_subgroup_*：仅保留动脉瘤诊断或处置证据患者后，死亡梯度和严重程度验证是否仍保留")
+print("9. phenotype_shap_feature_importance / phenotype_shap_phenotype_contributions：死亡预测模型的可解释贡献；不解释为聚类因果机制")
+print("10. phenotype_survival_km_curve / logrank / cox_models：住院期 time-to-event 分析；活着出院按出院时间删失")
+print("11. phenotype_feature_heatmap：主 phenotype 原始中位数[IQR] + 标准化中心热图长表")
+print("12. phenotype_process_of_care_audit：Table 1 扩展过程性治疗、专科干预和 fluid balance 覆盖率/分布")
+print("13. phenotype_process_of_care_adjusted_models：过程性治疗扩展模型；仅作敏感性调整，不作因果控制")
+print("14. phenotype_regression_models：调整年龄、性别、入院类型、aneurysm evidence 和贫血后 phenotype 是否仍有关联；按关联解释，不作因果解释")
+print("15. phenotype_severity_score_adjusted_models：加入 SOFA/SAPS II/OASIS/LODS 后 phenotype 是否仍提供增量关联")
+print("16. phenotype_candidate_feature_audit：ePVS/troponin 是否适合作敏感性增强变量或仅描述")
+print("17. phenotype_baseline_characteristics：总体与 K=3 phenotype 分层基线特征是否平衡、是否可作为 Table 1")
+print("18. phenotype_anemia_stratified_models：各 phenotype 内贫血 aOR 是否稳定，稀疏格子仅作探索解释")
+print("19. phenotype_sensitivity_cohort_summary：排除 RBC 和 ICU LOS >=48h 后 K=3 结构是否保留")
+print("20. phenotype_epvs_sensitivity_summary：加入/替换 ePVS 后 assignment 是否明显改变")
+print("21. phenotype_hb_free_sensitivity：去除 Hb 后死亡率和贫血梯度是否仍保留")
+print("22. phenotype_hb_free_anemia_regression：用去 Hb 表型调整后 early anemia 是否仍有关联，避免 Hb 循环调整")
+print("23. phenotype_inr_free_sensitivity：去除 INR 后几何指标是否改善、凝血表型是否削弱")
+print("24. phenotype_complete_case_sensitivity：不用中位数填补时 K=3 结构是否保留")
+print("25. phenotype_log_pca_kmeans_sensitivity / loadings：报告前三个 PC 的实际解释方差，不预设达到 85%")
+print("26. phenotype_log_pca_complete_case_sensitivity：主 log-PCA 流程在 complete-case 子集是否保留死亡梯度")
+print("27. phenotype_24h_window_sensitivity：0-24h 同源核心变量是否支持相近表型结构")
+print("28. phenotype_external_severity_validation：SOFA/SAPS II/OASIS/LODS 是否随 phenotype 呈严重程度梯度")
+print("29. phenotype_strict_aneurysm_subgroup_*：仅保留动脉瘤诊断或处置证据患者后，死亡梯度和严重程度验证是否仍保留")
+print("30. phenotype_lpa_*_sensitivity：LPA/GMM 是否支持 K=3、entropy/ARI/最小类比例是否达到升级主方案标准")
