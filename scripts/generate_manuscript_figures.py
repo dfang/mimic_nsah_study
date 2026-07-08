@@ -8,7 +8,9 @@ Pass a YYYYMMDD directory name as argv[1]; output is written to dist/YYYYMMDD/fi
 from __future__ import annotations
 
 import datetime
+import json
 import os
+import subprocess
 import sys
 
 import matplotlib
@@ -46,6 +48,44 @@ P4_COLOR = "#762A83"
 PHENOTYPES = ["P1\nStable", "P2\nNeuro-circulatory", "P3\nMultisystem"]
 COLORS = [P1_COLOR, P2_COLOR, P3_COLOR]
 
+MIMIC_FLOW_SQL = """
+SELECT step, rows_count, patients, admissions
+FROM `mimic-study-498508.non_traumatic_sah_study.cohort_flowchart_counts`
+ORDER BY step
+"""
+
+EICU_FLOW_SQL = """
+SELECT step, unit_stays, patients, definition
+FROM `mimic-study-498508.eicu_sah_validation.eicu_cohort_flowchart_counts`
+ORDER BY step
+"""
+
+MIMIC_STEP_LABELS = {
+    "01_source_sah_admissions": "SAH-coded hospital admissions",
+    "02_adult_source_sah": "Adult SAH admissions",
+    "03_adult_nontraumatic_sah_no_extra_aneurysm_required": "Non-traumatic SAH\n(no aneurysm evidence required)",
+    "04_first_icu_nsah_stays": "First ICU stay",
+    "05_icu_los_ge_24h": "ICU LOS >=24 h",
+    "06_core_missing_le_2": "8 core features\n<=2 missing",
+    "07_primary_analysis_no_massive_transfusion": "Primary analysis\n(no massive early transfusion)",
+    "08_sensitivity_icu_los_ge_48h": "ICU LOS >=48 h",
+    "09_sensitivity_no_rbc_48h": "No RBC 0-48 h",
+}
+
+EICU_STEP_LABELS = {
+    "01_sah_candidate_unit_stays": "SAH evidence from\ndiagnosis/admissionDx",
+    "02_adult": "Adult unit stays",
+    "03_non_traumatic": "Non-traumatic SAH",
+    "04_first_icu_stay": "First ICU stay",
+    "05_icu_los_ge_24h": "ICU LOS >=24 h",
+    "06_core_features_le_2_missing": "External validation\n(<=2 missing core features)",
+    "07_icu_los_ge_48h_sensitivity": "ICU LOS >=48 h",
+    "08_no_rbc_sensitivity": "No recorded RBC 0-48 h",
+    "09_strict_sah_sensitivity": "Strict SAH evidence",
+    "10_low_missing_sensitivity": "<=1 missing feature",
+    "11_complete_case_sensitivity": "Complete case",
+}
+
 
 def savefig(name: str) -> None:
     plt.savefig(f"{figures_dir}/{name}")
@@ -53,39 +93,325 @@ def savefig(name: str) -> None:
     print(f"{name} saved")
 
 
-def fig1_cohort_flowchart() -> None:
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 12)
-    ax.axis("off")
-    ax.set_title("Figure 1. Cohort flowchart", fontweight="bold", loc="left")
+def _run_bq_json(sql: str) -> list[dict[str, object]]:
+    result = subprocess.run(
+        ["bq", "--format=json", "query", "--use_legacy_sql=false", sql],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
 
-    boxes = [
-        (5, 11.0, 6.6, "MIMIC-IV 3.1 ICU admissions\nscreened in BigQuery"),
-        (5, 9.2, 6.2, "Adult non-traumatic SAH\nICD-defined ICU cohort"),
-        (5, 7.4, 5.8, "First ICU stay; ICU LOS >=24 h;\ntraumatic SAH and massive early transfusion excluded"),
-        (5, 5.6, 5.4, "Eligible primary analysis cohort\nN = 1,186; deaths = 235 (19.8%)"),
-    ]
-    for i, (x, y, width, text) in enumerate(boxes):
-        face = "#2166AC" if i == len(boxes) - 1 else "#D8E8F3"
-        color = "white" if i == len(boxes) - 1 else "black"
+
+def _as_int(value: object) -> int:
+    return int(value) if value is not None else 0
+
+
+def _load_cohort_flow_data() -> dict[str, list[dict[str, object]]]:
+    mimic_rows = _run_bq_json(MIMIC_FLOW_SQL)
+    eicu_rows = _run_bq_json(EICU_FLOW_SQL)
+    data = {"mimic": mimic_rows, "eicu": eicu_rows}
+    with open(f"{figures_dir}/fig1_cohort_flowchart_data.json", "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=False, indent=2)
+    return data
+
+
+def _format_n(value: int) -> str:
+    return f"{value:,}"
+
+
+def _draw_flow_box(
+    ax: plt.Axes,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    label: str,
+    count_label: str,
+    face: str,
+    edge: str,
+    text_color: str = "#151515",
+    count_color: str = "#151515",
+    alpha: float = 1.0,
+    linewidth: float = 1.1,
+) -> None:
+    rect = FancyBboxPatch(
+        (x - width / 2, y - height / 2),
+        width,
+        height,
+        boxstyle="round,pad=0.025,rounding_size=0.06",
+        facecolor=face,
+        edgecolor=edge,
+        linewidth=linewidth,
+        alpha=alpha,
+    )
+    ax.add_patch(rect)
+    ax.text(x, y + 0.13, label, ha="center", va="center", fontsize=8.7, color=text_color, linespacing=1.15)
+    ax.text(x, y - 0.22, count_label, ha="center", va="center", fontsize=10.2, color=count_color, fontweight="bold")
+
+
+def _draw_panel_header(ax: plt.Axes, x: float, title: str, subtitle: str, color: str) -> None:
+    ax.text(x, 8.72, title, ha="center", va="center", fontsize=13.2, color=color, fontweight="bold")
+    ax.text(x, 8.38, subtitle, ha="center", va="center", fontsize=8.4, color="#555555")
+    ax.plot([x - 2.45, x + 2.45], [8.18, 8.18], color=color, linewidth=2.0, solid_capstyle="round")
+
+
+def _draw_sensitivity_chip(ax: plt.Axes, x: float, y: float, label: str, count_label: str, color: str) -> None:
+    rect = FancyBboxPatch(
+        (x - 0.78, y - 0.27),
+        1.56,
+        0.54,
+        boxstyle="round,pad=0.02,rounding_size=0.05",
+        facecolor="#FFFFFF",
+        edgecolor=color,
+        linewidth=1.0,
+    )
+    ax.add_patch(rect)
+    ax.text(x, y + 0.08, label, ha="center", va="center", fontsize=6.7, color="#303030")
+    ax.text(x, y - 0.13, count_label, ha="center", va="center", fontsize=8.0, color=color, fontweight="bold")
+
+
+def fig1_cohort_flowchart() -> None:
+    flow_data = _load_cohort_flow_data()
+    mimic_by_step = {str(row["step"]): row for row in flow_data["mimic"]}
+    eicu_by_step = {str(row["step"]): row for row in flow_data["eicu"]}
+
+    fig, ax = plt.subplots(figsize=(10.6, 7.2))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 7.2)
+    ax.axis("off")
+    ax.set_title("Figure 1. Cohort selection and analysis framework", fontweight="bold", loc="left", pad=10)
+
+    mimic_color = "#1F5A85"
+    eicu_color = "#7B3294"
+    neutral = "#5A5A5A"
+    light_blue = "#EAF2F7"
+    light_purple = "#F3ECF7"
+    light_gray = "#F7F7F7"
+
+    def box(
+        x: float,
+        y: float,
+        w: float,
+        h: float,
+        title: str,
+        body: str,
+        edge: str,
+        face: str,
+        title_color: str | None = None,
+        title_size: float = 9.3,
+        body_size: float = 8.2,
+        title_y: float = 0.24,
+        body_y: float = -0.18,
+        body_linespacing: float = 1.18,
+        lw: float = 1.1,
+    ) -> None:
         rect = FancyBboxPatch(
-            (x - width / 2, y - 0.45),
-            width,
-            0.9,
-            boxstyle="round,pad=0.12",
+            (x - w / 2, y - h / 2),
+            w,
+            h,
+            boxstyle="round,pad=0.035,rounding_size=0.07",
             facecolor=face,
-            edgecolor="#1a1a1a",
-            linewidth=1.2,
+            edgecolor=edge,
+            linewidth=lw,
         )
         ax.add_patch(rect)
-        ax.text(x, y, text, ha="center", va="center", color=color, fontsize=9.5, fontweight="bold" if i == 3 else None)
+        ax.text(x, y + h * title_y, title, ha="center", va="center", fontsize=title_size, color=title_color or edge, fontweight="bold")
+        ax.text(x, y + h * body_y, body, ha="center", va="center", fontsize=body_size, color="#222222", linespacing=body_linespacing)
 
-    for y1, y2 in [(10.55, 9.65), (8.75, 7.85), (6.95, 6.05)]:
-        ax.annotate("", xy=(5, y2), xytext=(5, y1), arrowprops={"arrowstyle": "->", "lw": 1.5, "color": "#333333"})
+    def down_arrow(x: float, y0: float, y1: float, color: str) -> None:
+        ax.annotate("", xy=(x, y1), xytext=(x, y0), arrowprops={"arrowstyle": "-|>", "lw": 1.2, "color": color, "mutation_scale": 10})
 
-    ax.text(7.9, 8.25, "No aneurysm evidence required\nfor main cohort", fontsize=8, color="#555555", style="italic")
-    ax.text(7.8, 6.45, "Core 0-48 h feature missingness\n<=5.5% after eligibility", fontsize=8, color="#555555", style="italic")
+    def right_arrow(x0: float, x1: float, y: float, color: str) -> None:
+        ax.annotate("", xy=(x1, y), xytext=(x0, y), arrowprops={"arrowstyle": "-|>", "lw": 1.25, "color": color, "mutation_scale": 10})
+
+    mimic_start = _as_int(mimic_by_step["01_source_sah_admissions"]["admissions"])
+    mimic_start_patients = _as_int(mimic_by_step["01_source_sah_admissions"]["patients"])
+    mimic_final = _as_int(mimic_by_step["07_primary_analysis_no_massive_transfusion"]["admissions"])
+    mimic_final_patients = _as_int(mimic_by_step["07_primary_analysis_no_massive_transfusion"]["patients"])
+    eicu_start = _as_int(eicu_by_step["01_sah_candidate_unit_stays"]["unit_stays"])
+    eicu_start_patients = _as_int(eicu_by_step["01_sah_candidate_unit_stays"]["patients"])
+    eicu_final = _as_int(eicu_by_step["06_core_features_le_2_missing"]["unit_stays"])
+
+    mimic_exclusions = [
+        ("Age <18 years", 0),
+        ("Traumatic SAH", _as_int(mimic_by_step["02_adult_source_sah"]["admissions"]) - _as_int(mimic_by_step["03_adult_nontraumatic_sah_no_extra_aneurysm_required"]["admissions"])),
+        ("Non-first ICU stay", _as_int(mimic_by_step["03_adult_nontraumatic_sah_no_extra_aneurysm_required"]["admissions"]) - _as_int(mimic_by_step["04_first_icu_nsah_stays"]["admissions"])),
+        ("ICU LOS <24 h", _as_int(mimic_by_step["04_first_icu_nsah_stays"]["admissions"]) - _as_int(mimic_by_step["05_icu_los_ge_24h"]["admissions"])),
+        (">2 missing core variables", _as_int(mimic_by_step["05_icu_los_ge_24h"]["admissions"]) - _as_int(mimic_by_step["06_core_missing_le_2"]["admissions"])),
+        ("Massive transfusion <24 h", _as_int(mimic_by_step["06_core_missing_le_2"]["admissions"]) - mimic_final),
+    ]
+    eicu_exclusions = [
+        ("Age <18 years", eicu_start - _as_int(eicu_by_step["02_adult"]["unit_stays"])),
+        ("Traumatic SAH", _as_int(eicu_by_step["02_adult"]["unit_stays"]) - _as_int(eicu_by_step["03_non_traumatic"]["unit_stays"])),
+        ("Non-first ICU stay", _as_int(eicu_by_step["03_non_traumatic"]["unit_stays"]) - _as_int(eicu_by_step["04_first_icu_stay"]["unit_stays"])),
+        ("ICU LOS <24 h", _as_int(eicu_by_step["04_first_icu_stay"]["unit_stays"]) - _as_int(eicu_by_step["05_icu_los_ge_24h"]["unit_stays"])),
+        (">2 missing core variables", _as_int(eicu_by_step["05_icu_los_ge_24h"]["unit_stays"]) - eicu_final),
+    ]
+
+    def exclusion_text(items: list[tuple[str, int]]) -> str:
+        return "\n".join(f"{label}: n={_format_n(n)}" for label, n in items)
+
+    left_x, right_x = 2.65, 7.35
+    y_top, y_mid, y_final = 5.98, 4.75, 3.43
+    cohort_w = 3.85
+
+    box(left_x, 6.75, cohort_w, 0.42, "MIMIC-IV 3.1", "Development cohort (2008-2022)", mimic_color, "#FFFFFF", body_size=7.4, lw=0)
+    box(right_x, 6.75, cohort_w, 0.42, "eICU-CRD", "External validation cohort (2014-2015)", eicu_color, "#FFFFFF", body_size=7.4, lw=0)
+    ax.plot([0.75, 4.55], [6.47, 6.47], color=mimic_color, linewidth=2.0, solid_capstyle="round")
+    ax.plot([5.45, 9.25], [6.47, 6.47], color=eicu_color, linewidth=2.0, solid_capstyle="round")
+
+    box(
+        left_x,
+        y_top,
+        cohort_w,
+        0.82,
+        "Initial SAH screen",
+        f"ICD-9/ICD-10 SAH codes\nN={_format_n(mimic_start)} admissions\n{_format_n(mimic_start_patients)} patients",
+        mimic_color,
+        light_blue,
+        body_size=7.8,
+        title_y=0.27,
+        body_y=-0.22,
+        body_linespacing=1.32,
+    )
+    box(
+        right_x,
+        y_top,
+        cohort_w,
+        0.82,
+        "Initial SAH screen",
+        f"Diagnosis / ICD-9 430 / admissionDx\nN={_format_n(eicu_start)} unit stays\n{_format_n(eicu_start_patients)} patients",
+        eicu_color,
+        light_purple,
+        body_size=7.8,
+        title_y=0.27,
+        body_y=-0.22,
+        body_linespacing=1.32,
+    )
+    box(
+        left_x,
+        y_mid,
+        cohort_w,
+        1.18,
+        "Combined exclusions",
+        exclusion_text(mimic_exclusions),
+        mimic_color,
+        "#FFFFFF",
+        body_size=6.9,
+        title_y=0.30,
+        body_y=-0.15,
+        body_linespacing=1.25,
+    )
+    box(
+        right_x,
+        y_mid,
+        cohort_w,
+        1.18,
+        "Combined exclusions",
+        exclusion_text(eicu_exclusions),
+        eicu_color,
+        "#FFFFFF",
+        body_size=6.9,
+        title_y=0.30,
+        body_y=-0.15,
+        body_linespacing=1.28,
+    )
+    box(
+        left_x,
+        y_final,
+        cohort_w,
+        0.78,
+        "Final MIMIC-IV cohort",
+        "",
+        mimic_color,
+        mimic_color,
+        title_color="white",
+        body_size=8.4,
+        lw=1.2,
+    )
+    ax.text(left_x, y_final - 0.16, f"N={_format_n(mimic_final)} stays; {_format_n(mimic_final_patients)} patients", ha="center", va="center", fontsize=8.0, color="white", fontweight="bold")
+    box(
+        right_x,
+        y_final,
+        cohort_w,
+        0.78,
+        "Final eICU validation cohort",
+        "",
+        eicu_color,
+        eicu_color,
+        title_color="white",
+        body_size=8.4,
+        lw=1.2,
+    )
+    ax.text(right_x, y_final - 0.16, f"N={_format_n(eicu_final)} unit stays", ha="center", va="center", fontsize=8.4, color="white", fontweight="bold")
+
+    for x, color in [(left_x, mimic_color), (right_x, eicu_color)]:
+        down_arrow(x, y_top - 0.46, y_mid + 0.65, color)
+        down_arrow(x, y_mid - 0.65, y_final + 0.42, color)
+
+    workflow_title_y = 2.58
+    workflow_rule_y = 2.38
+    ax.text(5.0, workflow_title_y, "Analysis workflow", ha="center", va="center", fontsize=11.5, fontweight="bold", color="#222222")
+    ax.plot([1.0, 9.0], [workflow_rule_y, workflow_rule_y], color="#BDBDBD", linewidth=1.0)
+
+    analysis_y = 1.48
+    a_w = 2.65
+    box(
+        2.0,
+        analysis_y,
+        a_w,
+        0.86,
+        "Phenotype discovery",
+        "0-48 h physiology\nimputation + log1p + PCA",
+        neutral,
+        light_gray,
+        title_size=8.2,
+        body_size=6.9,
+    )
+    box(
+        5.0,
+        analysis_y,
+        a_w,
+        0.86,
+        "Log-PCA K-means",
+        "K=3: P1 / P2 / P3\nLogistic / Cox / KM",
+        neutral,
+        light_gray,
+        title_size=8.2,
+        body_size=6.9,
+    )
+    box(
+        8.0,
+        analysis_y,
+        a_w,
+        0.86,
+        "Transport validation",
+        "frozen eICU projection\nAPACHE + bootstrap checks",
+        eicu_color,
+        light_purple,
+        title_size=8.2,
+        body_size=6.9,
+    )
+    right_arrow(3.35, 3.65, analysis_y, neutral)
+    right_arrow(6.35, 6.65, analysis_y, neutral)
+    down_arrow(left_x, y_final - 0.48, 2.04, mimic_color)
+    ax.annotate("", xy=(7.75, 2.02), xytext=(right_x, y_final - 0.48), arrowprops={"arrowstyle": "-|>", "lw": 1.1, "color": eicu_color, "mutation_scale": 10})
+
+    ax.text(
+        0.72,
+        0.16,
+        (
+            "Counts from BigQuery intermediate tables: non_traumatic_sah_study.cohort_flowchart_counts and "
+            "eicu_sah_validation.eicu_cohort_flowchart_counts.\n"
+            "MIMIC was used for phenotype derivation; eICU was used for external transport validation."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=7.0,
+        color="#555555",
+    )
+    fig.tight_layout(rect=(0, 0.04, 1, 0.97))
     savefig("fig1_cohort_flowchart.png")
 
 
@@ -174,7 +500,7 @@ def fig5_prediction_performance() -> None:
     ax.set_xticklabels(models)
     ax.set_ylim(0, 0.92)
     ax.set_ylabel("Cross-validated score")
-    ax.set_title("Figure 5. Hospital mortality prediction performance", fontweight="bold", loc="left")
+    ax.set_title("Figure 6. Hospital mortality prediction performance", fontweight="bold", loc="left")
     ax.legend(frameon=False, loc="upper left")
     savefig("fig5_prediction_performance.png")
 
@@ -319,7 +645,7 @@ def fig_s7_eicu_external_validation() -> None:
         ax.set_ylabel("Percent")
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width() / 2, val + 1, f"{val:.1f}{suffix}", ha="center", fontsize=8.5, fontweight="bold")
-    fig.suptitle("Figure S7. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
+    fig.suptitle("Figure 5. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
     fig.tight_layout()
     savefig("fig_s7_eicu_external_validation.png")
 

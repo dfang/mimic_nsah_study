@@ -1,13 +1,5 @@
 # 论文生成提示词
 
-## 使用方式
-
-后续每次重新运行分析 pipeline 后，将以下内容发送给 Claude Code / Codex / Gemini，即可根据最新结果生成英文 + 中文论文、图表和 PDF。
-
-```bash
-claude ./scripts/prompt_for_regenerating_manuscript.md
-```
-
 ## 提示词正文
 
 ````text
@@ -127,6 +119,18 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 
 如果最新数据与脚本硬编码数值不一致，先根据 `dist/YYYYMMDD/analysis_result.md` 或 BigQuery 结果表更新 `scripts/generate_manuscript_figures.py`，再运行。
 
+图表总体要求：
+
+- 重要数据结果应尽量可视化，不要只埋在正文或表格中。至少将 cohort flow、主 phenotype 生理中心、死亡/贫血/RBC 梯度、严重程度外部验证、预测性能、K 选择、bootstrap 稳定性、敏感性分析、PCA loadings、调整后 OR/HR、eICU 外部验证做成图或补充图。
+- 图表应放在首次叙述对应结果的正文附近，而不是全部堆在文末：cohort flow 放在 Cohort/results 开头；phenotype heatmap 放在主 K=3 solution 后；outcomes/anemia 放在 outcome gradients 后；eICU 图放在 eICU external validation 小节；补充图放在 Supplementary Figures。
+- 图表大小必须适合 A4 纵向 PDF：单栏/正文图建议宽 6.5-7.2 inch；横向多面板图建议宽 7.0-7.5 inch、高 3.5-4.8 inch；热图/森林图可略高但不超过 5.5 inch；补充多面板图如 4 个小面板应优先使用 2x2 或 1x4 但保证 PDF 中文字可读。
+- 输出 PNG 建议 `dpi >= 300`，`bbox_inches="tight"`，并预留足够边距，避免坐标轴标签、图例、误差线文本或标题被裁切。
+- 图内文字应专业、克制、可读：坐标轴标签完整，单位明确；标题简短；图例不遮挡数据；数值标签最多保留 1 位小数或 2-3 位有效数字；避免把大量原始表格数字塞进图内。
+- 视觉风格应统一：P1/P2/P3 使用固定颜色；主图避免花哨渐变和过度装饰；热图使用发散色板并标明 z-score；森林图使用 log scale 和 OR/HR=1 参考线；柱状图显示百分比和样本量/事件数（空间允许时）。
+- 色彩应兼顾色盲友好和打印效果；避免红绿对立作为唯一编码。背景保持白色，网格线淡化，字体统一。
+- 如果某个关键结果尚无图，优先补充 `scripts/generate_manuscript_figures.py`，不要只在正文中描述。若受当前结果表限制暂不能作图，必须在 final report 中说明缺少哪张图和原因。
+- 每次更新图表后必须重新生成 PDF 并检查图表是否完整显示、尺寸合理、文字清晰、没有溢出或被分页切断。
+
 推荐图表清单：
 
 - `fig1_cohort_flowchart.png`：STROBE-style 队列筛选流程图。必须尽量显示每一步人数，包括初筛 MIMIC-IV ICU/SAH 记录、adult non-traumatic SAH、first ICU stay、ICU LOS >=24h、排除 traumatic SAH、排除 24h massive transfusion、最终 eligible primary analysis cohort。若 `analysis_result.md` 未提供某一步人数，不得编造；应在图或图例中明确“not available in current output”，并在正文说明需要 pipeline 输出筛选计数。
@@ -191,6 +195,16 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 **Figure X.** 图例文字。
 ```
 
+图表插入位置建议：
+
+- Figure 1 紧跟 Cohort Selection / Cohort and feature availability 的首段。
+- Figure 2 紧跟 Primary log-PCA K=3 solution 和 phenotype 命名段落。
+- Figure 3 紧跟 Outcome gradients and anemia/process-of-care summary；如果同一图包含死亡、贫血和输血，应在图例中明确 RBC transfusion 是描述性过程变量。
+- Figure 4 紧跟 external severity validation，且正文明确 SOFA/SAPSII/OASIS/LODS/APACHE 不进入聚类。
+- Figure 5 紧跟 prediction performance 段落，并说明 phenotype 的价值是解释性压缩，不是替代完整连续变量预测模型。
+- eICU 图紧跟 eICU external validation 小节，不要只放 Supplementary Figures。
+- Supplementary Figures 应按首次引用顺序排列；每张补充图都要有足够图例，不能只写文件名或“see figure”。
+
 ### 3.3 Abstract 必须包含
 
 Background：
@@ -240,6 +254,7 @@ Conclusions：
 - 早期多模态生理 phenotype 能识别不同死亡风险层级；
 - P3 是多系统失衡高危表型；
 - 贫血富集于高危 phenotype，但更像系统性失衡标志，而非独立因果因素。
+- 不得把 “RBC transfusion OR/HR 不显著” 写成“输血无效”或“输血没有获益”；当前研究没有因果识别设计，只能说不能评价输血获益、无效或最佳 Hb 阈值。
 
 ### 3.4 Introduction 写作要点
 
@@ -248,6 +263,7 @@ Conclusions：
 1. non-traumatic SAH ICU 患者死亡风险高，异质性大，预后不仅取决于神经损伤，也受循环、氧合、肾功能、凝血、贫血影响。
 2. 传统 GCS/WFNS/SOFA 有用，但不能表达 ICU 早期多系统生理组合；早期贫血在 SAH 中常见，但其是否为独立危险因素或高危状态标志不清楚。
 3. 本研究目标：
+
 - 识别 early multimodal physiological phenotypes；
 - 比较 mortality 和 severity score；
 - 探索 early anemia 在 phenotype 中的分布和预后意义；
@@ -582,6 +598,14 @@ Methods 中还必须明确：
    - raw K-means sensitivity；
    - K=4 exploratory。
 
+8. Future directions / next analyses：
+   - 不要只写泛泛“future work”。必须明确提出下一阶段分析路线：
+     - 从 0-48h 极值扩展到生理轨迹，使用纵向特征摘要、functional data analysis、latent class mixed models，或 LSTM/Transformer 等序列模型捕捉趋势、波动和恢复速度。
+     - 分析动态表型转化，例如入 ICU 24h 表型、72h 表型，以及 P1 向 P3-like physiology 转化的恶化轨迹。
+     - 将动态窗口延伸到 SAH 后第 4-10 天 delayed cerebral ischemia (DCI) 高风险期；如果当前数据/脚本未生成这些结果，只能写为 future analysis，不得编造结果。
+     - 比较 Gaussian Mixture Model/LPA、HDBSCAN、Deep Embedded Clustering 和 semi-supervised phenotyping；必须说明这些是后续方法学扩展，除非结果表已经生成，否则不要把它们写成已完成分析。
+     - 对 RBC transfusion 若要讨论疗效，后续必须使用 target trial emulation、propensity-score matching/weighting、instrumental-variable analysis（仅在有可信工具变量时）或 time-varying treatment model 来处理 confounding by indication 和 immortal-time bias。
+
 ### 3.8 Limitations 必须包含
 
 - Retrospective database study；虽然已加入 eICU 外部验证，仍缺少前瞻性、影像确认和多国队列验证。
@@ -593,7 +617,9 @@ Methods 中还必须明确：
 - PCA 3 个 PC 解释方差有限，约 56%。
 - K-means 依赖变量选择和预处理。
 - RBC transfusion rate low，不能评估输血获益。
+- 当前输血分析仅为描述/敏感性关联；不能得出“输血无效”“输血有害”或“某 Hb 阈值最佳”的因果结论。若要研究输血效应，必须作为后续因果推断研究单独设计。
 - 贫血与死亡可能有残余混杂。
+- 当前主表型定义使用 0-48h 极值，未捕捉完整生理轨迹的形状、斜率、波动性、恢复速度和 24-72h 转化；可能遗漏 DCI 高峰期（约 SAH 后 4-10 天）相关的动态恶化信号。
 - eICU 外部验证依赖 diagnosis text、ICD-9 430 和 admissionDx，仍可能存在 SAH 误分类。
 - eICU INR 缺失率高且具有 informative missingness；INR-free sensitivity 缓解但不能完全消除该问题。
 - eICU de novo clustering 与 frozen labels 的 ARI 接近 0，说明不同数据库中的患者级边界并不稳定；论文应表述为 transportable risk-stratifying phenotypes，而不是固定生物亚型实体。
@@ -624,6 +650,9 @@ Methods 中还必须明确：
 - eICU de novo ARI 接近 0 是否被过度包装；不得写成“replicated clusters”，只能写成“replicated risk gradient but not patient-level boundaries”。
 - eICU INR 缺失是否被忽略；必须报告 49.4% missing、informative missingness audit 和 INR-free sensitivity。
 - References 是否过少；必须补充 SAH、贫血、ICU phenotyping、unsupervised learning/reporting 相关文献。
+- 后续分析建议是否被具体写出：动态轨迹表型、LSTM/Transformer 或 functional data analysis、GMM/HDBSCAN/Deep Embedded Clustering/semi-supervised phenotyping、以及输血因果推断设计。
+- 摘要和正文中的极小 p 值应统一写作 `p < 0.001`，不要保留 `7.07e-23` 这类科学计数法；表格中也优先用 `<0.001` 节省版面。
+- PDF 生成后必须检查是否存在图表裁切、连续数字乱码或文本提取异常，例如 `0.37 0.37 0.37...`；若出现，先修复 Markdown/PDF 转换脚本或表格布局，再重新生成 PDF。
 
 ## 4. 更新中文论文
 
@@ -667,6 +696,10 @@ DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert
 - [ ] 所有数据与 `dist/YYYYMMDD/analysis_result.md` 或 BigQuery 结果表一致。
 - [ ] N 使用最新值，目前为 `1,186`，不是旧版 `1,187`。
 - [ ] Figure 1 是 STROBE-style flow diagram，尽量包含每一步筛选人数；如结果表缺失筛选人数，已明确说明未编造并建议 pipeline 补充。
+- [ ] 关键结果已尽量可视化：主 phenotype 中心、死亡/贫血/RBC 梯度、严重程度验证、预测性能、K 选择、bootstrap、敏感性分析、eICU 外部验证和 OR/HR forest plot 均有主图或补充图；若缺图，final report 已说明原因。
+- [ ] 每张图插入在首次叙述对应结果附近；eICU 外部验证图不只放在补充材料。
+- [ ] 图表尺寸适合 A4 PDF：没有过大、过小、跨页截断或边缘裁切；多面板图中文字仍可读。
+- [ ] 图表视觉风格统一且专业：P1/P2/P3 颜色一致，字体/标题/图例/坐标轴单位清楚，数值标签不过密，色彩兼顾打印和色盲友好。
 - [ ] Methods 或 Supplementary Table 5 列出 ICD code/队列算法、排除规则和 massive transfusion 定义；若当前结果缺失 code list，已明确标记而非编造。
 - [ ] Methods 写清 PCA/K-means 参数、random seed/n_init、phenotype ordering、cross-validation、bootstrap resampling 和 logistic model covariates。
 - [ ] 主方案写作是 `log1p(creatinine/INR) + PCA + K-means K=3`。
@@ -678,6 +711,7 @@ DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert
 - [ ] 早期贫血定义明确：0-48h minimum Hb <10 g/dL。
 - [ ] 没有声称贫血独立导致死亡。
 - [ ] 没有声称某 phenotype 应接受输血。
+- [ ] 没有把 RBC transfusion 不显著写成输血无效/无益；若提到输血疗效，只能写为后续需要因果推断设计。
 - [ ] Results 主文包含过程性治疗和器官支持分布，不只是在 Table 1 或补充材料中出现。
 - [ ] `phenotype_process_of_care_audit` 中的 nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC transfusion、CRRT、fluid balance 数字已报告且与最新结果一致。
 - [ ] `phenotype_process_of_care_adjusted_models` 中 specialty-care 和 organ-support 模型的 P2/P3 OR、95% CI 已写入正文或 Table 4，并明确不是 causal treatment effect。
@@ -699,10 +733,14 @@ DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert
 - [ ] Bootstrap ARI、complete-case、Hb-free、INR-free、no-RBC、ICU LOS >=48h、GCS alternatives 的数字一致。
 - [ ] Table 1 包含 demographics、admission/evidence、aneurysm evidence、severity scores、process-of-care/organ support 和 outcomes；如果缺少变量，原因明确。
 - [ ] References 不少于基础数据库/报告规范文献，已补充 SAH、贫血、ICU phenotyping 和 unsupervised learning 相关文献；没有伪造未核对文献。
+- [ ] Discussion 或 Future Directions 明确写入动态轨迹表型、24h/72h 转化、DCI 4-10 天窗口、高级聚类/半监督表型和输血因果推断后续路线，并清楚标记为未来分析而非当前结果。
+- [ ] 摘要、正文和表格中的极小 p 值统一为 `p < 0.001` 或 `<0.001`，没有科学计数法 p 值。
 - [ ] 中文稿标题完全中文化，没有残留 `References`、`Tables`、`Supplementary Tables`、`Table X` 等英文模板标题。
 - [ ] 图表全部嵌入正文合适位置。
 - [ ] 英文和中文版本结论一致。
 - [ ] PDF 中图片清晰、表格不越界、中文不乱码。
+- [ ] PDF 文本抽查没有连续数字乱码或图表残缺；尤其检查包含 Figure 2、Figure 3、Table 3/4 和 Supplementary Figures 的页面。
+- [ ] PDF 视觉抽查至少覆盖：第一个主图页、一个横向多面板图页、一个热图页、一个宽表页、一个补充图页；确认图表完整、美观、可读。
 
 ```
 

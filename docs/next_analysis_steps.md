@@ -835,3 +835,65 @@ ORDER BY missing_rate DESC;
 3. K=3 是否能形成稳定、可解释的主分型；K=4 是否只作为 K=3 重症组的高分辨率极重症切分。
 
 这三点确认后，再进入正式结局模型和论文表图制作。
+
+## 8. 当前 manuscript 后的下一轮分析升级
+
+当前论文已经完成静态 0-48 小时极值表型、eICU frozen transport 外部验证和过程性治疗/生存敏感性分析。下一轮不要继续只改 manuscript，应把以下内容落实为新的数据表、脚本和结果审计。
+
+### 8.1 动态轨迹表型
+
+目标：捕捉 0-48h 乃至 0-72h 生理轨迹，而不是只用极值。
+
+建议新增轨迹宽表，至少包含：
+
+- 时间分段：0-6h、6-24h、24-48h、48-72h。
+- 变量：Hb、GCS motor、MAP、shock index、SpO2、creatinine、INR、platelet；可额外加入 HR/SBP/MAP/SpO2 高频生命体征。
+- 每段摘要：first、last、min/max、delta、slope、time-weighted mean、variability、measurement_count、missing flag。
+
+优先输出：
+
+- `phenotype_dynamic_feature_summary`
+- `phenotype_dynamic_cluster_assignments`
+- `phenotype_dynamic_transition_matrix`
+- `phenotype_dynamic_outcome_summary`
+
+先用轨迹摘要 + PCA/K-means 或 GMM 跑通，再考虑 functional data analysis、latent class mixed models、LSTM 或 Transformer。深度序列模型必须单独处理不规则采样、mask、缺失机制和 measurement intensity bias；没有外部验证前不能替代当前主表型。
+
+### 8.2 24h/72h 转化与 DCI 窗口
+
+动态表型的关键输出不是再生成一个静态 cluster，而是转化：
+
+- 0-24h assignment -> 24-72h assignment。
+- P1 -> P3-like physiology 的恶化率和死亡率。
+- P2/P3 -> P1-like physiology 的恢复率和死亡率。
+- 若能构建 day 4-10 窗口，连接早期表型和 delayed cerebral ischemia (DCI) 高风险期。
+
+若没有影像确认、TCD 或清晰 DCI 结局，只能报告 vasospasm/DCI proxy 审计，不得把 proxy 写成确认 DCI。
+
+### 8.3 高级聚类与半监督表型
+
+当前 Gaussian mixture/LPA 已作为敏感性分析。下一轮可扩展但必须保持边界：
+
+- GMM/LPA：在 log-PCA 或轨迹低维空间运行，报告 BIC/AIC/entropy/最小簇比例/ARI。
+- HDBSCAN：报告 noise fraction 和参数敏感性，避免只展示“好看”的簇。
+- Deep Embedded Clustering：探索性方法，必须有稳定性、外部验证和可解释性审计。
+- Semi-supervised phenotyping：若使用死亡、SOFA/APACHE 或 DCI proxy 参与表示学习，应命名为 outcome-informed risk strata，不再称为纯无监督 discovery phenotype。
+
+### 8.4 输血因果推断
+
+当前结果不能支持“输血无效”或“输血有益/有害”。若要研究 RBC transfusion，应另立因果问题：
+
+- 写 target trial emulation：eligibility、time zero、treatment strategies、grace period、follow-up、outcome、estimand。
+- 处理 time-varying exposure，避免把 0-48h 输血作为固定 baseline 暴露造成 immortal-time bias。
+- PSM/IPTW 需要报告 overlap、balance、positivity 和敏感性分析。
+- 工具变量分析只有在有可信工具变量时才做；弱工具不应作为“因果补强”。
+- phenotype x transfusion interaction 只能作为探索性 effect modification，不能导出临床输血建议。
+
+### 8.5 Manuscript/PDF 生成规范同步
+
+下一次重新生成稿件时必须同步检查：
+
+- 极小 p 值在摘要、正文和表格中统一写成 `p < 0.001` 或 `<0.001`，不要输出科学计数法。
+- PDF 图表不得裁切，补充图也必须被缩放到页宽内。
+- 抽查 PDF 文本提取，确认没有连续数字乱码，例如 `0.37 0.37 0.37...`。
+- 动态轨迹、高级聚类和输血因果推断只能写成 future analyses，除非对应结果表已经实际生成。

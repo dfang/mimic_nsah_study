@@ -120,12 +120,20 @@ hr {
 /* ── Figures ────────────────────────────────────────────── */
 figure {
     text-align: center;
-    margin: 20pt 0 16pt 0;
+    margin: 14pt 0 14pt 0;
     page-break-inside: avoid;
 }
-figure img {
-    max-width: 92%;
+img {
+    max-width: 100%;
+    max-height: 17cm;
+    width: auto;
     height: auto;
+}
+figure img {
+    max-width: 100%;
+    max-height: 16.5cm;
+    height: auto;
+    width: auto;
     display: block;
     margin: 0 auto;
     border: 0.3pt solid #ddd;
@@ -147,9 +155,11 @@ figure figcaption strong {
 /* ── Tables (academic three-line style) ─────────────────── */
 table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     margin: 16pt 0 18pt 0;
-    font-size: 9.5pt;
+    font-size: 8.6pt;
+    line-height: 1.25;
     page-break-inside: auto;
 }
 thead { display: table-header-group; }
@@ -168,6 +178,7 @@ tbody td {
     text-align: left;
     border: none;
     background: none;
+    overflow-wrap: anywhere;
 }
 tbody tr:last-child td {
     border-bottom: 1.2pt solid #222;
@@ -283,7 +294,7 @@ def wrap_figures(html):
     """Wrap <img> + caption into <figure> containers for proper layout."""
     pattern = (
         r'<p><img (.*?)/?></p>\s*\n?\s*'
-        r'<p>(<(?:strong|b)>((?:Figure|图)\s*[^<]+)</(?:strong|b)>.*?)</p>'
+        r'<p>(<(?:strong|b)>((?:Supplementary\s+Figure|Figure|附图|图)\s*[^<]+)</(?:strong|b)>.*?)</p>'
     )
     replacement = (
         r'<figure>\n'
