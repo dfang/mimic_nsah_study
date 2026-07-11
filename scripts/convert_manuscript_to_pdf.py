@@ -231,8 +231,10 @@ body {
     font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", "Times New Roman", serif;
     font-size: 11.5pt;
     line-height: 1.85;
-    text-align: justify;
+    text-align: left;
+    text-justify: none;
 }
+p, li { text-align: left; }
 h1 {
     font-family: "PingFang SC", "Heiti SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
     font-size: 17pt;
@@ -273,6 +275,18 @@ def preprocess_markdown(md_path):
     """Read markdown and fix image paths to absolute."""
     with open(md_path, "r", encoding="utf-8") as f:
         content = f.read()
+
+    replacements = {
+        r"$\ge$": "≥",
+        r"$\le$": "≤",
+        r"$p < 0.001$": "p < 0.001",
+        r"$\times 10^3$/µL": "×10³/µL",
+        r"$\times 10^3$/μL": "×10³/µL",
+    }
+    for source, target in replacements.items():
+        content = content.replace(source, target)
+    content = re.sub(r"\$K\s*=\s*([0-9]+)\$", r"K=\1", content)
+    content = re.sub(r"\$\s*([^$]{1,24})\s*\$", r"\1", content)
 
     base_dir = os.path.dirname(os.path.abspath(md_path))
     content = re.sub(r'\]\(figures/', f'](file://{base_dir}/figures/', content)
@@ -359,5 +373,23 @@ if __name__ == "__main__":
         CSS_EN + CSS_CN,
         lang="zh",
     )
+
+    optional_outputs = [
+        (
+            f"{base}/electronic_supplementary_material.md",
+            f"{base}/pdf/electronic_supplementary_material.pdf",
+            CSS_EN,
+            "en",
+        ),
+        (
+            f"{base}/strobe_checklist.md",
+            f"{base}/pdf/strobe_checklist.pdf",
+            CSS_EN,
+            "en",
+        ),
+    ]
+    for md_path, pdf_path, css, lang in optional_outputs:
+        if os.path.exists(md_path):
+            convert(md_path, pdf_path, css, lang=lang)
 
     print(f"\nDone → {base}/pdf/")

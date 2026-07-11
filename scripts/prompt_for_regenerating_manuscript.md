@@ -466,9 +466,9 @@ Methods 中还必须明确：
      - process_model_4_organ_support：P2 vs P1 OR 3.88 (95% CI 2.48-6.06)；P3 vs P1 OR 11.75 (95% CI 6.37-21.68)；nimodipine OR 0.51 (95% CI 0.32-0.81)；vasopressor OR 2.61 (95% CI 1.72-3.95)；mechanical ventilation OR 2.11 (95% CI 1.40-3.19)；RBC transfusion OR 0.39 (95% CI 0.13-1.18)。
    - 对上述模型的解释必须谨慎：过程性治疗变量可能是 severity marker、treatment selection marker 或 mediator，不能写成“治疗保护/有害”或“调整后证明表型独立于治疗”。
    - 使用 `phenotype_survival_logrank` 报告住院期 pairwise log-rank：
-     - P1 vs P2 p=1.44e-17；
-     - P1 vs P3 p=1.68e-30；
-     - P2 vs P3 p=2.28e-05。
+     - P1 vs P2 p<0.001；
+     - P1 vs P3 p<0.001；
+     - P2 vs P3 p<0.001。
    - 使用 `phenotype_survival_cox_models` 报告 Cox：
      - unadjusted Cox：P2 HR 4.10 (95% CI 2.91-5.79)；P3 HR 7.78 (95% CI 5.29-11.45)。
      - clinical adjusted Cox：P2 HR 4.35 (95% CI 3.05-6.21)；P3 HR 8.55 (95% CI 5.51-13.29)。
@@ -513,10 +513,10 @@ Methods 中还必须明确：
      - low margin <0.10 = 4.4%；
      - low margin <0.25 = 12.0%。
    - eICU APACHE external criterion validation 必须报告：
-     - acute physiology score median P1/P2/P3 = 27/49/67, Spearman rho 0.508, p=2.29e-51；
-     - APACHE score median P1/P2/P3 = 36/57/79, rho 0.480, p=3.58e-45；
-     - predicted hospital mortality median P1/P2/P3 = 0.069/0.243/0.426, rho 0.445, p=2.00e-38；
-     - predicted ICU mortality median P1/P2/P3 = 0.039/0.175/0.299, rho 0.453, p=6.15e-40。
+     - acute physiology score median P1/P2/P3 = 27/49/67, Spearman rho 0.508, p<0.001；
+     - APACHE score median P1/P2/P3 = 36/57/79, rho 0.480, p<0.001；
+     - predicted hospital mortality median P1/P2/P3 = 0.069/0.243/0.426, rho 0.445, p<0.001；
+     - predicted ICU mortality median P1/P2/P3 = 0.039/0.175/0.299, rho 0.453, p<0.001。
    - eICU transport sensitivities 必须报告方向：
      - primary frozen transport mortality P1/P2/P3 = 5.4%/25.7%/42.7%；
      - ICU LOS >=48h = 6.9%/24.2%/33.9%；
@@ -534,8 +534,8 @@ Methods 中还必须明确：
      - ARI -0.003，NMI 0.002，same ordered label rate 43.9%，silhouette 0.269；
      - 结论只能是 “risk gradient emerged de novo, but exact frozen patient-level boundaries did not replicate”。
    - eICU Hb-free anemia sensitivity 必须报告：
-     - P2 vs P1 OR 6.16 (95% CI 3.74-10.13), p=8.30e-13；
-     - P3 vs P1 OR 10.27 (95% CI 5.68-18.57), p=1.22e-14；
+     - P2 vs P1 OR 6.16 (95% CI 3.74-10.13), p<0.001；
+     - P3 vs P1 OR 10.27 (95% CI 5.68-18.57), p<0.001；
      - early anemia OR 1.47 (95% CI 0.92-2.36), p=0.105。
 
 9. Internal sensitivity analyses
@@ -652,7 +652,46 @@ Methods 中还必须明确：
 - References 是否过少；必须补充 SAH、贫血、ICU phenotyping、unsupervised learning/reporting 相关文献。
 - 后续分析建议是否被具体写出：动态轨迹表型、LSTM/Transformer 或 functional data analysis、GMM/HDBSCAN/Deep Embedded Clustering/semi-supervised phenotyping、以及输血因果推断设计。
 - 摘要和正文中的极小 p 值应统一写作 `p < 0.001`，不要保留 `7.07e-23` 这类科学计数法；表格中也优先用 `<0.001` 节省版面。
+- Markdown 正文和表格中不要使用 LaTeX inline math，例如 `$\ge$`、`$K=3$`、`$\times 10^3$/µL`、`$p < 0.001$`。统一使用普通文本/Unicode：`≥`、`K=3`、`×10³/µL`、`p < 0.001`，避免 PDF 中原样显示 `$...$`。
+- 摘要后必须补充关键词。英文建议：`non-traumatic subarachnoid hemorrhage; physiological phenotypes; unsupervised learning; K-means clustering; MIMIC-IV; eICU; prognosis; early anemia`。中文建议：`非创伤性蛛网膜下腔出血；生理表型；无监督学习；K-means 聚类；MIMIC-IV；eICU；预后；早期贫血`。
+- Methods 必须写清可复现参数：K-means random seed、`n_init`、PCA components、log1p 变量、开发队列中位数插补、bootstrap 次数、交叉验证/预测模型设定。若具体参数来自脚本，应以脚本为准；不得写“固定随机种子”但不写数值。
+- Methods 必须说明每类敏感性分析的目的，而不是只罗列操作：complete-case 检查插补影响；strict aneurysm 检查病因误分类；LOS ≥48 h 检查存活/出院偏倚；0–24 h 检查早期治疗污染；Hb-free 检查贫血循环论证；INR-free 检查高缺失变量影响；K=4 检查高危尾部分解；bootstrap 检查聚类稳定性。
+- Data source/ethics 段必须包含规范数据库引用、公开去标识化数据库说明、CITI/DUA 访问说明、STROBE 清单将作为补充附件提供。不要编造本地伦理审批编号；如无本机构编号，写明使用公开去标识化数据库通常不需额外患者同意/IRB 复审，并按目标期刊要求补齐。
+- Cohort 段必须给出 ICD code 的诊断名称，而非只列数字；massive transfusion 截断值（24 h ≥5 units RBC）必须说明是为了排除早期强干预改写基线生理信号，并标注为操作性定义，需要在目标期刊投稿前补充文献或敏感性依据。
+- Results 每个核心结果小节末尾应有 1 句小结，帮助读者抓住意义：表型生理差异、内部死亡梯度、eICU 迁移一致性、贫血非独立效应、SHAP Top3 生理解释。
+- Figure/table QA 必须检索并消除明显错别字或 OCR/排版错误，例如 `De veiopment`、`extemal`、`木相同顺序标签`、图注中英文混杂、单位断裂、图中文字重叠。发现图内错误时优先修 `scripts/generate_manuscript_figures.py` 并重画。
+- Discussion 必须系统覆盖：与 Hunt-Hess/WFNS/GCS、APACHE/SOFA 等评分的差异；与 sepsis/ARDS 表型研究的横向关系；P2/P3 的神经-全身机制解释；早期贫血与 SAH 输血阈值试验的关系；临床试验分层用途；影像学缺失、48 h 窗口治疗污染、欧美数据库外推到亚洲人群的限制。
+- 参考文献不能只保留 7 条；必须补充规范的 MIMIC-IV、eICU、SAH 系统并发症/交感风暴、SAH 贫血/输血、ICU phenotyping/unsupervised learning/STROBE 等文献。若需要 2022–2026 近年文献，生成前必须联网核验，不得凭记忆编造。
+- Supplementary Materials 必须说明待投稿附件组成：STROBE checklist、ICD/code-list and cohort algorithm、feature mapping and missingness audit、all supplementary tables/figures、reproducible code and BigQuery table provenance。
+- 不得使用顶刊审稿中容易被认为过度包装的词语：英文避免 `outstanding`、`dramatically`、`fully mirrored`、`highly successful`、`proved`、`confirmed`；中文避免“极为显著”“充分印证”“非常成功”“证实”。应改为 `consistent`、`monotonic`、`robust in sensitivity analyses`、`remained associated` 或对应的克制中文。
+- 所有过程性治疗变量（nimodipine、vasopressor、mechanical ventilation、RBC transfusion、CRRT、EVD/ICP、fluid balance）的结果必须写成描述性或 exploratory association，不得写成治疗保护、有害或推荐；尤其不得把 RBC transfusion 的非显著结果解释为“输血无效”。
+- Cox 模型如果包含 0-48h 过程性治疗固定协变量，表题、表注和正文必须明确标注为 exploratory sensitivity analysis，并说明存在 immortal time / treatment-selection bias 风险。
+- Discussion 的 Clinical Implications 必须写成风险识别、分层入组、预后沟通和未来前瞻性验证，不得写成 ICU 即刻处置建议；避免 “should prompt immediate aggressive treatment/monitoring” 这类命令式临床建议。
+- 图注必须说明图中展示的是哪一类证据：Figure 1 使用 BigQuery 队列计数和冻结分析流程；Figure 3 若展示死亡、贫血和 RBC 输注，必须说明 RBC 输注是描述性过程变量；Figure 4/Figure S7 必须说明 APACHE/APS 等严重度评分未进入聚类，仅用于外部效标验证。
 - PDF 生成后必须检查是否存在图表裁切、连续数字乱码或文本提取异常，例如 `0.37 0.37 0.37...`；若出现，先修复 Markdown/PDF 转换脚本或表格布局，再重新生成 PDF。
+
+### 3.10 Intensive Care Medicine 投稿版约束
+
+若目标期刊指定为 *Intensive Care Medicine*，应将 canonical manuscript 直接整理为 ICM concise Original Paper 结构，即更新 `dist/YYYYMMDD/manuscript_non_traumatic_sah_phenotypes.md` 和中文对照稿。完整长版内容如需保留，应另存为 archive 或 supplementary working draft，而不是让主稿继续保持长版结构。
+
+ICM 版本必须遵守以下投稿取向：
+
+- Article type: Original paper。
+- 正文目标控制在 3,000 words 内；优先压缩 Introduction、Results 机制解释和 Discussion 重复结果。
+- Structured abstract 控制在 150–250 words，使用 `Purpose`、`Methods`、`Results`、`Conclusions` 四段，不使用 Background/Objective。
+- Keywords 4–6 个，避免超过 6 个。
+- 必须提供 65-word `Take-home message`。
+- 主文图表总数不超过 5 个。建议主文仅保留 Figure 1–5；所有 baseline table、phenotype table、regression table、sensitivity table 和 supplementary figures/tables 移入 Electronic Supplementary Material。
+- References 目标不超过 30 条，优先保留 SAH guideline、MIMIC-IV、eICU、STROBE、sepsis/ARDS phenotyping、SAH anemia/transfusion、systemic inflammation/organ dysfunction 相关关键文献。
+- 必须添加 `Declarations`：Funding、Conflicts of interest、Ethics approval、Consent、Data availability、Code availability、Author contributions、Use of AI-assisted tools（如适用）。缺失信息用 `To be completed by authors before submission` 占位，不要编造。
+- 必须添加 `Reporting guideline` 说明：STROBE checklist will be submitted as Electronic Supplementary Material。
+- 语言风格要符合 ICM：短句、克制、临床解释明确；避免宣传式机器学习措辞；所有治疗相关结果均写为 observational/exploratory。
+- 主文表格和长方法细节必须移入 Electronic Supplementary Material 清单；主稿只保留最关键的 5 个 display items。
+- 必须生成实际补充材料文件，而不只是主文末尾列清单：
+  - `dist/YYYYMMDD/electronic_supplementary_material.md`
+  - `dist/YYYYMMDD/strobe_checklist.md`
+  - PDF 输出：`electronic_supplementary_material.pdf` 和 `strobe_checklist.pdf`
+- ESM 至少包含 cohort-flow counts、ICD/code-list、core-variable mapping、missingness audit、baseline table、phenotype table、logistic/Cox model tables、eICU validation table、sensitivity table、bootstrap stability、supplementary figures、BigQuery provenance 和 reproducibility parameters。
 
 ## 4. 更新中文论文
 
@@ -663,9 +702,11 @@ Methods 中还必须明确：
 - 与英文版内容一致；
 - 学术中文表达；
 - 不要机械翻译；
+- 避免宣传式、命令式或因果化中文表达，例如“证实”“极为显著”“充分印证”“非常成功”“应立即”“无需干预”“无法挽救”。优先使用“提示”“支持”“与……一致”“仍观察到关联”“可用于未来研究分层”等克制表达。
 - 图表位置相同；
 - 所有数字与英文版一致；
 - 中文稿所有一级/二级标题、图表总标题和补充材料标题必须中文化；不要残留 `References`、`Tables`、`Supplementary Tables`、`Table 1` 等英文标题。建议使用“参考文献”“表格”“补充表”“表 1/图 1”。
+- 中文稿不要出现 Markdown 转义残留，例如 `*\\*注：` 或 `*\\*缩略语:`；表注统一写成 `*注：...*`、`*缩略语：...*`。
 - 中文稿参考文献可保留英文文献信息，但章节标题必须为“参考文献”，正文不要出现未解释的英文模板痕迹。
 - phenotype 中文命名建议：
   - 表型 1：相对稳定低危型

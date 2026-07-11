@@ -3,5 +3,3 @@ tmp
 __pycache__dist/
 .omx/
 .codewhale/
-
-dist/

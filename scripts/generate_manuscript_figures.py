@@ -542,7 +542,7 @@ def fig_s2_bootstrap() -> None:
 
 
 def fig_s3_sensitivity_summary() -> None:
-    analyses = ["Raw K-means", "Complete case", "Hb-free", "INR-free", "No RBC", "ICU LOS >=48h", "0-24h"]
+    analyses = ["Raw K-means", "Complete case", "Hb-free", "INR-free", "No RBC", "ICU LOS ≥48 h", "0–24 h"]
     ari = [0.746142, 0.941478, 0.630999, 0.730770, 0.737427, 0.733518, 0.697425]
     fig, ax = plt.subplots(figsize=(9.5, 4.2))
     bars = ax.bar(analyses, ari, color="#7FB3D5", edgecolor="black", linewidth=0.6)
@@ -645,7 +645,7 @@ def fig_s7_eicu_external_validation() -> None:
         ax.set_ylabel("Percent")
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width() / 2, val + 1, f"{val:.1f}{suffix}", ha="center", fontsize=8.5, fontweight="bold")
-    fig.suptitle("Figure 5. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
+    fig.suptitle("Supplementary Figure 7. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
     fig.tight_layout()
     savefig("fig_s7_eicu_external_validation.png")
 

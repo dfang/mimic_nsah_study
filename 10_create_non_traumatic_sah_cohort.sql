@@ -401,6 +401,63 @@ SELECT
     AVG(icu_los_hours) / 24.0 AS mean_icu_los_days
 FROM `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort`;
 
+-- 目的：提取 cohort 患者在 0-48h 内的所有 chartevents 原始记录以加速后续查询。
+-- 原因：chartevents 表非常巨大，对其进行多次全表扫描会极大地降低运行速度。通过创建 cohort 级别子表，后续可以直接对该子表进行快速分析。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.chartevents_cohort_raw` AS
+SELECT
+    ce.subject_id,
+    ce.hadm_id,
+    ce.stay_id,
+    ce.charttime,
+    ce.itemid,
+    ce.valuenum,
+    ce.value
+FROM `physionet-data.mimiciv_3_1_icu.chartevents` ce
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    ON ce.stay_id = c.stay_id
+WHERE ce.itemid IN (
+    229519, 229520, 229518, 229539, 229521, 226124, 226128, 226129, -- EVD/ICP
+    223835 -- FiO2
+)
+  AND ce.charttime >= c.icu_intime
+  AND ce.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
+-- 目的：提取 cohort 患者在 -6h 到 48h 内的所有 labevents 原始记录以加速后续查询。
+-- 原因：labevents 同样较大，包含一亿五千万行数据，通过对其创建 cohort 子表，可大幅提高后续 lactate/troponin/inr 等指标的查询性能。
+CREATE OR REPLACE TABLE `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` AS
+SELECT
+    le.subject_id,
+    le.hadm_id,
+    le.charttime,
+    le.itemid,
+    le.valuenum,
+    le.value,
+    le.valueuom
+FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
+    ON le.subject_id = c.subject_id
+WHERE le.itemid IN (
+    50813, -- Lactate
+    51002, 51003, 52642, -- Troponin
+    51237, 51675, -- INR
+    50816 -- FiO2
+)
+  AND le.charttime >= DATETIME_SUB(c.icu_intime, INTERVAL 6 HOUR)
+  AND le.charttime < DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR);
+
+-- 验证：检查 cohort 原始 data 子表的行数和覆盖 stay 数量。
+SELECT
+    'chartevents_cohort_raw' AS table_name,
+    COUNT(*) AS row_count,
+    COUNT(DISTINCT stay_id) AS distinct_stays
+FROM `mimic-study-498508.non_traumatic_sah_study.chartevents_cohort_raw`
+UNION ALL
+SELECT
+    'labevents_cohort_raw' AS table_name,
+    COUNT(*),
+    COUNT(DISTINCT subject_id)
+FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw`;
+
 -- -----------------------------------------------------------------------------
 -- 3. 红细胞输血标记：作为排除/敏感性分析因素，不作为核心暴露
 -- -----------------------------------------------------------------------------
@@ -585,7 +642,7 @@ evd_icp_chart_events AS (
         MIN(ce.charttime) AS first_evd_icp_chart_time_48h,
         COUNT(*) AS evd_icp_chart_events_48h,
         STRING_AGG(DISTINCT di.label, ', ' ORDER BY di.label) AS evd_icp_chart_labels_48h
-    FROM `physionet-data.mimiciv_3_1_icu.chartevents` ce
+    FROM `mimic-study-498508.non_traumatic_sah_study.chartevents_cohort_raw` ce
     INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
         ON ce.stay_id = c.stay_id
     INNER JOIN `physionet-data.mimiciv_3_1_icu.d_items` di
@@ -1030,7 +1087,7 @@ lab_lactate AS (
         'labevents_50813' AS source_table,
         le.itemid AS source_itemid,
         le.valuenum AS lactate
-    FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+    FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
     INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
         ON le.subject_id = c.subject_id
        AND (le.hadm_id = c.hadm_id OR le.hadm_id IS NULL)
@@ -1098,7 +1155,7 @@ lab_lactate AS (
         'labevents_50813' AS source_table,
         le.itemid AS source_itemid,
         le.valuenum AS lactate
-    FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+    FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
     INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
         ON le.subject_id = c.subject_id
        AND (le.hadm_id = c.hadm_id OR le.hadm_id IS NULL)
@@ -1158,7 +1215,7 @@ SELECT
     li.label AS troponin_label,
     le.valueuom AS valueuom,
     le.valuenum AS troponin_value
-FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.troponin_labitems` li
     ON le.itemid = li.itemid
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
@@ -1183,7 +1240,7 @@ SELECT
     li.label AS troponin_label,
     le.valueuom AS valueuom,
     le.valuenum AS troponin_value
-FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.troponin_labitems` li
     ON le.itemid = li.itemid
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
@@ -1268,7 +1325,7 @@ SELECT
     ii.label AS inr_label,
     le.valueuom,
     le.valuenum AS inr
-FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
 INNER JOIN inr_itemids ii
     ON le.itemid = ii.itemid
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
@@ -1354,7 +1411,7 @@ SELECT
         WHEN le.valuenum BETWEEN 21 AND 100 THEN le.valuenum / 100.0
         ELSE NULL
     END AS fio2
-FROM `physionet-data.mimiciv_3_1_hosp.labevents` le
+FROM `mimic-study-498508.non_traumatic_sah_study.labevents_cohort_raw` le
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
     ON le.subject_id = c.subject_id
    AND le.hadm_id = c.hadm_id
@@ -1394,7 +1451,7 @@ SELECT
         WHEN ce.valuenum BETWEEN 21 AND 100 THEN ce.valuenum / 100.0
         ELSE NULL
     END AS fio2
-FROM `physionet-data.mimiciv_3_1_icu.chartevents` ce
+FROM `mimic-study-498508.non_traumatic_sah_study.chartevents_cohort_raw` ce
 INNER JOIN `mimic-study-498508.non_traumatic_sah_study.eligible_icu_cohort` c
     ON ce.stay_id = c.stay_id
 WHERE ce.itemid = 223835
