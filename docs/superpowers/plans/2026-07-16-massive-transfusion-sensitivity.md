@@ -24,6 +24,7 @@
 ### Task 1: Lock the cross-file cohort contract with failing tests
 
 **Files:**
+- Create: `tests/__init__.py`
 - Create: `tests/test_massive_transfusion_sensitivity_contract.py`
 - Read: `10_create_non_traumatic_sah_cohort.sql`
 - Read: `11_bigquery_notebook_non_traumatic_sah_analysis.py`
@@ -35,7 +36,15 @@
 - Consumes: exact SQL aliases and Python registry names approved in the design.
 - Produces: a standard-library regression contract used by Tasks 2–4.
 
-- [ ] **Step 1: Create the failing contract test**
+- [ ] **Step 1: Create the local test package marker**
+
+Add the following file exactly so the repository test package cannot be shadowed by an installed top-level `tests` package:
+
+```python
+"""Repository-local contract tests."""
+```
+
+- [ ] **Step 2: Create the failing contract test**
 
 Add the following file exactly:
 
@@ -75,10 +84,10 @@ class SqlContractTests(unittest.TestCase):
 
     def test_inclusive_sensitivity_removes_only_massive_transfusion(self) -> None:
         body = self.cases["eligible_include_massive_transfusion_sensitivity"]
-        self.assertIn("core_feature_missing_count <= 2", body)
-        self.assertNotIn("massive_transfusion_24h", body)
-        self.assertNotIn("icu_los_hours", body)
-        self.assertNotIn("any_rbc_transfusion_48h", body)
+        self.assertEqual(
+            body,
+            "WHEN core_feature_missing_count <= 2 THEN 1 ELSE 0",
+        )
 
     def test_sql_audit_outputs_include_sensitivity(self) -> None:
         self.assertIn(
@@ -119,13 +128,17 @@ class GovernanceContractTests(unittest.TestCase):
         self.assertIn("DEV-2026-07-16-001", deviations)
         self.assertIn('outcome_access_before_decision: "accessed"', deviations)
         self.assertIn("不得描述为结果揭盲前预设", deviations)
+        self.assertIn("支持性敏感性分析", protocol)
+        self.assertIn("不用于估计 RBC 输血的因果效应", protocol)
+        self.assertIn("支持性而非共同主要分析", sap)
+        self.assertIn("不得据此估计 RBC 输血因果效应", sap)
 
 
 if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Step 2: Run the test and verify the intended failures**
+- [ ] **Step 3: Run the test and verify the intended failures**
 
 Run:
 
@@ -135,10 +148,10 @@ python3 -m unittest tests/test_massive_transfusion_sensitivity_contract.py -v
 
 Expected: the existing primary-exclusion test passes; the inclusive SQL, Python registry, and governance tests fail because the new flag and active-worktree documents are not implemented yet.
 
-- [ ] **Step 3: Commit the failing contract**
+- [ ] **Step 4: Commit the failing contract**
 
 ```bash
-git add tests/test_massive_transfusion_sensitivity_contract.py
+git add tests/__init__.py tests/test_massive_transfusion_sensitivity_contract.py
 git commit -m "Lock the transfusion sensitivity cohort contract"
 ```
 
