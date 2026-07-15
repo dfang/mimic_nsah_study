@@ -12,12 +12,12 @@ Runs:
   2. scripts/13_run_non_traumatic_sah_analysis.py
 
 Output is printed to the console and saved to:
-  dist/YYYYMMDD/analysis_result.md
+  dist/analysis_result.md
 
 Pipeline options:
   --sql-only             Run only the cohort SQL step.
   --analysis-only        Run only the Python analysis step.
-  --date YYYYMMDD        Date folder name to output results to. Default: today's date.
+  --date YYYYMMDD        Deprecated legacy option; the value is ignored.
 
 Common options passed to the cohort SQL step:
   --dry-run              Validate the SQL job without creating tables.
@@ -32,7 +32,6 @@ run_analysis=1
 sql_only=0
 analysis_only=0
 sql_args=()
-date_dir=$(date '+%Y%m%d')
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -51,11 +50,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --date)
-      if [[ $# -lt 2 ]]; then
-        echo "Error: --date requires a YYYYMMDD argument." >&2
+      if [[ $# -lt 2 || ! "$2" =~ ^[0-9]{8}$ ]]; then
+        echo "Usage: --date requires a legacy YYYYMMDD value." >&2
         exit 2
       fi
-      date_dir="$2"
+      echo "Warning: --date is deprecated and ignored; output is dist/analysis_result.md." >&2
       shift 2
       ;;
     *)
@@ -70,8 +69,8 @@ if [[ "$sql_only" -eq 1 && "$analysis_only" -eq 1 ]]; then
   exit 2
 fi
 
-mkdir -p "dist/${date_dir}"
-output_file="dist/${date_dir}/analysis_result.md"
+mkdir -p dist
+output_file="dist/analysis_result.md"
 
 close_log_block() {
   printf '\n```\n' >> "$output_file"

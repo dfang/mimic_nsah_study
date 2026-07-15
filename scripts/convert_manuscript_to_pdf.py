@@ -6,6 +6,11 @@ Professional typography with journal-style formatting.
 import os
 import sys
 
+if __package__:
+    from .artifact_cli import accept_legacy_date_arg
+else:
+    from artifact_cli import accept_legacy_date_arg
+
 # On macOS, WeasyPrint needs Homebrew libraries (glib, pango, cairo) which are located in /opt/homebrew/lib.
 # Setting DYLD_FALLBACK_LIBRARY_PATH in os.environ before importing weasyprint allows cffi to find them.
 if sys.platform == "darwin":
@@ -369,6 +374,7 @@ def convert(md_path, pdf_path, css, lang="en"):
 # ═══════════════════════════════════════════════════════════════
 def main() -> None:
     """Generate canonical manuscript PDFs under dist/pdf/."""
+    accept_legacy_date_arg(sys.argv[1:], "convert_manuscript_to_pdf.py")
     base = "dist"
 
     print(f"Converting manuscripts to PDF in {base}...\n")

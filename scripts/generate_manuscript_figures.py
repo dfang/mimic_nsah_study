@@ -2,16 +2,20 @@
 """
 Generate manuscript figures for the non-traumatic SAH phenotype manuscript.
 
-The values in this script are synchronized with dist/20260707/analysis_result.md.
-Pass a YYYYMMDD directory name as argv[1]; output is written to dist/YYYYMMDD/figures.
+The values in this script are synchronized with dist/analysis_result.md.
+Output is written to dist/figures/.
 """
 from __future__ import annotations
 
-import datetime
 import json
 import os
 import subprocess
 import sys
+
+if __package__:
+    from .artifact_cli import accept_legacy_date_arg
+else:
+    from artifact_cli import accept_legacy_date_arg
 
 import matplotlib
 
@@ -22,9 +26,8 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import FancyBboxPatch
 
 
-today = datetime.datetime.now().strftime("%Y%m%d")
-date_dir = sys.argv[1] if len(sys.argv) > 1 else today
-figures_dir = f"dist/{date_dir}/figures"
+accept_legacy_date_arg(sys.argv[1:], "generate_manuscript_figures.py")
+figures_dir = "dist/figures"
 os.makedirs(figures_dir, exist_ok=True)
 
 plt.rcParams.update(
