@@ -301,7 +301,13 @@ def preprocess_markdown(md_path):
     content = re.sub(r"\$\s*([^$]{1,24})\s*\$", r"\1", content)
 
     base_dir = os.path.dirname(os.path.abspath(md_path))
-    content = re.sub(r'\]\(figures/', f'](file://{base_dir}/figures/', content)
+    relative_image = r"(!\[[^\]]*\]\()(?!(?:[a-z][a-z0-9+.-]*:|/|#))([^)]+)\)"
+    content = re.sub(
+        relative_image,
+        lambda match: f"{match.group(1)}file://{base_dir}/{match.group(2)})",
+        content,
+        flags=re.IGNORECASE,
+    )
     return content
 
 

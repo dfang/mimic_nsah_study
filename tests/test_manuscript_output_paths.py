@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from scripts.convert_manuscript_to_pdf import preprocess_markdown
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,3 +39,14 @@ def test_canonical_manuscripts_reference_dated_figures() -> None:
     for document in (english, chinese, supplement):
         assert "](figures/" not in document
         assert "](20260711/figures/" in document
+
+
+def test_preprocess_resolves_dated_relative_figure_path(tmp_path: Path) -> None:
+    manuscript = tmp_path / "manuscript.md"
+    manuscript.write_text(
+        "![Figure](20260711/figures/figure.png)", encoding="utf-8"
+    )
+
+    result = preprocess_markdown(manuscript)
+
+    assert f"](file://{tmp_path}/20260711/figures/figure.png)" in result
