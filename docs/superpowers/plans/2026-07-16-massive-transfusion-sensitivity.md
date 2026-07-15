@@ -243,21 +243,56 @@ git commit -m "Expose the inclusive transfusion sensitivity cohort"
 - Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:164-168`
 - Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:252-255`
 - Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:353-355`
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:330-385`
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:1174-1182`
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:1627-1697`
 - Test: `tests/test_massive_transfusion_sensitivity_contract.py`
 
 **Interfaces:**
 - Consumes: `eligible_include_massive_transfusion_sensitivity` from `physiology_features_48h`.
-- Produces: sensitivity registry entry named `include_massive_transfusion`; preserves primary `COHORT_FLAG`.
+- Produces: sensitivity registry entry named `include_massive_transfusion`, an `ANALYSIS_SUPERSET_FLAG`, a primary-only dataframe for existing workflows, and an unfiltered superset for cohort sensitivity; preserves primary `COHORT_FLAG`.
 
-- [ ] **Step 1: Document the cohort flag in the configuration comment**
+- [ ] **Step 1: Extend the Python contract test for the loader/filter interaction**
 
-Add:
+Append the following assertions to `test_python_loads_and_registers_sensitivity_flag`:
+
+```python
+        self.assertIn(
+            'ANALYSIS_SUPERSET_FLAG = "eligible_include_massive_transfusion_sensitivity"',
+            self.source,
+        )
+        self.assertIn("WHERE {ANALYSIS_SUPERSET_FLAG} = 1", self.source)
+        self.assertIn("analysis_df = read_table_from_bigquery()", self.source)
+        self.assertIn(
+            "df = analysis_df[analysis_df[COHORT_FLAG] == 1].copy()",
+            self.source,
+        )
+        self.assertRegex(
+            self.source,
+            r'run_sensitivity_cohort_summaries\(\s*analysis_df,\s*primary\["assignments"\]\s*,?\s*\)',
+        )
+```
+
+- [ ] **Step 2: Run the focused test and verify RED**
+
+```bash
+python3 -m unittest \
+  tests.test_massive_transfusion_sensitivity_contract.PythonContractTests -v
+```
+
+Expected: FAIL because `ANALYSIS_SUPERSET_FLAG` and the split primary/superset data flow are not implemented.
+
+- [ ] **Step 3: Document both cohort flags in configuration**
+
+Keep the existing cohort comments, add the inclusive comment, and define the two roles exactly:
 
 ```python
 #   eligible_include_massive_transfusion_sensitivity: 不排除 0-24h 大量输血
+COHORT_FLAG = "eligible_primary_analysis"
+ANALYSIS_SUPERSET_FLAG = "eligible_include_massive_transfusion_sensitivity"
 ```
 
-- [ ] **Step 2: Register the sensitivity cohort**
+- [ ] **Step 4: Register the sensitivity cohort**
 
 Make the registry exactly:
 
@@ -269,7 +304,7 @@ SENSITIVITY_COHORT_FLAGS = {
 }
 ```
 
-- [ ] **Step 3: Load the new field from BigQuery**
+- [ ] **Step 5: Load the new field from BigQuery**
 
 Add this string after the other eligibility flags in `selected_columns`:
 
@@ -277,7 +312,49 @@ Add this string after the other eligibility flags in `selected_columns`:
 "eligible_include_massive_transfusion_sensitivity",
 ```
 
-- [ ] **Step 4: Run contract and syntax checks**
+- [ ] **Step 6: Query the analysis superset instead of the primary subset**
+
+Change the loader docstring, query predicate, and status print to:
+
+```python
+def read_table_from_bigquery() -> pd.DataFrame:
+    """从 BigQuery 读取覆盖主分析及队列敏感性分析的最小宽表超集。"""
+```
+
+```python
+    WHERE {ANALYSIS_SUPERSET_FLAG} = 1
+```
+
+```python
+    print(f"读取 cohort superset flag：{ANALYSIS_SUPERSET_FLAG} = 1")
+```
+
+- [ ] **Step 7: Derive the primary dataframe and preserve sensitivity access to the superset**
+
+Start the main flow exactly as follows:
+
+```python
+analysis_df = read_table_from_bigquery()
+df = analysis_df[analysis_df[COHORT_FLAG] == 1].copy()
+validate_input(df)
+```
+
+Keep every existing primary analysis call on `df`. Change only the cohort-sensitivity call to:
+
+```python
+sensitivity_cohort_summary = run_sensitivity_cohort_summaries(
+    analysis_df,
+    primary["assignments"],
+)
+```
+
+Change that function's docstring to:
+
+```python
+"""在覆盖预定义队列的宽表超集中分别重新聚类并汇总结局。"""
+```
+
+- [ ] **Step 8: Run contract and syntax checks**
 
 Run:
 
@@ -289,12 +366,13 @@ python3 -m py_compile 11_bigquery_notebook_non_traumatic_sah_analysis.py
 
 Expected: the Python contract test passes and `py_compile` exits 0 without output.
 
-- [ ] **Step 5: Review and commit**
+- [ ] **Step 9: Review and commit**
 
 ```bash
 git diff --check
 git diff -- 11_bigquery_notebook_non_traumatic_sah_analysis.py
-git add 11_bigquery_notebook_non_traumatic_sah_analysis.py
+git add 11_bigquery_notebook_non_traumatic_sah_analysis.py \
+  tests/test_massive_transfusion_sensitivity_contract.py
 git commit -m "Run the inclusive transfusion sensitivity analysis"
 ```
 

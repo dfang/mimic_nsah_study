@@ -56,8 +56,10 @@ The existing primary flag and table names will not be renamed, preserving downst
 
 1. Load the new eligibility flag.
 2. Register it in `SENSITIVITY_COHORT_FLAGS` under the stable analysis name `include_massive_transfusion`.
-3. Reuse the existing sensitivity-analysis pathway so preprocessing and clustering are independently refit within the sensitivity cohort, consistent with the current sensitivity framework.
-4. Preserve the primary `COHORT_FLAG = "eligible_primary_analysis"`.
+3. Query the minimal analysis superset with `eligible_include_massive_transfusion_sensitivity = 1`, then derive the primary dataframe in memory with `eligible_primary_analysis = 1`.
+4. Use the primary dataframe for every existing primary workflow and pass the unfiltered analysis superset only to the cohort-sensitivity pathway, preventing massive-transfusion rows from being discarded before sensitivity filtering.
+5. Reuse the existing sensitivity-analysis pathway so preprocessing and clustering are independently refit within each sensitivity cohort, consistent with the current sensitivity framework.
+6. Preserve the primary `COHORT_FLAG = "eligible_primary_analysis"`.
 
 No new estimator, dependency, random seed, feature set, or outcome definition is introduced.
 
