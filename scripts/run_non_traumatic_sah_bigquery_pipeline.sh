@@ -2,6 +2,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+command_args=("$@")
 
 usage() {
   cat <<'USAGE'
@@ -71,35 +72,50 @@ fi
 
 mkdir -p dist
 output_file="dist/analysis_result.md"
-
-close_log_block() {
-  printf '\n```\n' >> "$output_file"
-}
+temporary_file="$(mktemp "dist/.analysis_result.XXXXXX.md")"
 
 {
   printf '# Non-traumatic SAH BigQuery Analysis Result\n\n'
   printf 'Generated at: %s\n\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
-  printf 'Command: `%s`\n\n' "$0 $*"
+  printf 'Command: `%s`\n\n' "$0 ${command_args[*]}"
   printf '```text\n'
-} > "$output_file"
+} > "$temporary_file"
 
-exec > >(tee -a "$output_file") 2>&1
-trap close_log_block EXIT
+set +e
+(
+  set -e
+  if [[ "$run_sql" -eq 1 ]]; then
+    python3 scripts/12_run_non_traumatic_sah_cohort_sql.py ${sql_args[@]+"${sql_args[@]}"}
+  fi
 
-if [[ "$run_sql" -eq 1 ]]; then
-  python3 scripts/12_run_non_traumatic_sah_cohort_sql.py ${sql_args[@]+"${sql_args[@]}"}
+  if [[ "${#sql_args[@]}" -gt 0 ]]; then
+    for arg in "${sql_args[@]}"; do
+      case "$arg" in
+        --dry-run)
+          exit 0
+          ;;
+      esac
+    done
+  fi
+
+  if [[ "$run_analysis" -eq 1 ]]; then
+    python3 scripts/13_run_non_traumatic_sah_analysis.py
+  fi
+) 2>&1 | tee -a "$temporary_file"
+pipeline_status=("${PIPESTATUS[@]}")
+set -e
+
+printf '\n```\n' >> "$temporary_file"
+
+producer_status="${pipeline_status[0]}"
+tee_status="${pipeline_status[1]}"
+if [[ "$producer_status" -ne 0 || "$tee_status" -ne 0 ]]; then
+  failure_status="$producer_status"
+  if [[ "$failure_status" -eq 0 ]]; then
+    failure_status="$tee_status"
+  fi
+  printf 'Pipeline failed; temporary log retained at: %s\n' "$temporary_file" >&2
+  exit "$failure_status"
 fi
 
-if [[ "${#sql_args[@]}" -gt 0 ]]; then
-  for arg in "${sql_args[@]}"; do
-    case "$arg" in
-      --dry-run)
-        exit 0
-        ;;
-    esac
-  done
-fi
-
-if [[ "$run_analysis" -eq 1 ]]; then
-  python3 scripts/13_run_non_traumatic_sah_analysis.py
-fi
+mv -f "$temporary_file" "$output_file"

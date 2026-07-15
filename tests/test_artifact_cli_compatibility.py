@@ -1,6 +1,9 @@
+import importlib
+import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 import pytest
 
@@ -46,6 +49,62 @@ def test_generators_use_canonical_output_paths() -> None:
     assert "date_dir" not in converter
 
 
+def test_figure_generator_import_is_side_effect_free(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["pytest-host", "--unrelated-host-option"])
+    sys.modules.pop("scripts.generate_manuscript_figures", None)
+
+    module = importlib.import_module("scripts.generate_manuscript_figures")
+    importlib.reload(module)
+
+    assert not (tmp_path / "dist" / "figures").exists()
+
+
+def test_failed_pipeline_retains_log_without_replacing_canonical_report(
+    tmp_path: Path,
+) -> None:
+    canonical_report = ROOT / "dist" / "analysis_result.md"
+    original_bytes = canonical_report.read_bytes()
+    existing_logs = set((ROOT / "dist").glob(".analysis_result.*.md"))
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    python_stub = stub_bin / "python3"
+    python_stub.write_text("#!/usr/bin/env bash\necho 'forced python failure' >&2\nexit 23\n")
+    python_stub.chmod(0o755)
+
+    env = os.environ.copy()
+    env["PATH"] = f"{stub_bin}{os.pathsep}{env['PATH']}"
+    retained_logs: set[Path] = set()
+    try:
+        result = subprocess.run(
+            [
+                "bash",
+                "scripts/run_non_traumatic_sah_bigquery_pipeline.sh",
+                "--analysis-only",
+            ],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        retained_logs = (
+            set((ROOT / "dist").glob(".analysis_result.*.md")) - existing_logs
+        )
+
+        assert result.returncode == 23
+        assert canonical_report.read_bytes() == original_bytes
+        assert len(retained_logs) == 1
+        retained_log = next(iter(retained_logs))
+        assert str(retained_log.relative_to(ROOT)) in result.stderr
+        assert retained_log.read_text(encoding="utf-8").rstrip().endswith("```")
+    finally:
+        canonical_report.write_bytes(original_bytes)
+        for retained_log in retained_logs:
+            retained_log.unlink(missing_ok=True)
+
+
 def test_active_files_have_no_dated_dist_paths() -> None:
     active_paths = [
         "AGENTS.md",
@@ -75,3 +134,11 @@ def test_dist_is_not_ignored_and_has_no_dated_directories() -> None:
     assert not any(
         re.fullmatch(r"[0-9]{8}", path.name) for path in (ROOT / "dist").iterdir()
     )
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "dist"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert untracked.stdout == ""

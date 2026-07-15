@@ -26,22 +26,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import FancyBboxPatch
 
 
-accept_legacy_date_arg(sys.argv[1:], "generate_manuscript_figures.py")
 figures_dir = "dist/figures"
-os.makedirs(figures_dir, exist_ok=True)
-
-plt.rcParams.update(
-    {
-        "font.family": "DejaVu Sans",
-        "font.size": 10,
-        "axes.titlesize": 12,
-        "axes.labelsize": 10,
-        "figure.dpi": 300,
-        "savefig.dpi": 300,
-        "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.12,
-    }
-)
 
 P1_COLOR = "#2166AC"
 P2_COLOR = "#F4A582"
@@ -653,7 +638,24 @@ def fig_s7_eicu_external_validation() -> None:
     savefig("fig_s7_eicu_external_validation.png")
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> None:
+    accept_legacy_date_arg(
+        sys.argv[1:] if argv is None else argv,
+        "generate_manuscript_figures.py",
+    )
+    os.makedirs(figures_dir, exist_ok=True)
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "font.size": 10,
+            "axes.titlesize": 12,
+            "axes.labelsize": 10,
+            "figure.dpi": 300,
+            "savefig.dpi": 300,
+            "savefig.bbox": "tight",
+            "savefig.pad_inches": 0.12,
+        }
+    )
     fig1_cohort_flowchart()
     fig2_primary_log_pca_heatmap()
     fig3_outcomes_anemia()
@@ -667,3 +669,7 @@ if __name__ == "__main__":
     fig_s6_forest_plot()
     fig_s7_eicu_external_validation()
     print(f"\nAll figures saved to {figures_dir}/")
+
+
+if __name__ == "__main__":
+    main()
