@@ -165,6 +165,7 @@ CV_FOLDS = 5
 #   eligible_primary_analysis: 主分析
 #   eligible_no_transfusion_sensitivity: 排除所有 0-48h RBC 输血患者
 #   eligible_sensitivity_48h_los: ICU LOS >=48h 敏感性分析
+#   eligible_include_massive_transfusion_sensitivity: 不排除 0-24h 大量输血
 COHORT_FLAG = "eligible_primary_analysis"
 
 FEATURES = [
@@ -252,6 +253,7 @@ CANDIDATE_AUDIT_FEATURES = [
 SENSITIVITY_COHORT_FLAGS = {
     "no_rbc_48h": "eligible_no_transfusion_sensitivity",
     "icu_los_ge_48h": "eligible_sensitivity_48h_los",
+    "include_massive_transfusion": "eligible_include_massive_transfusion_sensitivity",
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
@@ -353,6 +355,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
         "eligible_sensitivity_48h_los",
+        "eligible_include_massive_transfusion_sensitivity",
         "gcs_min_48h",
         "gcs_grade_min_48h",
         "wfns_gcs_grade_min_48h",
