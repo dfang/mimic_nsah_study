@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC BigQuery QC"
+  short_description: "Audit MIMIC BigQuery schemas, joins, timing, and cost"
+  default_prompt: "Use $mimic-bigquery-qc to audit this MIMIC BigQuery SQL and its QC evidence."

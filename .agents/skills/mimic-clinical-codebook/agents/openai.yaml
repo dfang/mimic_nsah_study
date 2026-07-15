@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Clinical Codebook"
+  short_description: "Build auditable MIMIC clinical codebooks and mappings"
+  default_prompt: "Use $mimic-clinical-codebook to build or audit this MIMIC concept codebook."

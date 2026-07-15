@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Protocol and SAP"
+  short_description: "Freeze a reproducible MIMIC protocol and analysis plan"
+  default_prompt: "Use $mimic-study-protocol-sap to draft and freeze the protocol and statistical analysis plan for this MIMIC study."

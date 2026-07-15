@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Data Governance"
+  short_description: "Gate MIMIC data use before tools, scans, and sharing"
+  default_prompt: "Use $mimic-data-governance to classify these files and decide whether this MIMIC workflow may proceed."

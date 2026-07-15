@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Cohort Builder"
+  short_description: "Build time-valid, auditable MIMIC cohorts in BigQuery"
+  default_prompt: "Use $mimic-cohort-builder to define and audit this MIMIC cohort."

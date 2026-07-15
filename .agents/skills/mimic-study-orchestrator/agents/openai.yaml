@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Study Orchestrator"
+  short_description: "Run gated MIMIC research from protocol through submission"
+  default_prompt: "Use $mimic-study-orchestrator to coordinate this MIMIC study with explicit artifacts and stage gates."

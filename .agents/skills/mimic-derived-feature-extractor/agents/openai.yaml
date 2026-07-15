@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Derived Features"
+  short_description: "Extract time-aligned MIMIC derived clinical features"
+  default_prompt: "Use $mimic-derived-feature-extractor to build this time-aligned MIMIC feature table."

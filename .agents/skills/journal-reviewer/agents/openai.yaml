@@ -1,0 +1,4 @@
+interface:
+  display_name: "Journal Reviewer"
+  short_description: "Simulate publication-focused peer review for MIMIC studies"
+  default_prompt: "Use $journal-reviewer to assess this MIMIC manuscript for publication readiness."

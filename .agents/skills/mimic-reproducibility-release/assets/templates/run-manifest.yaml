@@ -1,0 +1,30 @@
+release_id: ""
+created_at_utc: ""
+git_commit: ""
+worktree_clean: null
+reproducibility_level: ""
+data_sources:
+  - name: "MIMIC-IV"
+    version: ""
+    access_required: true
+derived_concepts:
+  source: ""
+  revision: ""
+environment:
+  os: ""
+  architecture: ""
+  python: ""
+  r: ""
+  sql_dialect: "GoogleSQL"
+  lockfiles: []
+seeds: []
+pipeline_entrypoint: ""
+verification:
+  clean_run: "not_run"
+  tests: "not_run"
+  notebook_qc: "not_run"
+  sql_qc: "not_run"
+  result_comparison: "not_run"
+public_root: ""
+restricted_root: ""
+known_gaps: []

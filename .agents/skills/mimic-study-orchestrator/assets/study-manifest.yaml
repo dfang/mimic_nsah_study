@@ -1,0 +1,71 @@
+manifest_version: "2.0"
+manifest_scope: "single_primary_question"
+study:
+  id: "<study-id>"
+  title: "<working title>"
+  question: "<one primary scientific question>"
+  design_family: "<descriptive|association|prediction|causal|phenotyping>"
+  design_subtype: "<not_applicable|diagnostic|prognostic|target_trial|iv|rd|did|its|other_with_gate_plan>"
+  modalities: ["<structured|notes|imaging|waveforms|other>"]
+  intended_use: "<clinical or scientific use>"
+governance:
+  classification: "restricted-mimic"
+  execution_environment: "<local|approved-cloud>"
+  external_llm_allowed: false
+  compliance_evidence: "<path or policy reference>"
+data:
+  sources:
+    - project: "<MIMIC-IV|MIMIC-IV-Note|MIMIC-IV-ED|MIMIC-CXR|MIMIC-Code-derived|other>"
+      module: "<hosp|icu|note|ed|cxr|derived|other>"
+      release: "<exact source release>"
+      schema: "<verified execution schema or not_applicable>"
+      access_date: "<YYYY-MM-DD>"
+      linkage_provenance:
+        status: "<not_applicable|assessed|not_assessed>"
+        artifact: "<assessment path or empty>"
+        sha256: "<assessment hash or empty>"
+  derived_metadata:
+    mimic_version: "<query _metadata or record equivalent evidence>"
+    mimic_code_version: "<query _metadata or record build version>"
+    mimic_code_commit_hash: "<query _metadata or record source commit>"
+analysis_contract:
+  grain:
+    unit: "<subject|admission|stay|event|landmark|eligible_trial|clone|person_period>"
+    key_columns: ["<one or more key columns>"]
+    repeat_structure: "<not_applicable or definition>"
+  estimand_or_target: "<estimand or prediction target>"
+  times:
+    eligibility_time: "not_applicable"
+    cohort_entry_time: "not_applicable"
+    index_time: "not_applicable"
+    feature_window_start: "not_applicable"
+    feature_window_end: "not_applicable"
+    prediction_landmark: "not_applicable"
+    target_ascertainment_window: "not_applicable"
+    reference_standard_time: "not_applicable"
+    treatment_assignment_time: "not_applicable"
+    exposure_end: "not_applicable"
+    followup_start: "not_applicable"
+    censoring_time: "not_applicable"
+    outcome_time: "not_applicable"
+# Every stage artifact points to a bundle index. The index records each member's
+# role, path, version, and SHA-256 rather than embedding restricted contents.
+stages:
+  question: {status: "not_started", artifact: "", sha256: ""}
+  protocol: {status: "not_started", artifact: "", sha256: ""}
+  concepts: {status: "not_started", artifact: "", sha256: ""}
+  cohort: {status: "not_started", artifact: "", sha256: ""}
+  features: {status: "not_started", artifact: "", sha256: ""}
+  analysis: {status: "not_started", artifact: "", sha256: ""}
+  validation: {status: "not_started", artifact: "", sha256: "", rationale: ""}
+  analysis_review: {status: "not_started", artifact: "", sha256: ""}
+  manuscript: {status: "not_started", artifact: "", sha256: ""}
+  manuscript_review: {status: "not_started", artifact: "", sha256: ""}
+  release: {status: "not_started", artifact: "", sha256: ""}
+  submission: {status: "not_started", artifact: "", sha256: ""}
+provenance:
+  repository_commit: "<git commit>"
+  environment_lock: "<path>"
+  random_seed_registry: "<path>"
+  issue_register: "<path>"
+  deviation_log: "<path>"

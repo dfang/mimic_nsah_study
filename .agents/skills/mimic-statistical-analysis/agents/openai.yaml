@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Statistical Analysis"
+  short_description: "Run defensible statistical analyses for MIMIC-IV studies."
+  default_prompt: "Use $mimic-statistical-analysis to build and verify the statistical analysis for this MIMIC-IV study."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC-IV Expert Router"
+  short_description: "Route MIMIC research with global design and data guardrails"
+  default_prompt: "Use $mimic-iv-expert to establish the MIMIC study context and route this task."

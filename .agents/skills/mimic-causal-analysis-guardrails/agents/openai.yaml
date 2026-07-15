@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Causal Guardrails"
+  short_description: "Guard MIMIC target-trial and causal-effect analyses"
+  default_prompt: "Use $mimic-causal-analysis-guardrails to design or audit this MIMIC causal analysis."

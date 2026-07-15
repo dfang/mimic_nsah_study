@@ -1,0 +1,4 @@
+interface:
+  display_name: "Statistics Reviewer"
+  short_description: "Audit MIMIC statistical validity, uncertainty, and bias"
+  default_prompt: "Use $statistics-reviewer to audit the statistical validity of this MIMIC analysis."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Submission Packager"
+  short_description: "Assemble journal-ready MIMIC submission packages."
+  default_prompt: "Use $mimic-submission-packager to prepare this MIMIC manuscript and its journal submission package."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manuscript PDF Compiler"
+  short_description: "Resolve citations and render journal-ready manuscript PDFs."
+  default_prompt: "Use $mimic-manuscript-compiler to preflight Pandoc citations and compile this Markdown manuscript through the required PDF backend."

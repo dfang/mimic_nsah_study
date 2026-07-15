@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clinical Reviewer"
+  short_description: "Audit MIMIC clinical definitions, timing, and plausibility"
+  default_prompt: "Use $clinical-reviewer to audit the clinical validity of this MIMIC study artifact."

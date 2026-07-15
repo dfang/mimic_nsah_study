@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Exposure and Outcome Builder"
+  short_description: "Define auditable MIMIC-IV exposures and clinical outcomes."
+  default_prompt: "Use $mimic-exposure-outcome-builder to define and audit the exposures and outcomes for this MIMIC-IV study."

@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "skills": {
+    "clinical-reviewer": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/clinical-reviewer/SKILL.md",
+      "computedHash": "1b818a3aa79589d1476993628fbbbd9843f7d67c2d30eac6e1963acd90959edf"
+    },
+    "journal-reviewer": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/journal-reviewer/SKILL.md",
+      "computedHash": "ce4172c9ee5ad2dce87c770a2e5fc140bb544e9bc5359e51cb7145786dc55a94"
+    },
+    "mimic-bigquery-qc": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-bigquery-qc/SKILL.md",
+      "computedHash": "7d1537d49cbde6fbfa2785b594bb7fa30efac00a6bfbe2b124876b931374bc8e"
+    },
+    "mimic-causal-analysis-guardrails": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-causal-analysis-guardrails/SKILL.md",
+      "computedHash": "c1af41517822915d3f5834fab7c67f5a85f7f1ff474b019974a5cd17dc9a5382"
+    },
+    "mimic-clinical-codebook": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-clinical-codebook/SKILL.md",
+      "computedHash": "7ec71baf6515ac00e6db5c8456bd8745cc91131956b1a0032e76c2e5a266f8f6"
+    },
+    "mimic-clinical-manuscript": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-clinical-manuscript/SKILL.md",
+      "computedHash": "0231ea86a60187fcb00748b021ce7f83b1554ec2aa3f8310b4965005649f4053"
+    },
+    "mimic-cohort-builder": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-cohort-builder/SKILL.md",
+      "computedHash": "99633b2094689a3b2f410e487bd1c57b62cf5cca062cf5168921735aecfabd8f"
+    },
+    "mimic-data-governance": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-data-governance/SKILL.md",
+      "computedHash": "452773acbd7e1c7e79b5a23a2b41f6fee36ac6a32b7135eb179db405d02830f0"
+    },
+    "mimic-derived-feature-extractor": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-derived-feature-extractor/SKILL.md",
+      "computedHash": "92fca4f004b57a5d684986ed0424a83e449af494894c72676536957b987c28c1"
+    },
+    "mimic-exposure-outcome-builder": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-exposure-outcome-builder/SKILL.md",
+      "computedHash": "f388472550ec145983cbb9ea7615b0c14dceb54d9ad5b9b16159a77f3f6ffd2c"
+    },
+    "mimic-external-validation": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-external-validation/SKILL.md",
+      "computedHash": "e5e2568e9b84a38c9dc58ada6591bae56a3d456fad2cb931e5436ff1f48e29f5"
+    },
+    "mimic-iv-expert": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-iv-expert/SKILL.md",
+      "computedHash": "8124fe64f6a655bb6091995d589ed533b23d510261234f594e5ae94fcb462981"
+    },
+    "mimic-literature-evidence": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-literature-evidence/SKILL.md",
+      "computedHash": "905ba1b1301531f1a870c1d1f21458bfd462dc70af2b87ea6d1d8534057b6f2d"
+    },
+    "mimic-manuscript-compiler": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-manuscript-compiler/SKILL.md",
+      "computedHash": "755a2e1a9e7b0057d7326982ef6acc916b709d464f20de67aef6b83691cb047b"
+    },
+    "mimic-phenotyping-pipeline": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-phenotyping-pipeline/SKILL.md",
+      "computedHash": "01fbcf9253aecadc7d752100b4bc6b5a4ad38c4b709e694590c4bca08705dc14"
+    },
+    "mimic-prediction-modeling": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-prediction-modeling/SKILL.md",
+      "computedHash": "77f6accb9e3633aae7d6067ddace845b1909ee4d29430c1874288341df6c7e38"
+    },
+    "mimic-reproducibility-release": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-reproducibility-release/SKILL.md",
+      "computedHash": "75666be6d9eeff10e28ea690d4609821758cbaa65b63e9bab6405a12da1e42aa"
+    },
+    "mimic-research-topic-scout": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-research-topic-scout/SKILL.md",
+      "computedHash": "362b51c636fb1ae3acd28d247fbed314b327ee89ada2071a864d76ce67a5e4a6"
+    },
+    "mimic-review": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-review/SKILL.md",
+      "computedHash": "8017e7b53c770829c55591905caafb2caa9c2f3950e62350c7a716e079ed31cc"
+    },
+    "mimic-statistical-analysis": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-statistical-analysis/SKILL.md",
+      "computedHash": "b7e9237c768e9d0f889fd74ce4b12ee2d65898bfc6abaa26e38016dcb81996de"
+    },
+    "mimic-study-orchestrator": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-study-orchestrator/SKILL.md",
+      "computedHash": "e32c6482b22837a18f63d81fa19a818bc457e9ac5147ab1e3796316878571281"
+    },
+    "mimic-study-protocol-sap": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-study-protocol-sap/SKILL.md",
+      "computedHash": "3d6461fd1bfe54a100bed958073a83f7c7cc64683596459fc1f025072a7e800e"
+    },
+    "mimic-submission-packager": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-submission-packager/SKILL.md",
+      "computedHash": "3cf6dbc3834e8818f5b4ac584601bb5df759c77df313776055dd54433322f0de"
+    },
+    "mimic-transfusion-blood-products": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mimic-transfusion-blood-products/SKILL.md",
+      "computedHash": "80fc0b794d9b1b8d667cca6156dd0f25ffe236c4500d4cd33d8535d72b82f1ab"
+    },
+    "statistics-reviewer": {
+      "source": "dfang/mimic-skills",
+      "sourceType": "github",
+      "skillPath": "skills/statistics-reviewer/SKILL.md",
+      "computedHash": "9aa05c03e50dc13905e6d55588c05b188033431d6360882017aa0cb9a9fa9db3"
+    }
+  }
+}

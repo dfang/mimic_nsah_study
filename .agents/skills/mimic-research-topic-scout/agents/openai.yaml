@@ -1,0 +1,4 @@
+interface:
+  display_name: "MIMIC Research Topic Scout"
+  short_description: "Judge topic novelty, contribution path, value, and feasibility"
+  default_prompt: "Use $mimic-research-topic-scout to broadly verify novelty, classify each topic as filling a gap or deepening evidence, and assess feasibility and publication ceiling."

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manuscript Template</title>
+    <style>
+        /* CSS conforming to medical journal standards when printed to PDF */
+        @page {
+            size: letter;
+            margin: 1in;
+            @top-right {
+                content: "Running Head / Page " counter(page);
+                font-family: Georgia, serif;
+                font-size: 8.5pt;
+                color: #555555;
+            }
+            @bottom-center {
+                content: counter(page);
+                font-family: Georgia, serif;
+                font-size: 10pt;
+            }
+        }
+        
+        @media print {
+            body {
+                font-family: Georgia, serif;
+                font-size: 11pt;
+                line-height: 2.0; /* Double spacing */
+                color: black;
+                background: white;
+            }
+            
+            .title-page {
+                page-break-after: always;
+                text-align: center;
+                padding-top: 2in;
+            }
+
+            .title-page h1 {
+                font-size: 22pt;
+                font-weight: bold;
+                line-height: 1.2;
+                margin-bottom: 0.5in;
+            }
+
+            .authors {
+                font-size: 12pt;
+                margin-bottom: 0.8in;
+            }
+
+            .affiliations {
+                font-size: 10pt;
+                color: #444444;
+                margin-bottom: 1.5in;
+                white-space: pre-line;
+            }
+
+            .corresponding {
+                text-align: left;
+                font-size: 9pt;
+                font-style: italic;
+            }
+
+            .abstract-section {
+                page-break-after: always;
+                padding-top: 0.5in;
+            }
+
+            .abstract-title {
+                font-size: 14pt;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 0.5in;
+            }
+
+            /* Paragraph formatting */
+            p {
+                text-indent: 0.5in;
+                margin-top: 0;
+                margin-bottom: 1.5em;
+                text-align: justify;
+            }
+
+            /* Citeproc has already resolved References; CSS only styles it. */
+            .abstract-section p,
+            .references p,
+            #refs .csl-entry,
+            .csl-bib-body .csl-entry {
+                text-indent: 0;
+            }
+
+            .csl-entry {
+                margin-bottom: 0.75em;
+            }
+
+            /* Continuous Paragraph Numbering for review purposes */
+            body {
+                counter-reset: para-counter;
+            }
+            p {
+                counter-increment: para-counter;
+                position: relative;
+            }
+            p::before {
+                content: "[" counter(para-counter) "] ";
+                font-family: Arial, sans-serif;
+                font-size: 8.5pt;
+                color: #888888;
+                position: absolute;
+                left: -0.4in;
+                text-indent: 0;
+                width: 0.3in;
+                text-align: right;
+            }
+
+            /* Headings */
+            h1, h2, h3 {
+                font-family: Arial, sans-serif;
+                font-weight: bold;
+                page-break-after: avoid;
+            }
+
+            h1 {
+                font-size: 14pt;
+                text-align: center;
+                margin-top: 2em;
+                margin-bottom: 1em;
+                text-transform: uppercase;
+            }
+
+            h2 {
+                font-size: 12pt;
+                margin-top: 1.5em;
+                margin-bottom: 0.8em;
+            }
+
+            h3 {
+                font-size: 11pt;
+                font-style: italic;
+                margin-top: 1.2em;
+                margin-bottom: 0.6em;
+            }
+
+            /* Standard Scientific Three-line Tables */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 2em 0;
+                font-size: 10pt;
+                line-height: 1.5;
+                page-break-inside: avoid;
+                border-top: 1.5pt solid black;
+                border-bottom: 1.5pt solid black;
+            }
+
+            th {
+                border-bottom: 1px solid black;
+                padding: 8px;
+                font-weight: bold;
+                text-align: left;
+            }
+
+            td {
+                padding: 6px 8px;
+                text-align: left;
+            }
+
+            caption {
+                font-weight: bold;
+                text-align: left;
+                margin-bottom: 0.5em;
+                font-size: 11pt;
+                caption-side: top;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Template shell to be populated by Agent -->
+    <div class="title-page">
+        <h1>Manuscript Title</h1>
+        <div class="authors">Author A, Author B</div>
+        <div class="affiliations">Department of Medicine, University X</div>
+        <div class="corresponding">Corresponding Author: email@domain.com</div>
+    </div>
+    
+    <div class="abstract-section">
+        <div class="abstract-title">Abstract</div>
+        <p>Abstract body text goes here...</p>
+    </div>
+    
+    <div class="main-content">
+        <h1>Introduction</h1>
+        <p>Introduction body text...</p>
+        
+        <h1>Methods</h1>
+        <p>Methods body text...</p>
+        
+        <h1>Results</h1>
+        <p>Results body text...</p>
+        
+        <h1>Discussion</h1>
+        <p>Discussion body text...</p>
+    </div>
+</body>
+</html>
