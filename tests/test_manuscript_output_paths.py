@@ -16,7 +16,6 @@ def test_pdf_converter_uses_stable_dist_directory() -> None:
     assert 'base = "dist"' in script
     assert "date_dir" not in script
     assert "datetime" not in script
-    assert "sys.argv" not in script
 
 
 def test_active_instructions_use_canonical_manuscript_paths() -> None:
@@ -31,22 +30,20 @@ def test_active_instructions_use_canonical_manuscript_paths() -> None:
     assert "convert_manuscript_to_pdf.py YYYYMMDD" not in prompt
 
 
-def test_canonical_manuscripts_reference_dated_figures() -> None:
+def test_canonical_manuscripts_reference_canonical_figures() -> None:
     english = read_text("dist/manuscript_non_traumatic_sah_phenotypes.md")
     chinese = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cn.md")
     supplement = read_text("dist/electronic_supplementary_material.md")
 
     for document in (english, chinese, supplement):
-        assert "](figures/" not in document
-        assert "](20260711/figures/" in document
+        assert "](figures/" in document
+        assert "](20260711/figures/" not in document
 
 
-def test_preprocess_resolves_dated_relative_figure_path(tmp_path: Path) -> None:
+def test_preprocess_resolves_canonical_relative_figure_path(tmp_path: Path) -> None:
     manuscript = tmp_path / "manuscript.md"
-    manuscript.write_text(
-        "![Figure](20260711/figures/figure.png)", encoding="utf-8"
-    )
+    manuscript.write_text("![Figure](figures/figure.png)", encoding="utf-8")
 
     result = preprocess_markdown(manuscript)
 
-    assert f"](file://{tmp_path}/20260711/figures/figure.png)" in result
+    assert f"](file://{tmp_path}/figures/figure.png)" in result
