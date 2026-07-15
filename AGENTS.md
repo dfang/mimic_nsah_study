@@ -42,7 +42,9 @@
   - `03_causal_ml_analysis.py`
   - `run_all.sh`
 - 除非任务明确要求修改，保留 `option1/` 和 `option2/` 中已有研究资料。
-- 生成内容到 `dist/` 时，必须放入 `YYYYMMDD`（如 `20260702`）文件夹内，并且在该目录下编写一个 `readme.txt`，明确告知其中的 markdown 和 pdf 文件是由哪个模型（如 `codex`、`gemini` 或 `claude`）生成的。
+- canonical manuscript 产物直接放在 `dist/`：英文稿使用 `dist/manuscript_non_traumatic_sah_phenotypes.md`，其他 Markdown、`readme.txt` 和 `dist/pdf/` 同样不再使用 `YYYYMMDD` 子目录。
+- 分析结果和图表快照仍可放入 `dist/YYYYMMDD/`，以保留生成日期和数据版本。
+- `dist/readme.txt` 必须明确说明 manuscript Markdown 和 PDF 由哪个模型（如 `codex`、`gemini` 或 `claude`）生成。
 
 ## BigQuery 与 SQL 规范
 

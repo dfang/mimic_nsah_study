@@ -99,11 +99,11 @@
 - SOFA
 - MIMIC-IV
 
-## 1. 创建目录与记录生成模型
+## 1. 准备目录与记录生成模型
 
-创建 `dist/YYYYMMDD` 目录。
+canonical manuscript 文件直接写入 `dist/`，PDF 写入 `dist/pdf/`，不使用日期子目录。分析结果和图表仍保留在 `dist/YYYYMMDD/`。
 
-在 `dist/YYYYMMDD/readme.txt` 中写明：
+在 `dist/readme.txt` 中写明：
 - markdown 和 pdf 文件由哪个模型生成；
 - 生成日期；
 - 使用的主要输入文件；
@@ -165,7 +165,7 @@ python3 scripts/generate_manuscript_figures.py YYYYMMDD
 
 ## 3. 更新英文论文
 
-更新 `dist/YYYYMMDD/manuscript_non_traumatic_sah_phenotypes.md`。
+更新 `dist/manuscript_non_traumatic_sah_phenotypes.md`。
 
 ### 3.1 标题
 
@@ -672,7 +672,7 @@ Methods 中还必须明确：
 
 ### 3.10 Intensive Care Medicine 投稿版约束
 
-若目标期刊指定为 *Intensive Care Medicine*，应将 canonical manuscript 直接整理为 ICM concise Original Paper 结构，即更新 `dist/YYYYMMDD/manuscript_non_traumatic_sah_phenotypes.md` 和中文对照稿。完整长版内容如需保留，应另存为 archive 或 supplementary working draft，而不是让主稿继续保持长版结构。
+若目标期刊指定为 *Intensive Care Medicine*，应将 canonical manuscript 直接整理为 ICM concise Original Paper 结构，即更新 `dist/manuscript_non_traumatic_sah_phenotypes.md` 和中文对照稿。完整长版内容如需保留，应另存为 archive 或 supplementary working draft，而不是让主稿继续保持长版结构。
 
 ICM 版本必须遵守以下投稿取向：
 
@@ -688,14 +688,14 @@ ICM 版本必须遵守以下投稿取向：
 - 语言风格要符合 ICM：短句、克制、临床解释明确；避免宣传式机器学习措辞；所有治疗相关结果均写为 observational/exploratory。
 - 主文表格和长方法细节必须移入 Electronic Supplementary Material 清单；主稿只保留最关键的 5 个 display items。
 - 必须生成实际补充材料文件，而不只是主文末尾列清单：
-  - `dist/YYYYMMDD/electronic_supplementary_material.md`
-  - `dist/YYYYMMDD/strobe_checklist.md`
+  - `dist/electronic_supplementary_material.md`
+  - `dist/strobe_checklist.md`
   - PDF 输出：`electronic_supplementary_material.pdf` 和 `strobe_checklist.pdf`
 - ESM 至少包含 cohort-flow counts、ICD/code-list、core-variable mapping、missingness audit、baseline table、phenotype table、logistic/Cox model tables、eICU validation table、sensitivity table、bootstrap stability、supplementary figures、BigQuery provenance 和 reproducibility parameters。
 
 ## 4. 更新中文论文
 
-同步更新 `dist/YYYYMMDD/manuscript_non_traumatic_sah_phenotypes_cn.md`。
+同步更新 `dist/manuscript_non_traumatic_sah_phenotypes_cn.md`。
 
 要求：
 
@@ -719,13 +719,13 @@ ICM 版本必须遵守以下投稿取向：
 运行转换脚本：
 
 ```bash
-DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert_manuscript_to_pdf.py YYYYMMDD
+python3 scripts/convert_manuscript_to_pdf.py
 ```
 
 产出：
 
-- `dist/YYYYMMDD/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf`
-- `dist/YYYYMMDD/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf`
+- `dist/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf`
+- `dist/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf`
 
 若 PDF 图表溢出、表格过宽或中文乱码，必须修复后重新生成。
 
@@ -733,7 +733,7 @@ DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH" python3 scripts/convert
 
 生成完毕后逐项确认：
 
-- [ ] `dist/YYYYMMDD/readme.txt` 已写入生成模型、日期和输入来源。
+- [ ] `dist/readme.txt` 已写入生成模型、日期和输入来源。
 - [ ] 所有数据与 `dist/YYYYMMDD/analysis_result.md` 或 BigQuery 结果表一致。
 - [ ] N 使用最新值，目前为 `1,186`，不是旧版 `1,187`。
 - [ ] Figure 1 是 STROBE-style flow diagram，尽量包含每一步筛选人数；如结果表缺失筛选人数，已明确说明未编造并建议 pipeline 补充。
