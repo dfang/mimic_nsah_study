@@ -6,9 +6,9 @@ Generation Metadata
 - Current preparation date: 2026-07-11
 - Target journal style: Intensive Care Medicine Original Paper
 - Input files used:
-  - dist/20260711/analysis_result.md
-  - dist/20260711/figures/*
-  - dist/20260711/figures/fig1_cohort_flowchart_data.json
+  - dist/analysis_result.md
+  - dist/figures/*
+  - dist/figures/fig1_cohort_flowchart_data.json
   - dist/manuscript_non_traumatic_sah_phenotypes.md
   - BigQuery validation tables under mimic-study-498508.non_traumatic_sah_study
 
