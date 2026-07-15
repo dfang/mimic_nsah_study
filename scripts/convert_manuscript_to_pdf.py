@@ -361,14 +361,9 @@ def convert(md_path, pdf_path, css, lang="en"):
 
 
 # ═══════════════════════════════════════════════════════════════
-if __name__ == "__main__":
-    import sys
-    import datetime
-
-    # Determine date directory (default to today's YYYYMMDD if not specified)
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    date_dir = sys.argv[1] if len(sys.argv) > 1 else today
-    base = os.path.join("dist", date_dir)
+def main() -> None:
+    """Generate canonical manuscript PDFs under dist/pdf/."""
+    base = "dist"
 
     print(f"Converting manuscripts to PDF in {base}...\n")
 
@@ -405,3 +400,7 @@ if __name__ == "__main__":
             convert(md_path, pdf_path, css, lang=lang)
 
     print(f"\nDone → {base}/pdf/")
+
+
+if __name__ == "__main__":
+    main()

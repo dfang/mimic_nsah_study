@@ -64,17 +64,17 @@ The MIMIC derivation cohort included 1,186 adults. Overall in-hospital mortality
 
 The K=3 solution identified three clinically interpretable phenotypes (Fig. 1 and Fig. 2). P1 included 694 patients (58.5%) and had mild neurological and systemic impairment. P2 included 384 patients (32.4%) and had severe neurological impairment with relatively preserved systemic physiology. P3 included 108 patients (9.1%) and combined severe neurological impairment with hypotension, elevated shock index, hypoxemia, renal dysfunction, coagulopathy, thrombocytopenia, and lower hemoglobin.
 
-![Cohort flowchart and analysis design](figures/fig1_cohort_flowchart.png)
+![Cohort flowchart and analysis design](20260711/figures/fig1_cohort_flowchart.png)
 **Fig. 1.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and eICU fixed transport.
 
-![Phenotype heatmap](figures/fig2_primary_log_pca_heatmap.png)
+![Phenotype heatmap](20260711/figures/fig2_primary_log_pca_heatmap.png)
 **Fig. 2.** Early physiological profiles of the three MIMIC-derived phenotypes. Values represent standardized cluster centers with raw medians and interquartile ranges.
 
 ### Outcomes and anemia
 
 Mortality increased across phenotypes (Fig. 3). In-hospital mortality was 6.34% in P1, 32.55% in P2, and 61.11% in P3. ICU mortality followed the same order: 3.60%, 26.56%, and 50.93%, respectively. In unadjusted Cox analysis, hazard ratios for hospital death were 4.20 (95% CI 2.97-5.94) for P2 and 7.94 (95% CI 5.38-11.70) for P3 compared with P1.
 
-![Outcome and anemia patterns](figures/fig3_outcomes_anemia.png)
+![Outcome and anemia patterns](20260711/figures/fig3_outcomes_anemia.png)
 **Fig. 3.** Outcome, anemia, and early red blood cell transfusion patterns in MIMIC-IV. Red blood cell transfusion is shown as a descriptive process variable and should not be interpreted as a treatment-effect estimate.
 
 In the primary logistic model, P2 and P3 remained associated with in-hospital mortality after adjustment. Compared with P1, adjusted odds ratios were 7.59 (95% CI 5.07-11.36) for P2 and 21.21 (95% CI 12.08-37.26) for P3. Early anemia was more frequent in P2 and P3 but was not independently associated with mortality after phenotype adjustment (adjusted odds ratio 0.99, 95% CI 0.68-1.44). The process-of-care model attenuated phenotype associations but did not remove them. These process-adjusted estimates are exploratory because several variables occurred during the feature window.
@@ -85,7 +85,7 @@ The eICU validation cohort included 843 patients. Fixed transport assigned 539 p
 
 Transported phenotype order aligned with independent eICU severity measures (Fig. 4). Median APACHE scores were 36, 57, and 79 across P1, P2, and P3, with Spearman rho 0.480. Acute Physiology Score and predicted hospital mortality showed similar ordering. These variables were not used for phenotype assignment.
 
-![External validation severity scores](figures/fig4_external_severity_validation.png)
+![External validation severity scores](20260711/figures/fig4_external_severity_validation.png)
 **Fig. 4.** External criterion validation in eICU. APACHE, Acute Physiology Score, and predicted mortality were not clustering inputs.
 
 Independent de novo K-means clustering in eICU recovered ordered mortality differences, but patient-level agreement with transported labels was low (adjusted Rand index -0.003). This result supports transportability of the risk ordering, not exact replication of cluster boundaries across databases.
@@ -94,7 +94,7 @@ Independent de novo K-means clustering in eICU recovered ordered mortality diffe
 
 A multivariable eight-variable physiological model improved mortality prediction compared with GCS alone (Fig. 5). Cross-validated AUROC was 0.842 for the full physiological model, 0.754 for phenotype only, and 0.539 for GCS only. SHAP-style attribution ranked GCS motor, creatinine, and platelets as the most influential variables, consistent with neurological, renal, and coagulation axes.
 
-![Prediction performance](figures/fig5_prediction_performance.png)
+![Prediction performance](20260711/figures/fig5_prediction_performance.png)
 **Fig. 5.** Incremental prediction of in-hospital mortality in MIMIC-IV.
 
 Sensitivity analyses preserved the ordered mortality pattern. Bootstrap stability was high, with mean adjusted Rand index 0.920 across 200 resamples. Hemoglobin-free clustering preserved phenotype-mortality separation and supported the conclusion that the anemia result was not driven only by the inclusion of hemoglobin in the primary clustering model.

@@ -232,25 +232,25 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 
 ## ESM 4. Supplementary Figures
 
-![K-selection metrics](figures/fig_s1_k_selection.png)
+![K-selection metrics](20260711/figures/fig_s1_k_selection.png)
 **ESM Fig. 1.** Cluster-quality metrics across K=2 to K=5 for raw standardized and primary log-PCA pipelines.
 
-![Bootstrap ARI distribution](figures/fig_s2_bootstrap.png)
+![Bootstrap ARI distribution](20260711/figures/fig_s2_bootstrap.png)
 **ESM Fig. 2.** Adjusted Rand Index distribution across 200 bootstrap iterations compared with the primary K-means K=3 partition.
 
-![Sensitivity summaries](figures/fig_s3_sensitivity_summary.png)
+![Sensitivity summaries](20260711/figures/fig_s3_sensitivity_summary.png)
 **ESM Fig. 3.** Standardized cluster centers for sensitivity partitions, demonstrating alignment with the primary log-PCA centroids.
 
-![K3 to K4 refinement crosstab](figures/fig_s4_k4_refinement.png)
+![K3 to K4 refinement crosstab](20260711/figures/fig_s4_k4_refinement.png)
 **ESM Fig. 4.** High-resolution K=4 refinement crosstab, illustrating how the primary P3 phenotype splits into two smaller high-risk subcohorts.
 
-![PCA loadings](figures/fig_s5_pca_loadings.png)
+![PCA loadings](20260711/figures/fig_s5_pca_loadings.png)
 **ESM Fig. 5.** Loadings of the eight physiological variables on the first three principal components.
 
-![SHAP forest plot](figures/fig_s6_forest_plot.png)
+![SHAP forest plot](20260711/figures/fig_s6_forest_plot.png)
 **ESM Fig. 6.** Forest plot showing multivariable logistic regression and Cox proportional hazards odds/hazard ratios with 95% confidence intervals for primary and sensitivity models.
 
-![eICU validation performance](figures/fig_s7_eicu_external_validation.png)
+![eICU validation performance](20260711/figures/fig_s7_eicu_external_validation.png)
 **ESM Fig. 7.** eICU validation performance, including transported phenotype calibration, calibration slope, and de novo clustering comparison metrics.
 
 ## ESM 5. Reproducibility Notes
