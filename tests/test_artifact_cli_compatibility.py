@@ -105,6 +105,53 @@ def test_failed_pipeline_retains_log_without_replacing_canonical_report(
             retained_log.unlink(missing_ok=True)
 
 
+def test_successful_pipeline_publishes_canonical_report_with_public_mode(
+    tmp_path: Path,
+) -> None:
+    canonical_report = ROOT / "dist" / "analysis_result.md"
+    original_bytes = canonical_report.read_bytes()
+    original_mode = canonical_report.stat().st_mode & 0o777
+    existing_logs = set((ROOT / "dist").glob(".analysis_result.*.md"))
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    python_stub = stub_bin / "python3"
+    python_stub.write_text(
+        "#!/usr/bin/env bash\necho 'stubbed analysis completed successfully'\n"
+    )
+    python_stub.chmod(0o755)
+
+    env = os.environ.copy()
+    env["PATH"] = f"{stub_bin}{os.pathsep}{env['PATH']}"
+    try:
+        result = subprocess.run(
+            [
+                "bash",
+                "scripts/run_non_traumatic_sah_bigquery_pipeline.sh",
+                "--analysis-only",
+            ],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        new_logs = set((ROOT / "dist").glob(".analysis_result.*.md")) - existing_logs
+        published = canonical_report.read_text(encoding="utf-8")
+
+        assert result.returncode == 0
+        assert "stubbed analysis completed successfully" in result.stdout
+        assert "stubbed analysis completed successfully" in published
+        assert published.rstrip().endswith("```")
+        assert canonical_report.stat().st_mode & 0o777 == 0o644
+        assert new_logs == set()
+    finally:
+        canonical_report.write_bytes(original_bytes)
+        canonical_report.chmod(original_mode)
+        for temporary_log in (
+            set((ROOT / "dist").glob(".analysis_result.*.md")) - existing_logs
+        ):
+            temporary_log.unlink(missing_ok=True)
+
+
 def test_active_files_have_no_dated_dist_paths() -> None:
     active_paths = [
         "AGENTS.md",

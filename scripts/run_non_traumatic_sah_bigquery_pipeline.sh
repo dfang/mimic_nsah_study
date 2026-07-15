@@ -118,4 +118,5 @@ if [[ "$producer_status" -ne 0 || "$tee_status" -ne 0 ]]; then
   exit "$failure_status"
 fi
 
+chmod 0644 "$temporary_file"
 mv -f "$temporary_file" "$output_file"
