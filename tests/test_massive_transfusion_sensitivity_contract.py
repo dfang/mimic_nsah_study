@@ -33,10 +33,10 @@ class SqlContractTests(unittest.TestCase):
 
     def test_inclusive_sensitivity_removes_only_massive_transfusion(self) -> None:
         body = self.cases["eligible_include_massive_transfusion_sensitivity"]
-        self.assertIn("core_feature_missing_count <= 2", body)
-        self.assertNotIn("massive_transfusion_24h", body)
-        self.assertNotIn("icu_los_hours", body)
-        self.assertNotIn("any_rbc_transfusion_48h", body)
+        self.assertEqual(
+            body,
+            "WHEN core_feature_missing_count <= 2 THEN 1 ELSE 0",
+        )
 
     def test_sql_audit_outputs_include_sensitivity(self) -> None:
         self.assertIn(
@@ -77,6 +77,10 @@ class GovernanceContractTests(unittest.TestCase):
         self.assertIn("DEV-2026-07-16-001", deviations)
         self.assertIn('outcome_access_before_decision: "accessed"', deviations)
         self.assertIn("不得描述为结果揭盲前预设", deviations)
+        self.assertIn("支持性敏感性分析", protocol)
+        self.assertIn("不用于估计 RBC 输血的因果效应", protocol)
+        self.assertIn("支持性而非共同主要分析", sap)
+        self.assertIn("不得据此估计 RBC 输血因果效应", sap)
 
 
 if __name__ == "__main__":
