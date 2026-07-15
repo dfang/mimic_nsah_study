@@ -3,9 +3,21 @@
 Convert markdown manuscripts to publication-quality PDF.
 Professional typography with journal-style formatting.
 """
+import os
+import sys
+
+# On macOS, WeasyPrint needs Homebrew libraries (glib, pango, cairo) which are located in /opt/homebrew/lib.
+# Setting DYLD_FALLBACK_LIBRARY_PATH in os.environ before importing weasyprint allows cffi to find them.
+if sys.platform == "darwin":
+    homebrew_lib = "/opt/homebrew/lib"
+    if os.path.exists(homebrew_lib):
+        if "DYLD_FALLBACK_LIBRARY_PATH" not in os.environ:
+            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = homebrew_lib
+        else:
+            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = f"{homebrew_lib}:{os.environ['DYLD_FALLBACK_LIBRARY_PATH']}"
+
 import markdown
 from weasyprint import HTML
-import os
 import re
 
 # PDF output directory will be created dynamically inside the convert function.

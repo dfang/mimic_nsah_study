@@ -18,6 +18,8 @@
   - `physionet-data.mimiciv_3_1_hosp`
   - `physionet-data.mimiciv_3_1_icu`
   - `physionet-data.mimiciv_3_1_derived`
+  - `physionet-data.mimiciv_note`
+  - `physionet-data.mimiciv_ed`
 - 本研究使用的 BigQuery 项目名：`mimic-study-498508`。
 - 既往 aSAH 研究数据集名：`asah_study`。
 - 当前 non-traumatic SAH 主研究数据集名：`non_traumatic_sah_study`。
@@ -41,7 +43,6 @@
   - `run_all.sh`
 - 除非任务明确要求修改，保留 `option1/` 和 `option2/` 中已有研究资料。
 - 生成内容到 `dist/` 时，必须放入 `YYYYMMDD`（如 `20260702`）文件夹内，并且在该目录下编写一个 `readme.txt`，明确告知其中的 markdown 和 pdf 文件是由哪个模型（如 `codex`、`gemini` 或 `claude`）生成的。
-
 
 ## BigQuery 与 SQL 规范
 
