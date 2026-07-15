@@ -167,6 +167,7 @@ CV_FOLDS = 5
 #   eligible_sensitivity_48h_los: ICU LOS >=48h 敏感性分析
 #   eligible_include_massive_transfusion_sensitivity: 不排除 0-24h 大量输血
 COHORT_FLAG = "eligible_primary_analysis"
+ANALYSIS_SUPERSET_FLAG = "eligible_include_massive_transfusion_sensitivity"
 
 FEATURES = [
     "gcs_motor_min_48h",
@@ -328,7 +329,7 @@ client = bigquery.Client(project=PROJECT_ID)
 
 
 def read_table_from_bigquery() -> pd.DataFrame:
-    """从 BigQuery 读取最终宽表，并只保留当前 cohort flag 对应样本。"""
+    """从 BigQuery 读取覆盖主分析及队列敏感性分析的最小宽表超集。"""
     selected_columns = [
         "subject_id",
         "hadm_id",
@@ -376,10 +377,10 @@ def read_table_from_bigquery() -> pd.DataFrame:
     sql = f"""
     SELECT {", ".join(selected_columns)}
     FROM `{INPUT_TABLE}`
-    WHERE {COHORT_FLAG} = 1
+    WHERE {ANALYSIS_SUPERSET_FLAG} = 1
     """
     print(f"读取 BigQuery 表：{INPUT_TABLE}")
-    print(f"当前 cohort flag：{COHORT_FLAG} = 1")
+    print(f"读取 cohort superset flag：{ANALYSIS_SUPERSET_FLAG} = 1")
     df = client.query(sql).to_dataframe(create_bqstorage_client=False)
     print(f"读取完成：{len(df):,} 行，{df.shape[1]} 列")
     return df
@@ -1172,7 +1173,7 @@ def run_anemia_stratified_regression(assignments: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_sensitivity_cohort_summaries(df: pd.DataFrame, primary_assignments: pd.DataFrame) -> pd.DataFrame:
-    """在主分析宽表内对预先定义的敏感性子队列重新聚类并汇总结局。"""
+    """在覆盖预定义队列的宽表超集中分别重新聚类并汇总结局。"""
     rows = []
     reference = primary_assignments[["stay_id", "phenotype"]].rename(columns={"phenotype": "primary_phenotype"})
 
@@ -1624,7 +1625,8 @@ def build_k3_k4_refinement_crosstab(primary_assignments: pd.DataFrame, explorato
 # =============================================================================
 
 
-df = read_table_from_bigquery()
+analysis_df = read_table_from_bigquery()
+df = analysis_df[analysis_df[COHORT_FLAG] == 1].copy()
 validate_input(df)
 
 print("\n总体样本快速检查：")
@@ -1692,7 +1694,10 @@ anemia_stratified_models = run_anemia_stratified_regression(primary["assignments
 print("\n各 K=3 phenotype 内早期贫血调整后死亡模型：")
 display(anemia_stratified_models)
 
-sensitivity_cohort_summary = run_sensitivity_cohort_summaries(df, primary["assignments"])
+sensitivity_cohort_summary = run_sensitivity_cohort_summaries(
+    analysis_df,
+    primary["assignments"],
+)
 print("\n敏感性子队列 K=3 重新聚类汇总：")
 display(sensitivity_cohort_summary)
 

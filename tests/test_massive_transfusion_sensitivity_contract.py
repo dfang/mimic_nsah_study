@@ -63,6 +63,20 @@ class PythonContractTests(unittest.TestCase):
             self.source,
         )
         self.assertIn('COHORT_FLAG = "eligible_primary_analysis"', self.source)
+        self.assertIn(
+            'ANALYSIS_SUPERSET_FLAG = "eligible_include_massive_transfusion_sensitivity"',
+            self.source,
+        )
+        self.assertIn("WHERE {ANALYSIS_SUPERSET_FLAG} = 1", self.source)
+        self.assertIn("analysis_df = read_table_from_bigquery()", self.source)
+        self.assertIn(
+            "df = analysis_df[analysis_df[COHORT_FLAG] == 1].copy()",
+            self.source,
+        )
+        self.assertRegex(
+            self.source,
+            r'run_sensitivity_cohort_summaries\(\s*analysis_df,\s*primary\["assignments"\]\s*,?\s*\)',
+        )
 
 
 class GovernanceContractTests(unittest.TestCase):
