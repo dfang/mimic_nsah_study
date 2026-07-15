@@ -8,6 +8,7 @@ from scripts.artifact_cli import accept_legacy_date_arg
 
 
 ROOT = Path(__file__).resolve().parents[1]
+DATED_DIST = re.compile(r"dist/(?:[0-9]{8}|YYYYMMDD)")
 
 
 def read_text(path: str) -> str:
@@ -54,9 +55,16 @@ def test_active_files_have_no_dated_dist_paths() -> None:
         "dist/readme.txt",
         "dist/electronic_supplementary_material.md",
     ]
-    dated_dist = re.compile(r"dist/[0-9]{8}")
     for path in active_paths:
-        assert not dated_dist.search(read_text(path)), path
+        assert not DATED_DIST.search(read_text(path)), path
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["dist/20260711/analysis_result.md", "dist/YYYYMMDD/analysis_result.md"],
+)
+def test_dated_dist_pattern_matches_legacy_forms(path: str) -> None:
+    assert DATED_DIST.search(path)
 
 
 def test_dist_is_not_ignored_and_has_no_dated_directories() -> None:
