@@ -1390,7 +1390,8 @@ SELECT
     COUNTIF(platelet_min_48h IS NOT NULL) AS platelet_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
-    COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND any_rbc_transfusion_48h = 0) AS eligible_no_rbc_sensitivity_rows
+    COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND any_rbc_transfusion_48h = 0) AS eligible_no_rbc_sensitivity_rows,
+    COUNTIF(core_feature_missing_count <= 2) AS eligible_include_massive_transfusion_sensitivity_rows
 FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`;
 
 SELECT
@@ -1421,7 +1422,11 @@ SELECT
          AND massive_transfusion_24h = 0
          AND any_rbc_transfusion_48h = 0 THEN 1
         ELSE 0
-    END AS eligible_no_transfusion_sensitivity
+    END AS eligible_no_transfusion_sensitivity,
+    CASE
+        WHEN core_feature_missing_count <= 2 THEN 1
+        ELSE 0
+    END AS eligible_include_massive_transfusion_sensitivity
 FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`;
 
 -- 验证：最终宽表规模、主分析样本量、贫血比例和死亡率。
@@ -1430,6 +1435,7 @@ SELECT
     COUNTIF(eligible_primary_analysis = 1) AS primary_analysis_rows,
     COUNTIF(eligible_sensitivity_48h_los = 1) AS sensitivity_48h_los_rows,
     COUNTIF(eligible_no_transfusion_sensitivity = 1) AS no_transfusion_sensitivity_rows,
+    COUNTIF(eligible_include_massive_transfusion_sensitivity = 1) AS include_massive_transfusion_sensitivity_rows,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(hospital_mortality AS FLOAT64) ELSE NULL END) AS primary_hospital_mortality_rate,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(early_anemia_all AS FLOAT64) ELSE NULL END) AS primary_early_anemia_rate,
     AVG(CASE WHEN eligible_primary_analysis = 1 THEN CAST(any_rbc_transfusion_48h AS FLOAT64) ELSE NULL END) AS primary_any_rbc_rate
@@ -1509,7 +1515,11 @@ WHERE eligible_sensitivity_48h_los = 1
 UNION ALL
 SELECT '09_sensitivity_no_rbc_48h', COUNT(*), COUNT(DISTINCT subject_id), COUNT(DISTINCT hadm_id)
 FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`
-WHERE eligible_no_transfusion_sensitivity = 1;
+WHERE eligible_no_transfusion_sensitivity = 1
+UNION ALL
+SELECT '10_sensitivity_include_massive_transfusion', COUNT(*), COUNT(DISTINCT subject_id), COUNT(DISTINCT hadm_id)
+FROM `mimic-study-498508.non_traumatic_sah_study.physiology_features_48h`
+WHERE eligible_include_massive_transfusion_sensitivity = 1;
 
 -- 验证：查看 flowchart 计数。
 SELECT *
