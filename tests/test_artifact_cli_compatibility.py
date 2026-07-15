@@ -1,4 +1,6 @@
 from pathlib import Path
+import re
+import subprocess
 
 import pytest
 
@@ -41,3 +43,27 @@ def test_generators_use_canonical_output_paths() -> None:
     assert "date_dir" not in pipeline
     assert "date_dir" not in figures
     assert "date_dir" not in converter
+
+
+def test_active_files_have_no_dated_dist_paths() -> None:
+    active_paths = [
+        "AGENTS.md",
+        "scripts/prompt_for_regenerating_manuscript.md",
+        "scripts/run_non_traumatic_sah_bigquery_pipeline.sh",
+        "scripts/generate_manuscript_figures.py",
+        "dist/readme.txt",
+        "dist/electronic_supplementary_material.md",
+    ]
+    dated_dist = re.compile(r"dist/[0-9]{8}")
+    for path in active_paths:
+        assert not dated_dist.search(read_text(path)), path
+
+
+def test_dist_is_not_ignored_and_has_no_dated_directories() -> None:
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-q", "dist/analysis_result.md"], cwd=ROOT
+    )
+    assert ignored.returncode == 1
+    assert not any(
+        re.fullmatch(r"[0-9]{8}", path.name) for path in (ROOT / "dist").iterdir()
+    )
