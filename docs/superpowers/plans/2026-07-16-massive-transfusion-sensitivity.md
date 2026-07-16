@@ -594,3 +594,115 @@ Static contract and Python syntax checks passed.
 BigQuery was not executed; no result-level sensitivity estimates were regenerated.
 Protocol and SAP remain DRAFT_BLOCKED because unrelated freeze blockers remain open.
 ```
+
+### Task 6: Resolve final whole-branch review findings
+
+**Files:**
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:28`
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:1175-1236`
+- Modify: `11_bigquery_notebook_non_traumatic_sah_analysis.py:1754`
+- Modify: `tests/test_massive_transfusion_sensitivity_contract.py`
+- Modify: `protocol.md`
+- Modify: `sap.md`
+- Modify: `deviations.md`
+
+**Interfaces:**
+- Consumes: the inclusive superset, primary assignments, seven `FEATURES`, and per-sensitivity refitted scaled K-means solution.
+- Produces: actual sensitivity flag metadata, `primary_overlap_n`, overlap-based `ari_vs_primary_subset`, seven `<feature>_mean` values, seven `<feature>_standardized_center` values, and governance version `0.1.2`.
+
+- [ ] **Step 1: Add a synthetic behavioral regression test**
+
+Create a deterministic synthetic dataframe with at least 60 stays in three separated clusters, including primary-overlap stays and added stays eligible only for `eligible_include_massive_transfusion_sensitivity`. Exercise the actual `run_sensitivity_cohort_summaries` function using the script's production helper functions and assert:
+
+```python
+self.assertEqual(set(result["cohort_flag"]), {"eligible_include_massive_transfusion_sensitivity"})
+self.assertEqual(set(result["primary_overlap_n"]), {len(primary_assignments)})
+self.assertTrue(result["ari_vs_primary_subset"].notna().all())
+for feature in features:
+    self.assertTrue(result[f"{feature}_mean"].notna().all())
+    self.assertTrue(result[f"{feature}_standardized_center"].notna().all())
+```
+
+The test must load the production function and helpers without executing the notebook's BigQuery client or main flow. Run it before implementation and record the expected RED caused by missing metadata/profile behavior.
+
+- [ ] **Step 2: Correct sensitivity summary metadata and overlap ARI**
+
+For every sensitivity result row set:
+
+```python
+"cohort_flag": flag_col
+```
+
+After merging primary labels, define the overlap and ARI as:
+
+```python
+overlap = assignments.dropna(subset=["primary_phenotype"])
+ari = (
+    adjusted_rand_score(
+        overlap["primary_phenotype"].astype(int),
+        overlap["phenotype"].astype(int),
+    )
+    if len(overlap) >= 2
+    else np.nan
+)
+```
+
+Add `primary_overlap_n = int(len(overlap))` to every non-small result row. For the too-small branch, add `primary_overlap_n` using the intersection of `sub_df.stay_id` with primary assignment stay IDs and keep ARI/profile values missing with the existing explanatory note.
+
+- [ ] **Step 3: Persist raw profiles and standardized centers**
+
+Retain the centers returned by `build_ordered_phenotype_labels`. For each phenotype row add, for every feature in `FEATURES`:
+
+```python
+row[f"{feature}_mean"] = float(group[feature].mean())
+row[f"{feature}_standardized_center"] = float(
+    centers.loc[centers["phenotype"] == phenotype, feature].iloc[0]
+)
+```
+
+Do not introduce PCA, change `FEATURES`, or change clustering parameters.
+
+- [ ] **Step 4: Align user-facing Python documentation**
+
+Update the output inventory and final console guidance so `phenotype_sensitivity_cohort_summary` names all three cohorts: no RBC, ICU LOS ≥48h, and inclusion of massive transfusion. State that the table includes overlap ARI and feature profiles/centers.
+
+- [ ] **Step 5: Correct protocol/SAP to the implemented seven-feature direct K-means pipeline**
+
+Bump protocol/SAP to `0.1.2`. Replace implemented-pipeline references to eight features and PCA with:
+
+```text
+seven core features; median imputation; Z-score standardization; direct K-means in seven-dimensional scaled space
+```
+
+This includes YAML metadata, cohort missingness rules, preprocessing/algorithm descriptions, phenotype profiles, frozen-transport parameter lists, the massive-transfusion subsection, and implementation-difference language. Preserve `DRAFT_BLOCKED`, prior outcome access, and unrelated blockers. Remove `deviations.md` from protocol line 50's list of still-missing artifacts because the file now exists.
+
+The massive-transfusion subsection must state that preprocessing independently refits median imputation, standardization, and direct K-means with no PCA. Its interpretation criteria must name sample size, cluster size, raw feature profiles, standardized centers, overlap ARI, and outcome-association direction.
+
+- [ ] **Step 6: Append a second deviation entry**
+
+Append `DEV-2026-07-16-002` without rewriting `DEV-2026-07-16-001`. Record versions `0.1.2`, prior outcome access, correction of the seven-feature/no-PCA description, addition of overlap ARI and persisted profiles/centers, continued exploratory/non-causal status, and no BigQuery execution.
+
+- [ ] **Step 7: Strengthen governance/static assertions**
+
+Require protocol/SAP version `0.1.2`, seven-feature/direct-K-means wording, absence of PCA in the massive-transfusion subsection, `DEV-2026-07-16-002`, actual sensitivity cohort metadata, `primary_overlap_n`, and profile/center field construction.
+
+- [ ] **Step 8: Run focused and full verification**
+
+```bash
+python3 -m unittest tests/test_massive_transfusion_sensitivity_contract.py -v
+python3 -m py_compile \
+  11_bigquery_notebook_non_traumatic_sah_analysis.py \
+  tests/test_massive_transfusion_sensitivity_contract.py
+git diff --check
+```
+
+Expected: all tests pass, both Python files compile without output, and no whitespace errors are reported. BigQuery remains unexecuted.
+
+- [ ] **Step 9: Commit the final-review fixes**
+
+```bash
+git add 11_bigquery_notebook_non_traumatic_sah_analysis.py \
+  tests/test_massive_transfusion_sensitivity_contract.py \
+  protocol.md sap.md deviations.md
+git commit -m "Make sensitivity robustness outputs match their governance contract"
+```

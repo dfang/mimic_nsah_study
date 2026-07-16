@@ -60,6 +60,9 @@ The existing primary flag and table names will not be renamed, preserving downst
 4. Use the primary dataframe for every existing primary workflow and pass the unfiltered analysis superset only to the cohort-sensitivity pathway, preventing massive-transfusion rows from being discarded before sensitivity filtering.
 5. Reuse the existing sensitivity-analysis pathway so preprocessing and clustering are independently refit within each sensitivity cohort, consistent with the current sensitivity framework.
 6. Preserve the primary `COHORT_FLAG = "eligible_primary_analysis"`.
+7. Compute `ari_vs_primary_subset` on stays overlapping the primary assignments, record `primary_overlap_n`, and do not require newly included stays to have primary labels.
+8. Persist each sensitivity phenotype's raw feature means and standardized K-means centers for all seven implemented `FEATURES` columns.
+9. Label each output row with its actual eligibility flag rather than the primary flag.
 
 No new estimator, dependency, random seed, feature set, or outcome definition is introduced.
 
@@ -97,10 +100,13 @@ Verification will include:
 - confirmation that the primary flag still excludes `massive_transfusion_24h = 1`;
 - confirmation that the inclusive flag contains no massive-transfusion condition;
 - Python syntax compilation for modified Python files;
+- a synthetic behavioral test showing that newly included massive-transfusion stays reach sensitivity clustering, overlap ARI is finite on primary-overlap stays, profile/center columns are populated, and the output cohort flag is the actual sensitivity flag;
 - repository diff review for unintended changes;
 - documentation checks that `DRAFT_BLOCKED`, outcome-access disclosure, and non-causal language remain intact.
 
 BigQuery execution and result-level validation are explicitly out of scope unless separately authorized in a compliant environment.
+
+The active protocol/SAP must describe the implemented main pipeline accurately: seven core features, median imputation, Z-score standardization, and direct K-means in seven-dimensional scaled space. PCA and the earlier eight-feature contract are not part of the implemented primary or massive-transfusion sensitivity pathway and must not be repeated as implemented behavior.
 
 ## Rejected alternatives
 
