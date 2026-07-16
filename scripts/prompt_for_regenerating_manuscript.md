@@ -249,10 +249,10 @@ Results：
 - hospital-course log-rank and Cox models show persistent phenotype gradients；必须明确 alive discharges censored at hospital discharge。
 - eICU Frozen Transport external validation:
   - eICU validation N = 843；
-  - P1/P2/P3 hospital mortality = 5.4%、25.7%、42.7%；
+  - P1/P2/P3 hospital mortality = 5.4%、25.8%、42.7%；
   - APACHE score 和 predicted mortality 随 transported phenotype 单调升高；
   - eICU transport sensitivities preserve the monotonic mortality gradient；
-  - eICU de novo clustering recovers a risk gradient but has low agreement with frozen labels, ARI approximately -0.003。
+  - eICU de novo clustering recovers a risk gradient but has low agreement with frozen labels, ARI approximately 0.0005。
 
 Conclusions：
 
@@ -505,8 +505,8 @@ Methods 中还必须明确：
    - 必须说明 shock index extraction was improved by matching HR to nearest periodic/aperiodic SBP within 15 minutes；893 patients had matched HR/SBP pairs，median matched pairs 440，mean median pairing gap 2.83 minutes。
    - Frozen Transport 结果必须报告：
      - eICU N=843；
-     - P1 n=539, hospital mortality 5.4%, ICU mortality 2.8%, early anemia 11.4%, RBC 0-48h 0.4%；
-     - P2 n=222, hospital mortality 25.7%, ICU mortality 16.2%, early anemia 34.5%, RBC 0-48h 5.9%；
+     - P1 n=540, hospital mortality 5.4%, ICU mortality 2.8%, early anemia 11.4%, RBC 0-48h 0.4%；
+     - P2 n=221, hospital mortality 25.8%, ICU mortality 16.3%, early anemia 34.7%, RBC 0-48h 5.9%；
      - P3 n=82, hospital mortality 42.7%, ICU mortality 29.3%, early anemia 58.0%, RBC 0-48h 11.0%。
    - eICU physiological profiles 必须简要报告：
      - P1: Hb 11.9, GCS motor 6, MAP 62.0, shock index 0.88, SpO2 90.0, creatinine 0.75, INR 1.1, platelet 207.0；
@@ -523,7 +523,7 @@ Methods 中还必须明确：
      - predicted hospital mortality median P1/P2/P3 = 0.069/0.243/0.426, rho 0.445, p<0.001；
      - predicted ICU mortality median P1/P2/P3 = 0.039/0.175/0.299, rho 0.453, p<0.001。
    - eICU transport sensitivities 必须报告方向：
-     - primary frozen transport mortality P1/P2/P3 = 5.4%/25.7%/42.7%；
+     - primary frozen transport mortality P1/P2/P3 = 5.4%/25.8%/42.7%；
      - ICU LOS >=48h = 6.9%/24.2%/33.9%；
      - no recorded RBC = 5.4%/25.8%/39.7%；
      - strict SAH = 6.6%/30.5%/45.6%；
@@ -536,7 +536,7 @@ Methods 中还必须明确：
      - 因此 INR 缺失不是 MCAR，INR-free transport 必须作为重要敏感性分析。
    - eICU de novo clustering 必须报告但降级解释：
      - de novo P1/P2/P3 mortality = 5.8%/18.1%/42.0%；
-     - ARI -0.003，NMI 0.002，same ordered label rate 43.9%，silhouette 0.269；
+     - ARI 0.0005，NMI 0.0011，same ordered label rate 45.2%，silhouette 0.271；
      - 结论只能是 “risk gradient emerged de novo, but exact frozen patient-level boundaries did not replicate”。
    - eICU Hb-free anemia sensitivity 必须报告：
      - P2 vs P1 OR 6.16 (95% CI 3.74-10.13), p<0.001；
@@ -766,10 +766,10 @@ python3 scripts/convert_manuscript_to_pdf.py
 - [ ] 没有把 nimodipine、EVD/ICP、vasopressor、mechanical ventilation、RBC、CRRT 或 fluid balance 的关联解释为干预获益/伤害。
 - [ ] eICU 外部验证已进入 Abstract、Methods、Results、Discussion、Limitations，而不是只放在补充材料。
 - [ ] eICU 主验证写成 Frozen Transport：固定 MIMIC median imputer、log transform、StandardScaler、PCA eigenvectors 和 K=3 centroids 后投影到 eICU。
-- [ ] eICU 结果使用最新值：N=843；P1/P2/P3 hospital mortality = 5.4%/25.7%/42.7%；ICU mortality = 2.8%/16.2%/29.3%；early anemia = 11.4%/34.5%/58.0%。
+- [ ] eICU 结果使用最新值：N=843；P1/P2/P3 hospital mortality = 5.4%/25.8%/42.7%；ICU mortality = 2.8%/16.3%/29.3%；early anemia = 11.4%/34.7%/58.0%。
 - [ ] eICU APACHE 外部效标已报告：APACHE score median 36/57/79；predicted hospital mortality median 0.069/0.243/0.426。
 - [ ] eICU 敏感性分析已报告：LOS >=48h、no recorded RBC、strict SAH、<=1 missing、complete case、INR-free transport 均保留单调死亡率梯度。
-- [ ] eICU de novo clustering 明确作为 structural sensitivity，且写清 ARI 约 -0.003、NMI 0.002、silhouette 0.269；没有写成 exact cluster replication。
+- [ ] eICU de novo clustering 明确作为 structural sensitivity，且写清 ARI 约 0.0005、NMI 0.0011、silhouette 0.271；没有写成 exact cluster replication。
 - [ ] eICU INR 缺失已报告：446/903 (49.4%)，并说明 INR measured patients were sicker；INR-free transport 被保留为重要敏感性分析。
 - [ ] eICU shock index 提取逻辑已写明：HR 与 15 分钟内最近 periodic/aperiodic SBP 配对；shock index missing 10/903 (1.1%)。
 - [ ] eICU Hb-free anemia sensitivity 已报告：phenotype OR 显著，early anemia OR 1.47 (95% CI 0.92-2.36), p=0.105。

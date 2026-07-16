@@ -2,7 +2,8 @@
 """
 Generate manuscript figures for the non-traumatic SAH phenotype manuscript.
 
-The values in this script are synchronized with dist/analysis_result.md.
+All analytical values are read from frozen aggregate BigQuery tables. Public
+figure annotations suppress non-zero counts below 10.
 Output is written to dist/figures/.
 """
 from __future__ import annotations
@@ -46,6 +47,117 @@ EICU_FLOW_SQL = """
 SELECT step, unit_stays, patients, definition
 FROM `mimic-study-498508.eicu_sah_validation.eicu_cohort_flowchart_counts`
 ORDER BY step
+"""
+
+BOOTSTRAP_SQL = """
+SELECT adjusted_rand_index_vs_primary, min_cluster_n
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_log_pca_kmeans_bootstrap_stability`
+ORDER BY iteration
+"""
+
+SENSITIVITY_ARI_SQL = """
+SELECT 1 AS display_order, 'Raw K-means' AS label, MAX(ari_vs_raw_8d_kmeans_reference) AS ari
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_log_pca_kmeans_sensitivity`
+UNION ALL
+SELECT 2, 'Complete case', MAX(ari_vs_primary_log_pca_subset)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_log_pca_complete_case_sensitivity`
+UNION ALL
+SELECT 3, 'Hb-free', MAX(ari_vs_primary_log_pca)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_hb_free_sensitivity`
+UNION ALL
+SELECT 4, 'INR-free', MAX(ari_vs_primary_log_pca)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_inr_free_sensitivity`
+UNION ALL
+SELECT 5, 'No RBC', MAX(ari_vs_primary_subset)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_sensitivity_cohort_summary`
+WHERE analysis = 'no_rbc_48h'
+UNION ALL
+SELECT 6, 'ICU LOS >=48 h', MAX(ari_vs_primary_subset)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_sensitivity_cohort_summary`
+WHERE analysis = 'icu_los_ge_48h'
+UNION ALL
+SELECT 7, '0-24 h', MAX(ari_vs_primary_log_pca)
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_24h_window_sensitivity`
+ORDER BY display_order
+"""
+
+EICU_OUTCOME_SQL = """
+SELECT phenotype, hospital_mortality_rate, icu_mortality_rate, early_anemia_rate
+FROM `mimic-study-498508.eicu_sah_validation.eicu_external_outcome_summary_by_phenotype`
+ORDER BY phenotype
+"""
+
+EICU_PREDICTED_MORTALITY_SQL = """
+SELECT phenotype, median
+FROM `mimic-study-498508.eicu_sah_validation.eicu_external_severity_validation`
+WHERE severity_feature = 'predictedhospitalmortality'
+ORDER BY phenotype
+"""
+
+MIMIC_CENTERS_SQL = """
+SELECT phenotype, hb_min_48h_all, gcs_motor_min_48h, map_min_48h,
+       shock_index_max_48h, spo2_min_48h, creatinine_max_48h,
+       inr_max_48h, platelet_min_48h
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_cluster_centers_zscore`
+ORDER BY phenotype
+"""
+
+MIMIC_OUTCOME_SQL = """
+SELECT phenotype, n, hospital_mortality_rate, icu_mortality_rate,
+       early_anemia_rate, any_rbc_transfusion_48h_rate
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_outcome_summary`
+ORDER BY phenotype
+"""
+
+MIMIC_SEVERITY_SQL = """
+SELECT validation_score, phenotype, median
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_external_severity_validation`
+ORDER BY validation_score, phenotype
+"""
+
+PREDICTION_SQL = """
+SELECT model, auroc, brier_score
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_prediction_metrics`
+"""
+
+K_SELECTION_SQL = """
+SELECT analysis, k, silhouette
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_k_selection_metrics`
+ORDER BY analysis, k
+"""
+
+K4_CROSSTAB_SQL = """
+SELECT phenotype_k3, phenotype_k4, n
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_k3_k4_refinement_crosstab`
+ORDER BY phenotype_k3, phenotype_k4
+"""
+
+PCA_LOADINGS_SQL = """
+SELECT principal_component, feature, loading, explained_variance_ratio
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_log_pca_kmeans_loadings`
+ORDER BY principal_component, feature
+"""
+
+FOREST_SQL = """
+SELECT 1 AS display_order,
+       CASE term WHEN 'C(phenotype)[T.2.0]' THEN 'P2 vs P1' WHEN 'C(phenotype)[T.3.0]' THEN 'P3 vs P1' ELSE 'Early anemia' END AS label,
+       odds_ratio, ci_lower, ci_upper
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_regression_models`
+WHERE model = 'adjusted_main_effect'
+  AND term IN ('C(phenotype)[T.2.0]', 'C(phenotype)[T.3.0]', 'early_anemia_all')
+UNION ALL
+SELECT 2,
+       CASE term WHEN 'C(phenotype)[T.2.0]' THEN 'P2 vs P1 + SOFA' ELSE 'P3 vs P1 + SOFA' END,
+       odds_ratio, ci_lower, ci_upper
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_severity_score_adjusted_models`
+WHERE model = 'phenotype_plus_sofa' AND term LIKE 'C(phenotype)%'
+UNION ALL
+SELECT 3,
+       CASE term WHEN 'C(phenotype)[T.2.0]' THEN 'P2 vs P1 + SOFA + clinical' ELSE 'P3 vs P1 + SOFA + clinical' END,
+       odds_ratio, ci_lower, ci_upper
+FROM `mimic-study-498508.non_traumatic_sah_study.phenotype_severity_score_adjusted_models`
+WHERE model = 'phenotype_plus_sofa_clinical' AND term LIKE 'C(phenotype)%'
+ORDER BY display_order, label
 """
 
 MIMIC_STEP_LABELS = {
@@ -101,17 +213,49 @@ def _as_int(value: object) -> int:
     return int(value) if value is not None else 0
 
 
+def _as_float(value: object) -> float:
+    return float(value) if value is not None else float("nan")
+
+
 def _load_cohort_flow_data() -> dict[str, list[dict[str, object]]]:
     mimic_rows = _run_bq_json(MIMIC_FLOW_SQL)
     eicu_rows = _run_bq_json(EICU_FLOW_SQL)
     data = {"mimic": mimic_rows, "eicu": eicu_rows}
+    public_data = {
+        "mimic": _redact_small_transition_rows(mimic_rows, ("rows_count", "patients", "admissions")),
+        "eicu": _redact_small_transition_rows(eicu_rows, ("unit_stays", "patients")),
+    }
     with open(f"{figures_dir}/fig1_cohort_flowchart_data.json", "w", encoding="utf-8") as handle:
-        json.dump(data, handle, ensure_ascii=False, indent=2)
+        json.dump(public_data, handle, ensure_ascii=False, indent=2)
     return data
 
 
 def _format_n(value: int) -> str:
     return f"{value:,}"
+
+
+def _format_public_count(value: int) -> str:
+    return "<10" if 0 < value < 10 else _format_n(value)
+
+
+def _redact_small_transition_rows(
+    rows: list[dict[str, object]], numeric_keys: tuple[str, ...]
+) -> list[dict[str, object]]:
+    public_rows: list[dict[str, object]] = []
+    previous: dict[str, object] | None = None
+    for row in rows:
+        public_row = dict(row)
+        if previous is not None and any(
+            0 < _as_int(previous[key]) - _as_int(row[key]) < 10
+            for key in numeric_keys
+            if key in previous and key in row
+        ):
+            for key in numeric_keys:
+                if key in public_row:
+                    public_row[key] = "suppressed (<10 transition)"
+        public_rows.append(public_row)
+        previous = row
+    return public_rows
 
 
 def _draw_flow_box(
@@ -244,7 +388,10 @@ def fig1_cohort_flowchart() -> None:
     ]
 
     def exclusion_text(items: list[tuple[str, int]]) -> str:
-        return "\n".join(f"{label}: n={_format_n(n)}" for label, n in items)
+        return "\n".join(
+            f"{label}: n<10" if 0 < n < 10 else f"{label}: n={_format_public_count(n)}"
+            for label, n in items
+        )
 
     left_x, right_x = 2.65, 7.35
     y_top, y_mid, y_final = 5.98, 4.75, 3.43
@@ -411,14 +558,11 @@ def fig1_cohort_flowchart() -> None:
 
 def fig2_primary_log_pca_heatmap() -> None:
     features = ["Hb min", "GCS motor\nmin", "MAP min", "Shock index\nmax", "SpO2 min", "Creatinine\nmax", "INR max", "Platelet\nmin"]
-    z = np.array(
-        [
-            [0.370908, 0.607756, 0.314843, -0.398426, 0.032829, -0.294419, -0.283075, 0.250870],
-            [-0.368133, -0.889040, -0.395846, 0.422988, 0.349160, 0.050932, -0.009149, -0.131964],
-            [-1.074512, -0.744361, -0.615704, 1.056299, -1.452417, 1.710823, 1.851550, -1.142869],
-        ]
-    )
-    labels = ["P1 stable\nn=694", "P2 neuro-circulatory\nn=384", "P3 multisystem\nn=108"]
+    rows = _run_bq_json(MIMIC_CENTERS_SQL)
+    value_columns = ["hb_min_48h_all", "gcs_motor_min_48h", "map_min_48h", "shock_index_max_48h", "spo2_min_48h", "creatinine_max_48h", "inr_max_48h", "platelet_min_48h"]
+    z = np.array([[_as_float(row[column]) for column in value_columns] for row in rows])
+    outcome_rows = _run_bq_json(MIMIC_OUTCOME_SQL)
+    labels = [f"{name}\nn={_as_int(row['n'])}" for name, row in zip(["P1 stable", "P2 neuro-circulatory", "P3 multisystem"], outcome_rows)]
     fig, ax = plt.subplots(figsize=(9.8, 4.2))
     cmap = LinearSegmentedColormap.from_list("zmap", ["#2166AC", "#F7F7F7", "#B2182B"], N=256)
     im = ax.imshow(z, cmap=cmap, vmin=-2, vmax=2, aspect="auto")
@@ -437,11 +581,12 @@ def fig2_primary_log_pca_heatmap() -> None:
 
 def fig3_outcomes_anemia() -> None:
     phenotype_ticks = ["P1", "P2", "P3"]
+    rows = _run_bq_json(MIMIC_OUTCOME_SQL)
     metrics = [
-        ("Hospital mortality", [6.3, 32.6, 61.1], "%"),
-        ("ICU mortality", [3.6, 26.6, 50.9], "%"),
-        ("Early anemia", [12.1, 41.4, 66.7], "%"),
-        ("RBC transfusion 0-48 h", [0.4, 3.4, 7.4], "%"),
+        ("Hospital mortality", [100 * _as_float(row["hospital_mortality_rate"]) for row in rows], "%"),
+        ("ICU mortality", [100 * _as_float(row["icu_mortality_rate"]) for row in rows], "%"),
+        ("Early anemia", [100 * _as_float(row["early_anemia_rate"]) for row in rows], "%"),
+        ("RBC transfusion 0-48 h", [100 * _as_float(row["any_rbc_transfusion_48h_rate"]) for row in rows], "%"),
     ]
     fig, axes = plt.subplots(1, 4, figsize=(13, 3.9))
     for ax, (title, values, suffix) in zip(axes, metrics):
@@ -457,12 +602,12 @@ def fig3_outcomes_anemia() -> None:
 
 
 def fig4_external_severity_validation() -> None:
+    rows = _run_bq_json(MIMIC_SEVERITY_SQL)
+    score_order = ["SOFA", "SAPS II", "OASIS", "LODS"]
     scores = {
-        "SOFA": [2.0, 4.0, 8.0],
-        "SAPS II": [26.0, 37.0, 45.5],
-        "APS III": [28.0, 41.0, 59.5],
-        "OASIS": [26.0, 36.0, 37.0],
-        "LODS": [2.0, 4.0, 7.0],
+        score: [_as_float(row["median"]) for row in rows if row["validation_score"] == score]
+        for score in score_order
+        if any(row["validation_score"] == score for row in rows)
     }
     fig, ax = plt.subplots(figsize=(7.6, 4.5))
     x = np.arange(3)
@@ -478,9 +623,11 @@ def fig4_external_severity_validation() -> None:
 
 
 def fig5_prediction_performance() -> None:
+    rows_by_model = {str(row["model"]): row for row in _run_bq_json(PREDICTION_SQL)}
+    model_order = ["gcs_only", "phenotype_only", "phenotype_anemia_covariates", "features_8"]
     models = ["GCS only", "Phenotype\nonly", "Phenotype +\ncovariates", "8 raw\nfeatures"]
-    auroc = [0.540132, 0.767374, 0.809540, 0.842567]
-    brier = [0.150005, 0.127783, 0.127241, 0.120055]
+    auroc = [_as_float(rows_by_model[model]["auroc"]) for model in model_order]
+    brier = [_as_float(rows_by_model[model]["brier_score"]) for model in model_order]
     x = np.arange(len(models))
     width = 0.36
     fig, ax = plt.subplots(figsize=(8, 4.4))
@@ -500,9 +647,10 @@ def fig5_prediction_performance() -> None:
 
 
 def fig_s1_k_selection() -> None:
-    k = np.array([2, 3, 4, 5])
-    log_pca = [0.446028, 0.333113, 0.340991, 0.251882]
-    raw = [0.265246, 0.224708, 0.233787, 0.156050]
+    rows = _run_bq_json(K_SELECTION_SQL)
+    k = np.array(sorted({_as_int(row["k"]) for row in rows}))
+    log_pca = [_as_float(row["silhouette"]) for row in rows if row["analysis"] == "primary_log1p_creatinine_inr_pca_kmeans"]
+    raw = [_as_float(row["silhouette"]) for row in rows if row["analysis"] == "raw_standardized_8_variable_kmeans"]
     fig, ax = plt.subplots(figsize=(6.5, 4.2))
     ax.plot(k, log_pca, marker="o", linewidth=2, label="log1p + PCA")
     ax.plot(k, raw, marker="s", linewidth=2, label="raw standardized")
@@ -517,17 +665,19 @@ def fig_s1_k_selection() -> None:
 
 
 def fig_s2_bootstrap() -> None:
-    np.random.seed(42)
-    ari = np.clip(np.random.normal(0.921119, 0.045567, 200), 0.775748, 0.989350)
-    min_n = np.clip(np.random.normal(107.26, 17.736837, 200), 46, 142)
+    rows = _run_bq_json(BOOTSTRAP_SQL)
+    ari = np.array([_as_float(row["adjusted_rand_index_vs_primary"]) for row in rows])
+    min_n = np.array([_as_int(row["min_cluster_n"]) for row in rows])
+    median_ari = float(np.median(ari))
+    median_min_n = int(np.median(min_n))
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.8))
     axes[0].hist(ari, bins=18, color="#92C5DE", edgecolor="black", linewidth=0.5)
-    axes[0].axvline(0.924776, color=P3_COLOR, linestyle="--", linewidth=2, label="Median 0.925")
+    axes[0].axvline(median_ari, color=P3_COLOR, linestyle="--", linewidth=2, label=f"Median {median_ari:.3f}")
     axes[0].set_xlabel("ARI vs primary assignment")
     axes[0].set_ylabel("Bootstrap resamples")
     axes[0].legend(frameon=False, fontsize=8)
     axes[1].hist(min_n, bins=18, color="#F4A582", edgecolor="black", linewidth=0.5)
-    axes[1].axvline(109, color=P3_COLOR, linestyle="--", linewidth=2, label="Median 109")
+    axes[1].axvline(median_min_n, color=P3_COLOR, linestyle="--", linewidth=2, label=f"Median {median_min_n}")
     axes[1].set_xlabel("Minimum cluster size")
     axes[1].legend(frameon=False, fontsize=8)
     fig.suptitle("Figure S2. Bootstrap stability, 200 resamples", fontweight="bold", x=0.01, ha="left")
@@ -536,8 +686,9 @@ def fig_s2_bootstrap() -> None:
 
 
 def fig_s3_sensitivity_summary() -> None:
-    analyses = ["Raw K-means", "Complete case", "Hb-free", "INR-free", "No RBC", "ICU LOS ≥48 h", "0–24 h"]
-    ari = [0.746142, 0.941478, 0.630999, 0.730770, 0.737427, 0.733518, 0.697425]
+    rows = _run_bq_json(SENSITIVITY_ARI_SQL)
+    analyses = [str(row["label"]).replace(">=", "≥").replace("0-24", "0–24") for row in rows]
+    ari = [_as_float(row["ari"]) for row in rows]
     fig, ax = plt.subplots(figsize=(9.5, 4.2))
     bars = ax.bar(analyses, ari, color="#7FB3D5", edgecolor="black", linewidth=0.6)
     ax.set_ylim(0, 1.05)
@@ -550,18 +701,15 @@ def fig_s3_sensitivity_summary() -> None:
 
 
 def fig_s4_k4_refinement() -> None:
-    data = np.array(
-        [
-            [669, 16, 9, 0],
-            [45, 334, 2, 3],
-            [7, 38, 28, 35],
-        ]
-    )
+    rows = _run_bq_json(K4_CROSSTAB_SQL)
+    data = np.zeros((3, 4), dtype=int)
+    for row in rows:
+        data[_as_int(row["phenotype_k3"]) - 1, _as_int(row["phenotype_k4"]) - 1] = _as_int(row["n"])
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     im = ax.imshow(data, cmap="Blues")
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            ax.text(j, i, str(data[i, j]), ha="center", va="center", color="white" if data[i, j] > 250 else "black", fontweight="bold")
+            ax.text(j, i, _format_public_count(int(data[i, j])), ha="center", va="center", color="white" if data[i, j] > 250 else "black", fontweight="bold")
     ax.set_xticks(range(4))
     ax.set_xticklabels(["K4-P1", "K4-P2", "K4-P3", "K4-P4"])
     ax.set_yticks(range(3))
@@ -573,13 +721,11 @@ def fig_s4_k4_refinement() -> None:
 
 def fig_s5_pca_loadings() -> None:
     features = ["Hb", "GCS motor", "MAP", "Shock index", "SpO2", "Creatinine", "INR", "Platelet"]
-    loadings = np.array(
-        [
-            [-0.338444, -0.374444, -0.303399, 0.412463, -0.195035, 0.406643, 0.424848, -0.314926],
-            [-0.432820, 0.018516, 0.409694, -0.387283, 0.509016, 0.076663, 0.167752, -0.448745],
-            [-0.100071, -0.489973, -0.256162, 0.262683, 0.664013, -0.190042, -0.295185, 0.226112],
-        ]
-    )
+    rows = _run_bq_json(PCA_LOADINGS_SQL)
+    feature_order = ["hb_min_48h_all", "gcs_motor_min_48h", "map_min_48h", "shock_index_max_48h", "spo2_min_48h", "creatinine_max_48h", "inr_max_48h", "platelet_min_48h"]
+    by_key = {(str(row["principal_component"]), str(row["feature"])): row for row in rows}
+    loadings = np.array([[_as_float(by_key[(pc, feature)]["loading"]) for feature in feature_order] for pc in ["PC1", "PC2", "PC3"]])
+    variance = [_as_float(by_key[(pc, feature_order[0])]["explained_variance_ratio"]) for pc in ["PC1", "PC2", "PC3"]]
     fig, ax = plt.subplots(figsize=(9, 4.1))
     im = ax.imshow(loadings, cmap="RdBu_r", vmin=-0.7, vmax=0.7, aspect="auto")
     for i in range(loadings.shape[0]):
@@ -588,25 +734,18 @@ def fig_s5_pca_loadings() -> None:
     ax.set_xticks(range(len(features)))
     ax.set_xticklabels(features, rotation=25, ha="right")
     ax.set_yticks(range(3))
-    ax.set_yticklabels(["PC1 (30.3%)", "PC2 (13.8%)", "PC3 (12.4%)"])
+    ax.set_yticklabels([f"PC{i + 1} ({100 * value:.1f}%)" for i, value in enumerate(variance)])
     ax.set_title("Figure S5. PCA loadings for primary log-PCA model", fontweight="bold", loc="left")
     fig.colorbar(im, ax=ax, shrink=0.82, label="Loading")
     savefig("fig_s5_pca_loadings.png")
 
 
 def fig_s6_forest_plot() -> None:
-    terms = [
-        "P2 vs P1",
-        "P3 vs P1",
-        "Early anemia",
-        "P2 vs P1 + SOFA",
-        "P3 vs P1 + SOFA",
-        "P2 vs P1 + SOFA + clinical",
-        "P3 vs P1 + SOFA + clinical",
-    ]
-    ors = [7.533971, 21.840957, 0.997788, 5.102458, 9.551606, 5.534644, 9.380935]
-    lo = [5.040794, 12.488732, 0.685292, 3.437104, 5.300124, 3.634758, 4.960908]
-    hi = [11.260272, 38.196625, 1.452784, 7.574714, 17.213404, 8.427601, 17.739080]
+    rows = _run_bq_json(FOREST_SQL)
+    terms = [str(row["label"]) for row in rows]
+    ors = [_as_float(row["odds_ratio"]) for row in rows]
+    lo = [_as_float(row["ci_lower"]) for row in rows]
+    hi = [_as_float(row["ci_upper"]) for row in rows]
     y = np.arange(len(terms))
     fig, ax = plt.subplots(figsize=(8.5, 4.8))
     ax.errorbar(ors, y, xerr=[np.array(ors) - np.array(lo), np.array(hi) - np.array(ors)], fmt="o", color=P3_COLOR, ecolor="#555555", capsize=3)
@@ -625,11 +764,13 @@ def fig_s6_forest_plot() -> None:
 
 def fig_s7_eicu_external_validation() -> None:
     phenotype_ticks = ["P1", "P2", "P3"]
+    outcome_rows = _run_bq_json(EICU_OUTCOME_SQL)
+    predicted_rows = _run_bq_json(EICU_PREDICTED_MORTALITY_SQL)
     metrics = [
-        ("Hospital mortality", [5.4, 25.7, 42.7], "%"),
-        ("ICU mortality", [2.8, 16.2, 29.3], "%"),
-        ("Early anemia", [11.4, 34.5, 58.0], "%"),
-        ("APACHE predicted\nhospital mortality", [6.9, 24.3, 42.6], "%"),
+        ("Hospital mortality", [100 * _as_float(row["hospital_mortality_rate"]) for row in outcome_rows], "%"),
+        ("ICU mortality", [100 * _as_float(row["icu_mortality_rate"]) for row in outcome_rows], "%"),
+        ("Early anemia", [100 * _as_float(row["early_anemia_rate"]) for row in outcome_rows], "%"),
+        ("APACHE predicted\nhospital mortality", [100 * _as_float(row["median"]) for row in predicted_rows], "%"),
     ]
     fig, axes = plt.subplots(1, 4, figsize=(13, 3.9))
     for ax, (title, values, suffix) in zip(axes, metrics):

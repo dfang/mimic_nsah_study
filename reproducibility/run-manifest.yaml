@@ -1,41 +1,56 @@
-release_id: "MIMIC-NSAH-PHENO-01-draft-20260716"
+release_id: "MIMIC-NSAH-PHENO-01-freeze-20260716"
 created_at_utc: "2026-07-16T00:00:00Z"
-git_commit: "09b80ecab75963b050efbef81f46f36b874acd90"
-worktree_clean: false
-reproducibility_level: "conceptual; computational verification incomplete"
+status: "FROZEN_EXPLORATORY"
+git_commit: "resolved by annotated tag analysis-freeze-v1.0.0"
+worktree_clean_at_tag: true
+reproducibility_level: "computational and statistical analysis freeze; restricted source access required"
 data_sources:
   - name: "MIMIC-IV"
     version: "3.1"
+    access_date: "2026-07-16"
     access_required: true
+    source: "physionet-data.mimiciv_3_1_{hosp,icu,derived}"
   - name: "eICU-CRD"
     version: "2.0"
+    access_date: "2026-07-16"
     access_required: true
+    source: "physionet-data.eicu_crd"
 derived_concepts:
-  source: "MIMIC-IV community derived tables and repository SQL"
-  revision: "exact mimic-code commit not recorded"
+  source: "PhysioNet-published MIMIC-IV 3.1 community derived BigQuery tables plus repository SQL"
+  revision: "MIMIC-IV release 3.1; no separate local MIMIC-Code checkout was used"
 environment:
   os: "macOS 26.5.2 arm64"
   architecture: "arm64"
   python: "3.12.9"
   r: "not used"
   sql_dialect: "GoogleSQL"
-  lockfiles: []
+  lockfiles:
+    - path: "reproducibility/requirements-bigquery.lock"
+      sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"
+      python_target: "3.12"
 seeds:
-  - "42: PCA, K-means, resampling, eICU validation, figure illustration"
+  - "42: PCA, K-means, subject-grouped resampling, grouped prediction, eICU validation"
 pipeline_entrypoint: "scripts/run_non_traumatic_sah_bigquery_pipeline.sh"
+jobs:
+  cohort: "d7eab218-46dd-48c2-9388-df9a7a993a1c"
+  freeze_qc: "79176287-6e85-4b9c-a54c-8b6da3309d81"
+  mimic_final_read: "9446e34c-7986-4dc4-8346-7a0aa7e1e36d"
+  eicu_cohort: "b8ddf1a3-1e1e-49f0-a8ee-6155d536ea82"
+  eicu_final_reads:
+    - "eb4587a6-8536-487f-aa5b-4463a93f0aac"
+    - "5d29dcb5-4f4c-46d3-bd38-ad926d94bf94"
 verification:
-  clean_run: "not_run: restricted data access not authorized in this review"
-  tests: "passed: 25 focused repository tests on 2026-07-16"
-  notebook_qc: "not_applicable: executable analysis is a Python script, not a notebook file"
-  sql_qc: "not_run: credentials/authorized-user status not confirmed"
-  result_comparison: "partial: manuscript numbers previously reconciled to aggregate result artifacts; no clean rerun"
+  clean_run: "passed in exact locked Python 3.12 environment on 2026-07-16"
+  tests: "repository test suite passed; freeze guardrails passed"
+  notebook_qc: "not_applicable: executable analysis is Python"
+  sql_qc: "main and QC dry-runs passed; row-grain/time-window QC passed"
+  result_comparison: "manuscript, Chinese manuscript, ESM and figures reconciled to final aggregate tables"
+  figure_review: "12 PNG/PDF figure pairs regenerated from frozen aggregate tables and visually reviewed"
+  disclosure_review: "local conservative pass; public non-zero cells below 10 suppressed"
 public_root: "."
-restricted_root: "external authorized BigQuery projects; no restricted local root declared"
+restricted_root: "authorized BigQuery projects; no patient-level local export"
 known_gaps:
-  - "Dirty working tree and no release tag"
-  - "No exact dependency lock"
-  - "No clean authorized end-to-end rerun"
-  - "No recorded MIMIC-Code commit or exact query-job provenance"
-  - "No completed disclosure review for aggregate outputs"
-  - "Protocol/SAP and several analysis gates remain blocked"
-  - "Pandoc/Typst unavailable; submission PDF build remains blocked"
+  - "This is a post-outcome-access exploratory freeze, not prospective preregistration."
+  - "Manual-chart diagnostic validation was not available; misclassification remains a limitation."
+  - "Final author/institution disclosure approval is required before public journal release."
+  - "Author/ethics/declaration metadata, editable submission source and final rendered PDFs remain incomplete."

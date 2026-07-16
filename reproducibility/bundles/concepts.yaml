@@ -1,0 +1,15 @@
+bundle_version: "1.0"
+stage: concepts
+artifacts:
+  - role: clinical_codebook
+    path: reproducibility/clinical-codebook.csv
+    version: "0.1.0-ready-for-dictionary-qc"
+    sha256: "4a0abc69a7ce37a4245ef663b0a8a819aa499b0ab941c65977c5e4fe8c63f10e"
+  - role: external_nsah_identification_evidence
+    path: reproducibility/nsah-identification-validation.md
+    version: "2026-07-16"
+    sha256: "bced2408bd055c352bf7fe2bdb286425019d49dcffff396f18d0c6036c0caecc"
+  - role: dictionary_and_grain_qc_sql
+    path: 16_freeze_release_qc.sql
+    version: "working-tree-20260716"
+    sha256: "62f9a4dd5f32daf35eb5257d3c7ce4aa6d54a3d962e5ff2088e9189d499c4621"

@@ -1,0 +1,17 @@
+bundle_version: "1.0"
+stage: features
+artifacts:
+  - role: feature_extraction_sql
+    path: 10_create_non_traumatic_sah_cohort.sql
+    version: "working-tree-20260716"
+    sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
+    index_time: "ICU intime"
+    feature_window_start: "ICU intime, inclusive"
+    feature_window_end: "ICU intime + 48 hours, exclusive"
+    leakage_policy: "Descriptive phenotype discovery; outcome variables are excluded from clustering features"
+  - role: feature_preprocessing_and_stability
+    path: scripts/phenotype_stability.py
+    version: "working-tree-20260716"
+    sha256: "6aabbd6b8eda2601d32f2acea329438ba4e3a979fd56661af761eb9b8687ace6"
+    resampling_unit: "subject_id"
+    preprocessing_scope: "Refit within every bootstrap iteration and prediction fold"

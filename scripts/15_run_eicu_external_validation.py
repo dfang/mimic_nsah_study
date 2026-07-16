@@ -72,7 +72,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_table(client, table: str) -> pd.DataFrame:
-    return client.query(f"SELECT * FROM `{table}`").to_dataframe(create_bqstorage_client=False)
+    job = client.query(f"SELECT * FROM `{table}`")
+    print(f"BigQuery read job: {job.job_id}")
+    return job.to_dataframe(create_bqstorage_client=False)
 
 
 def write_table(client, df: pd.DataFrame, table: str) -> None:
@@ -80,6 +82,7 @@ def write_table(client, df: pd.DataFrame, table: str) -> None:
 
     job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
     job = client.load_table_from_dataframe(df, table, job_config=job_config)
+    print(f"BigQuery load job: {job.job_id}")
     job.result()
     print(f"Wrote {len(df):,} rows to {table}")
 

@@ -3,9 +3,21 @@ stage: analysis
 artifacts:
   - role: phenotyping_and_association_analysis
     path: 11_bigquery_notebook_non_traumatic_sah_analysis.py
-    version: "working-tree-20260716"
-    sha256: "d5e81b8391302327cfe08067aa485e7d07c9a3637ab285bdf693a1b40bdfb383"
+    version: "analysis-freeze-v1.0.0"
+    sha256: "59ecd08006e7863cb2aab75deb4837a761fdc4c885e185ecb873d92e4ab72d6f"
   - role: analysis_runner
     path: scripts/13_run_non_traumatic_sah_analysis.py
-    version: "working-tree-20260716"
-    sha256: "5affff7ef1151104163a2eb22aff16e7973a20e87648ce8338950e4f774115f1"
+    version: "analysis-freeze-v1.0.0"
+    sha256: "779aefb5f733d2bd6433cd08aeca779b0a1058e3b6cc4918fa31ab6ccd62f3c5"
+  - role: grouped_resampling_implementation
+    path: scripts/phenotype_stability.py
+    version: "analysis-freeze-v1.0.0"
+    sha256: "6aabbd6b8eda2601d32f2acea329438ba4e3a979fd56661af761eb9b8687ace6"
+  - role: direct_dependency_specification
+    path: scripts/requirements-bigquery.txt
+    version: "analysis-freeze-v1.0.0"
+    sha256: "81399739f79f01c0e8841e592b72fd6e83946ad37ebf8091afeb419bba47fb6a"
+  - role: exact_analysis_environment_lock
+    path: reproducibility/requirements-bigquery.lock
+    version: "python-3.12-20260716"
+    sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"

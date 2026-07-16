@@ -4,8 +4,12 @@ artifacts:
   - role: mimic_cohort_and_feature_sql
     path: 10_create_non_traumatic_sah_cohort.sql
     version: "working-tree-20260716"
-    sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+    sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
   - role: mimic_sql_runner
     path: scripts/12_run_non_traumatic_sah_cohort_sql.py
     version: "working-tree-20260716"
     sha256: "b09f64ccc1c3a6648b10f779f09ba468617103c324bb2679df1d458930e8fc8e"
+  - role: aggregate_freeze_qc_sql
+    path: 16_freeze_release_qc.sql
+    version: "working-tree-20260716"
+    sha256: "62f9a4dd5f32daf35eb5257d3c7ce4aa6d54a3d962e5ff2088e9189d499c4621"

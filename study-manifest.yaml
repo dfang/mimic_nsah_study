@@ -19,42 +19,42 @@ data:
       module: "hosp"
       release: "3.1"
       schema: "physionet-data.mimiciv_3_1_hosp"
-      access_date: "unknown"
+      access_date: "2026-07-16"
       linkage_provenance:
         status: "assessed"
         artifact: "10_create_non_traumatic_sah_cohort.sql"
-        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+        sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
     - project: "MIMIC-IV"
       module: "icu"
       release: "3.1"
       schema: "physionet-data.mimiciv_3_1_icu"
-      access_date: "unknown"
+      access_date: "2026-07-16"
       linkage_provenance:
         status: "assessed"
         artifact: "10_create_non_traumatic_sah_cohort.sql"
-        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+        sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
     - project: "MIMIC-Code-derived"
       module: "derived"
       release: "MIMIC-IV 3.1 hosted derived schema"
       schema: "physionet-data.mimiciv_3_1_derived"
-      access_date: "unknown"
+      access_date: "2026-07-16"
       linkage_provenance:
         status: "assessed"
         artifact: "10_create_non_traumatic_sah_cohort.sql"
-        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+        sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
     - project: "other"
       module: "other"
       release: "eICU-CRD 2.0"
       schema: "physionet-data.eicu_crd"
-      access_date: "unknown"
+      access_date: "2026-07-16"
       linkage_provenance:
         status: "assessed"
         artifact: "14_create_eicu_external_validation_cohort.sql"
         sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
   derived_metadata:
-    mimic_version: "3.1 declared in code; execution metadata not frozen"
-    mimic_code_version: "unknown"
-    mimic_code_commit_hash: "unknown"
+    mimic_version: "3.1 frozen and executed"
+    mimic_code_version: "PhysioNet-hosted MIMIC-IV 3.1 derived schema"
+    mimic_code_commit_hash: "not applicable; no separate local MIMIC-Code checkout used"
 analysis_contract:
   grain:
     unit: "stay"
@@ -72,25 +72,25 @@ analysis_contract:
     reference_standard_time: "not_applicable"
     treatment_assignment_time: "not_applicable"
     exposure_end: "not_applicable"
-    followup_start: "Current descriptive analysis has no landmark; author decision remains open"
+    followup_start: "not_applicable: descriptive same-hospital association with no landmark risk origin"
     censoring_time: "Hospital discharge for the binary in-hospital outcome"
     outcome_time: "In-hospital death time when available; may overlap the feature window"
 stages:
-  question: {status: "ready_for_review", artifact: "reproducibility/bundles/question.yaml", sha256: "b7ef4877f7391462084acfbaf696d1691dc3d070937486115d3c247ec3dc5e43"}
-  protocol: {status: "blocked", artifact: "reproducibility/bundles/protocol.yaml", sha256: "b945f11b6f85058d115dbf7459c8c5afc05da377c2347e5e7852322c4e5b54ce"}
-  concepts: {status: "blocked", artifact: "", sha256: ""}
-  cohort: {status: "blocked", artifact: "reproducibility/bundles/cohort-features.yaml", sha256: "bca929d219acf69c3e017b8eb132e61c9141af49a1835a576d5b758cbacf4c58"}
-  features: {status: "blocked", artifact: "", sha256: ""}
-  analysis: {status: "blocked", artifact: "reproducibility/bundles/analysis.yaml", sha256: "15d3b1ffc855849b0adab0964df57d9384558dd399c782efad19dbbc798b6cd6"}
-  validation: {status: "ready_for_review", artifact: "reproducibility/bundles/validation.yaml", sha256: "52e0805cefe2fa41a3201091ffa66b2e8cd542a3527a688b9d5eff0e689e1a6b", rationale: "Exploratory eICU frozen transport exists but was not preceded by an independently frozen protocol."}
-  analysis_review: {status: "blocked", artifact: "", sha256: ""}
-  manuscript: {status: "ready_for_review", artifact: "reproducibility/bundles/manuscript.yaml", sha256: "742cdd587cf62e0ee20ee6993fb6de6a982041e4aecda906ad12ff7dacfb22d0"}
+  question: {status: "frozen_exploratory", artifact: "reproducibility/bundles/question.yaml", sha256: "7650e7ef316240cc67241d8c64b0a66215700e1c68fe4b5a68f8462c27ea057e"}
+  protocol: {status: "frozen_exploratory", artifact: "reproducibility/bundles/protocol.yaml", sha256: "f78b75be730ae0dea449ff3555bed884f88c4664064580940a89258230aacbd2"}
+  concepts: {status: "frozen_with_misclassification_limitation", artifact: "reproducibility/bundles/concepts.yaml", sha256: "c7b7c33d20e5105a1dc338b60565083c63a29efdbdfb16ead8e2860c5cc4c988"}
+  cohort: {status: "frozen", artifact: "reproducibility/bundles/cohort-features.yaml", sha256: "986cc74386ccf2f03466f8ba4bfdbaa9f00d12417bde78c5c7ec0867d900480a"}
+  features: {status: "frozen", artifact: "reproducibility/bundles/features.yaml", sha256: "3b4afa3cff5436f29fcb644cadca0be3f98267849e9078fa8242e59619867424"}
+  analysis: {status: "frozen_exploratory", artifact: "reproducibility/bundles/analysis.yaml", sha256: "99b68a20f60889f32949991227216a99547107b893eacb3f6d303a71bed5c5d0"}
+  validation: {status: "frozen_exploratory", artifact: "reproducibility/bundles/validation.yaml", sha256: "9c146aef79557c31a7a6c8452105e79a20905eba1ca144eaec75bb9a566d8ec7", rationale: "Exploratory eICU frozen transport was outcome-accessed and is not confirmatory external validation."}
+  analysis_review: {status: "complete_for_freeze", artifact: "reproducibility/freeze-validation.md", sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"}
+  manuscript: {status: "analysis_content_frozen", artifact: "reproducibility/bundles/manuscript.yaml", sha256: "b65e1387a4d0a7ec08b750ecb6538430b19ea87557465dea82c160ef65b209ec"}
   manuscript_review: {status: "blocked", artifact: "reproducibility/bundles/manuscript-review.yaml", sha256: "9e1d71ba8568fb21da2324f1175d72d895619799ca17161104ce1ffe6fd6ca19"}
-  release: {status: "in_progress", artifact: "reproducibility/bundles/release.yaml", sha256: "1be202f6631995a924839a11b5e2271196b92fb0c712ff34e67933264b9645a6"}
+  release: {status: "frozen_exploratory", artifact: "reproducibility/bundles/release.yaml", sha256: "dc6cabb8529f17e57ca3106a18332162ce03fd5a6a16b13be7e7746e49cd6bbf"}
   submission: {status: "blocked", artifact: "", sha256: ""}
 provenance:
-  repository_commit: "09b80ecab75963b050efbef81f46f36b874acd90"
-  environment_lock: "not_available; reproducibility/environment-observed.txt is not a lock"
+  repository_commit: "resolved by annotated tag analysis-freeze-v1.0.0"
+  environment_lock: "reproducibility/requirements-bigquery.lock"
   random_seed_registry: "reproducibility/random-seeds.md"
   issue_register: "reproducibility/issue-register.yaml"
   deviation_log: "reproducibility/deviation-log.md"

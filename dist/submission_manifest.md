@@ -14,7 +14,7 @@
 | Gate | Status | Verdict/manifest artifact | SHA-256 | Open blocking | Open major | Checked on |
 | :--- | :--- | :--- | :--- | ---: | ---: | :--- |
 | manuscript_review | Complete | `manuscript_review_report.md` | `b059803912f1c3402767f903750bb7a75c7a57d756078e103da3d6a55f0c0ec0` | 3 | 4 | 2026-07-16 |
-| reproducibility_release | Not passed | Draft `reproducibility/bundles/release.yaml`; not immutable/frozen | `1be202f6631995a924839a11b5e2271196b92fb0c712ff34e67933264b9645a6` | 1 | Not assessed | 2026-07-16 |
+| reproducibility_release | Analysis frozen | `reproducibility/bundles/release.yaml`; tag `analysis-freeze-v1.0.0` | `dc6cabb8529f17e57ca3106a18332162ce03fd5a6a16b13be7e7746e49cd6bbf` | 0 analysis-freeze blockers | Submission risks remain | 2026-07-16 |
 
 ## Live requirements
 
@@ -37,9 +37,9 @@
 
 | File | Purpose | SHA-256 | Required | Status |
 | :--- | :--- | :--- | :---: | :--- |
-| `manuscript_non_traumatic_sah_phenotypes.md` | Canonical English manuscript | `3a13e5bbc01b8fdf9106042f544399381317334be8312d56d45dae5b9fb53a47` | Yes | Content revised; author fields/render pending |
-| `manuscript_non_traumatic_sah_phenotypes_cn.md` | Chinese reference manuscript | `0c14a7bfac8de51c10315e0a6ddf17ff2c22a13aa7479a5ece0bd79fa4d75c90` | No | Synchronized reference version |
-| `electronic_supplementary_material.md` | ESM source | `6e768d2d9d2c2e4705d4303349ba1a877b92db33780acbd61707a836a4043cc2` | Yes | Content prepared; title-page details/render pending |
+| `manuscript_non_traumatic_sah_phenotypes.md` | Canonical English manuscript | `95b5ee74d3e592dd2e8e450e56080964ccb060cf561fa8d46c76e88058ca3ae6` | Yes | Analysis content frozen; author fields/render pending |
+| `manuscript_non_traumatic_sah_phenotypes_cn.md` | Chinese reference manuscript | `eb366b9c0b03397dba85b6ef560adda910a8b2523acd21e71ff3930cec72b250` | No | Synchronized frozen reference version |
+| `electronic_supplementary_material.md` | ESM source | `b9660139408df1f02e3ca5b41eba7ace5a098cd1e2955c26a3abf68256333c16` | Yes | Analysis content and small-cell suppression frozen; render pending |
 | `references.bib` | Verified bibliography | `207f4b04e345868d0595572f937f7829014a62278a8889b270182724312ac583` | Build input | Static checks pass; render pending |
 | `journal.csl` | ICM parent citation style | `2f39b2c93cf7a90cb41c72a2945700c4d227ad233682d7fe843c77364a11ba82` | Build input | Pinned and verified |
 | `strobe_checklist.md` | STROBE mapping | `e1448467c36ce3d226723f721e6c9dedd653151c252e79fa33aa4297f98dfb73` | Yes | Author review pending |
@@ -49,6 +49,6 @@
 ## Blockers
 
 - Complete the author/title-page/declaration/ethics package and ICMJE forms.
-- Resolve or formally accept the authorized reanalysis items in `author_completion_checklist.md`.
-- Pass an immutable reproducibility-release audit.
+- Review the now-frozen reanalysis evidence in `reproducibility/freeze-validation.md`.
+- Obtain final author/institution disclosure approval for public journal release.
 - Render and visually inspect citations, DOCX/PDF, and ESM; use the new vector/600 dpi figures and do not use the current stale manuscript PDFs.

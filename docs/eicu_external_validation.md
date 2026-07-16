@@ -166,14 +166,14 @@ The frozen MIMIC classifier assigned all 843 eICU validation patients to one of 
 
 | Transported phenotype | N | Hospital mortality | ICU mortality | Early anemia | RBC 0-48h |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| P1 | 539 | 5.4% | 2.8% | 11.4% | 0.4% |
-| P2 | 222 | 25.7% | 16.2% | 34.5% | 5.9% |
+| P1 | 540 | 5.4% | 2.8% | 11.4% | 0.4% |
+| P2 | 221 | 25.8% | 16.3% | 34.7% | 5.9% |
 | P3 | 82 | 42.7% | 29.3% | 58.0% | 11.0% |
 
 The mortality gradient is strong and monotonic:
 
 - P1 hospital mortality: 5.4%;
-- P2 hospital mortality: 25.7%;
+- P2 hospital mortality: 25.8%;
 - P3 hospital mortality: 42.7%.
 
 ### Transported Phenotype Physiology
@@ -205,7 +205,7 @@ All major transport sensitivities preserved a monotonic hospital mortality gradi
 
 | Analysis | N | P1 mortality | P2 mortality | P3 mortality | Minimum phenotype N |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Primary frozen transport | 843 | 5.4% | 25.7% | 42.7% | 82 |
+| Primary frozen transport | 843 | 5.4% | 25.8% | 42.7% | 82 |
 | ICU LOS >=48h | 626 | 6.9% | 24.2% | 33.9% | 62 |
 | No recorded RBC 0-48h | 819 | 5.4% | 25.8% | 39.7% | 73 |
 | Strict SAH evidence | 605 | 6.6% | 30.5% | 45.6% | 68 |
@@ -243,18 +243,18 @@ The eICU de novo K=3 model also forms a mortality gradient:
 
 | De novo phenotype | N | Hospital mortality | Early anemia |
 | --- | ---: | ---: | ---: |
-| 1 | 450 | 5.8% | 9.8% |
-| 2 | 293 | 18.1% | 29.9% |
+| 1 | 456 | 5.7% | 9.9% |
+| 2 | 287 | 18.5% | 30.2% |
 | 3 | 100 | 42.0% | 53.5% |
 
 However, concordance with frozen transport labels is low:
 
 | Metric | Value |
 | --- | ---: |
-| Adjusted Rand Index | -0.003 |
-| Normalized mutual information | 0.002 |
-| Same ordered label rate | 43.9% |
-| Silhouette | 0.269 |
+| Adjusted Rand Index | 0.0005 |
+| Normalized mutual information | 0.0011 |
+| Same ordered label rate | 45.2% |
+| Silhouette | 0.271 |
 | Minimum de novo cluster size | 100 |
 
 Interpretation: eICU independently recovers a risk gradient, but its patient-level partition boundaries differ from the MIMIC-frozen classifier. This supports using de novo clustering only as a structural sensitivity analysis. It should not be presented as external validation of the exact cluster membership.

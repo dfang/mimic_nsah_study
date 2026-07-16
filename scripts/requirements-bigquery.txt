@@ -6,3 +6,4 @@ pandas
 scipy
 scikit-learn
 matplotlib
+statsmodels>=0.14.0

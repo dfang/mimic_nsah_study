@@ -1,12 +1,14 @@
 Observed local environment on 2026-07-16
 ========================================
 
-This is an observation record, not an exact dependency lock.
+This records the authoring environment. The exact analysis dependency lock is
+`reproducibility/requirements-bigquery.lock`.
 
 OS: macOS 26.5.2 arm64
 Python: 3.12.9
 BigQuery CLI: 2.1.33
 Git: 2.50.1 (Apple Git-155)
+uv: 0.6.5
 
 Python packages:
 - google-cloud-bigquery 3.42.1
@@ -27,4 +29,14 @@ Rendering tools:
 - Typst: unavailable
 - Google Chrome: available under /Applications
 
-Known limitation: `scripts/requirements-bigquery.txt` contains lower bounds and unpinned packages; it is not a fully resolved environment lock.
+Lock verification:
+- Python target: 3.12
+- Lock SHA-256: d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2
+- Clean environment: `/tmp/mimic-freeze-venv` (ephemeral; not part of release)
+- Install result: 43 locked packages installed successfully
+- Freeze-guardrail tests: 14 passed under the locked environment
+
+Authorized MIMIC-IV/eICU execution and aggregate reconciliation completed with
+this analysis environment on 2026-07-16. The broader manuscript/PDF test suite
+uses the authoring environment because those rendering dependencies are not
+part of the analysis-only lock.

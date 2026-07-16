@@ -4,39 +4,47 @@ artifacts:
   - role: data_governance_decision
     path: DATA_GOVERNANCE.md
     version: "2026-07-16"
-    sha256: "839929cab74eab55ad6046605c3d4f4244bb35498ce7313312d2a4dababfb6f5"
+    sha256: "0de2025459afa45887dce4f389d9f7875df37d07f611bbc6d942ba26e188afb9"
   - role: observed_environment
     path: reproducibility/environment-observed.txt
     version: "2026-07-16"
-    sha256: "e3f2a2ce7d2b8bc834ca7d46ddb3ad31c8a516ec955da06cc3f8427f1b127405"
+    sha256: "ef710c1cd3d0af5d64895e5699bd0d4f530c1ad2e24656e53d3010f4d70465d8"
+  - role: exact_analysis_environment_lock
+    path: reproducibility/requirements-bigquery.lock
+    version: "python-3.12-20260716"
+    sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"
   - role: run_manifest
     path: reproducibility/run-manifest.yaml
-    version: "draft-2026-07-16"
-    sha256: "172a2950d2c82877d8b3613cd02ff56f3588920d94c7810f836a35a5190d909e"
+    version: "freeze-2026-07-16"
+    sha256: "8251b56df17964dae22a5f48e5f76c52408f8db22236ce2a24f7d9616428ffe5"
   - role: pipeline_dag
     path: reproducibility/pipeline-dag.md
     version: "2026-07-16"
-    sha256: "ffb4c6f8a8db89451fb47a4ed9a568bf68704c1780acc7406db099e39209fd8a"
+    sha256: "41de68c69df3a36b00cb0a97656cafab42dd51b0914b30faae9a8e3b567138bc"
   - role: artifact_provenance
     path: reproducibility/artifact-provenance.csv
-    version: "draft-2026-07-16"
-    sha256: "616eb41a7abafdbef66a932913c8376da1512d36c133f82edb8cc80821ecc753"
+    version: "freeze-2026-07-16"
+    sha256: "209f0add964159ee288b068a52ecf60a540857298f74eff1dbf2fe9664a49450"
   - role: release_checklist
     path: reproducibility/release-checklist.md
-    version: "draft-2026-07-16"
-    sha256: "ee5a9c0002ba063241f15b303eb8dca416ce742c3fd6ec484dfc20cb67cec366"
+    version: "freeze-2026-07-16"
+    sha256: "0fd187f3ebf1e24ab9d6bddf88c67cc7ae0e31cd5aa06dcb2b0e895b75485f93"
   - role: issue_register
     path: reproducibility/issue-register.yaml
     version: "2026-07-16"
-    sha256: "21d936c1c2c6cfcf41c32c3819f792cb80c137a284d90806c7c47983c07f6f3e"
+    sha256: "4f473c5f507c848b957990eb4ffb76a50a4bc517e909ce8ad60a3dae7305763f"
   - role: random_seed_registry
     path: reproducibility/random-seeds.md
     version: "2026-07-16"
-    sha256: "7e26c271cccf5f3e67ed481c70856ff53150f20f30971ab621d32685b252721d"
+    sha256: "e827b204819248a05ef34296cb681062b9feee8908a7c3adfee58b646e8a9909"
   - role: deviation_log
     path: reproducibility/deviation-log.md
     version: "2026-07-16"
-    sha256: "b825e329fe50f07b69fabc96b1aa506e7ec22a3051787bdf5ef571386d28d9fb"
+    sha256: "07e235d072ce2469730b56c8a23dda8bb28561ca57b5cc7d4a115c09a35a1ced"
+  - role: freeze_validation
+    path: reproducibility/freeze-validation.md
+    version: "freeze-2026-07-16"
+    sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"
   - role: render_preflight
     path: reproducibility/render-preflight.md
     version: "2026-07-16"

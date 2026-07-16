@@ -3,13 +3,13 @@ stage: protocol
 artifacts:
   - role: protocol
     path: protocol.md
-    version: "0.1.0-DRAFT_BLOCKED"
-    sha256: "fe931d178e738e5b72dbf9c5d4e6e975a4009da68fe7d3499bd41cb83327815e"
+    version: "1.0.0-FROZEN_EXPLORATORY"
+    sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
   - role: statistical_analysis_plan
     path: sap.md
-    version: "0.1.0-DRAFT_BLOCKED"
-    sha256: "a8ea4fcc7c5fd73eb4af48f17628730ceaa582d7cac8230c91be28ddc3df5898"
+    version: "1.0.0-FROZEN_EXPLORATORY"
+    sha256: "e8938b9094a1d4119405bd8460a6be99f8cb4802dc83be110f1b2b4b6b66ec5f"
   - role: deviation_log
     path: reproducibility/deviation-log.md
-    version: "draft-20260716"
-    sha256: "b825e329fe50f07b69fabc96b1aa506e7ec22a3051787bdf5ef571386d28d9fb"
+    version: "freeze-20260716"
+    sha256: "07e235d072ce2469730b56c8a23dda8bb28561ca57b5cc7d4a115c09a35a1ced"

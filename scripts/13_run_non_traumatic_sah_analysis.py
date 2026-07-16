@@ -12,11 +12,13 @@ import argparse
 import builtins
 import os
 import runpy
+import sys
 from pathlib import Path
 from typing import Any
 
 
 DEFAULT_ANALYSIS_FILE = "11_bigquery_notebook_non_traumatic_sah_analysis.py"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def terminal_display(obj: Any = None, **_: Any) -> None:
@@ -47,6 +49,8 @@ def main() -> None:
 
     os.environ.setdefault("MPLBACKEND", "Agg")
     builtins.display = terminal_display
+    if str(REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPOSITORY_ROOT))
 
     print(f"Analysis file: {analysis_path}")
     runpy.run_path(str(analysis_path), run_name="__main__")

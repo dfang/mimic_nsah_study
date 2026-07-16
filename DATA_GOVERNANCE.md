@@ -3,36 +3,34 @@
 ## Current decision
 
 ```yaml
-governance_decision: PROCEED_PUBLIC_ONLY
-scope: "Public code, SQL text, protocol/SAP, aggregate manuscripts, submission documents, and figure metadata"
-data_classes: [PUBLIC, AGGREGATE_REVIEW]
+governance_decision: PROCEED_LOCAL
+scope: "Authorized local BigQuery dry-run and execution for the declared MIMIC-IV/eICU pipeline; local statistical rerun; aggregate-only QC, reconciliation, and freeze metadata"
+data_classes: [PUBLIC, MIMIC_RESTRICTED, DERIVED_SENSITIVE, AGGREGATE_REVIEW]
 source_projects_and_versions:
   - "MIMIC-IV 3.1"
   - "eICU-CRD 2.0"
-authorized_user_confirmed: false
+authorized_user_confirmed: true
+authorization_confirmation_recorded_at: "2026-07-16 Asia/Shanghai"
 processing_destinations:
   - "local workspace"
 service_evidence:
-  zero_retention: unknown
-  no_training: unknown
-  no_human_review: unknown
-  subprocessors_and_region: unknown
-  verified_on: null
+  applicability: "not applicable to restricted processing; no restricted rows were sent to an external AI/service"
+  verified_on: "2026-07-16"
 controls:
-  - "Do not read, print, upload, or publish patient-level rows or restricted query outputs."
+  - "Execute restricted processing only through local scripts and the user's authorized BigQuery credentials."
+  - "Do not print, upload, commit, or publish patient-level rows or restricted query outputs."
+  - "Persist only approved aggregate outputs and non-sensitive job/source provenance in the public workspace."
   - "Do not include credentials, service-account files, tokens, or connection strings in Git."
-  - "Treat aggregate tables and figures as AGGREGATE_REVIEW until author/institution disclosure review."
+  - "Apply conservative local disclosure review and suppress non-zero public cells below 10."
   - "Run restricted BigQuery work only in an authorized user's approved environment."
 excluded_paths:
   - ".git/"
   - ".env* and credentials"
   - "patient-level exports and local data directories"
   - "notebook outputs, logs, caches, model weights, embeddings, and checkpoints"
-release_plan: "Public code and documentation are separated from restricted source data; aggregate outputs require disclosure review; derived patient-level data and models remain restricted."
+release_plan: "Public code and documentation are separated from restricted source data; a conservative local aggregate review is complete, while author/institution approval remains required before journal/public release; derived patient-level data and models remain restricted."
 blockers:
-  - "Individual PhysioNet authorization, training, and DUA status is not confirmed in this repository."
-  - "Institutional disclosure review of aggregate tables and figures is not recorded."
-  - "External-service retention, training, human-review, subprocessors, and region evidence is not verified."
+  - "Author/institutional disclosure approval is not yet recorded for journal/public release; this does not block the controlled exploratory analysis freeze."
 next_review_date: null
 ```
 

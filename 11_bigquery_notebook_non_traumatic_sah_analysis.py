@@ -77,9 +77,13 @@ from sklearn.metrics import (
     roc_auc_score,
     silhouette_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+
+from scripts.phenotype_stability import (
+    grouped_logistic_predictions,
+    run_grouped_pipeline_bootstrap,
+)
 
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -210,6 +214,7 @@ LOG_TRANSFORM_FEATURES_24H = ["creatinine_max_24h", "inr_max_24h"]
 #   eligible_primary_analysis: 主分析
 #   eligible_no_transfusion_sensitivity: 排除所有 0-48h RBC 输血患者
 #   eligible_sensitivity_48h_los: ICU LOS >=48h 敏感性分析
+#   eligible_include_massive_transfusion_sensitivity: 纳入大量输血患者
 COHORT_FLAG = "eligible_primary_analysis"
 
 FEATURES = [
@@ -337,6 +342,7 @@ CANDIDATE_AUDIT_FEATURES = [
 SENSITIVITY_COHORT_FLAGS = {
     "no_rbc_48h": "eligible_no_transfusion_sensitivity",
     "icu_los_ge_48h": "eligible_sensitivity_48h_los",
+    "include_massive_transfusion_24h": "eligible_include_massive_transfusion_sensitivity",
 }
 
 EPVS_SENSITIVITY_FEATURE_SETS = {
@@ -574,6 +580,7 @@ def read_table_from_bigquery() -> pd.DataFrame:
         "eligible_primary_analysis",
         "eligible_no_transfusion_sensitivity",
         "eligible_sensitivity_48h_los",
+        "eligible_include_massive_transfusion_sensitivity",
         "gcs_min_48h",
         "gcs_grade_min_48h",
         "gcs_grade_min_24h",
@@ -615,11 +622,13 @@ def read_table_from_bigquery() -> pd.DataFrame:
     sql = f"""
     SELECT {", ".join(selected_columns)}
     FROM `{INPUT_TABLE}`
-    WHERE {COHORT_FLAG} = 1
+    WHERE core_feature_missing_count <= 2
     """
     print(f"读取 BigQuery 表：{INPUT_TABLE}")
-    print(f"当前 cohort flag：{COHORT_FLAG} = 1")
-    df = client.query(sql).to_dataframe(create_bqstorage_client=False)
+    print("读取缺失核心变量不超过 2 项的冻结分析源表；主分析和敏感性队列随后显式分层。")
+    query_job = client.query(sql)
+    print(f"BigQuery read job: {query_job.job_id}")
+    df = query_job.to_dataframe(create_bqstorage_client=False)
     df["race_group"] = df["race"].map(collapse_race)
     print(f"读取完成：{len(df):,} 行，{df.shape[1]} 列")
     return df
@@ -634,6 +643,7 @@ def write_dataframe(df: pd.DataFrame, table_id: str) -> None:
         raise ValueError(f"写入 {table_id} 前发现重复列名：{duplicate_columns}")
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
+    print(f"BigQuery load job: {job.job_id}")
     job.result()
     print(f"写回 BigQuery：{table_id} ({len(df):,} 行)")
 
@@ -981,67 +991,47 @@ def run_stability_check(x_scaled: np.ndarray, raw_labels: np.ndarray, k: int) ->
     )
 
 
-def run_bootstrap_stability(x_scaled: np.ndarray, reference_phenotype: pd.Series, k: int) -> pd.DataFrame:
-    """Bootstrap 重采样评估 K-means phenotype assignment 稳定性。"""
-    rng = np.random.default_rng(RANDOM_SEED)
-    reference = reference_phenotype.astype(int).to_numpy()
-    rows = []
-    n = x_scaled.shape[0]
-
-    for iteration in range(1, BOOTSTRAP_N + 1):
-        sample_idx = rng.integers(0, n, size=n)
-        model = KMeans(n_clusters=k, random_state=RANDOM_SEED + iteration, n_init=50)
-        model.fit(x_scaled[sample_idx])
-        raw_labels = model.predict(x_scaled)
-        _, label_map = build_ordered_phenotype_labels(x_scaled, raw_labels)
-        ordered_labels = np.array([label_map[int(label)] for label in raw_labels])
-        rows.append(
-            {
-                "cohort_flag": COHORT_FLAG,
-                "k": int(k),
-                "iteration": int(iteration),
-                "adjusted_rand_index_vs_primary": float(adjusted_rand_score(reference, ordered_labels)),
-                "same_ordered_label_rate": float(np.mean(reference == ordered_labels)),
-                "min_cluster_n": int(pd.Series(ordered_labels).value_counts().min()),
-            }
-        )
-
-    return pd.DataFrame(rows)
+def run_bootstrap_stability(df: pd.DataFrame, reference_phenotype: pd.Series, k: int) -> pd.DataFrame:
+    """按 subject_id 重采样并在每轮重拟合完整 raw K-means 预处理流程。"""
+    result = run_grouped_pipeline_bootstrap(
+        df,
+        features=FEATURES,
+        reference_phenotype=reference_phenotype,
+        subject_column="subject_id",
+        k=k,
+        random_seed=RANDOM_SEED,
+        n_bootstrap=BOOTSTRAP_N,
+        severity_directions=SEVERITY_DIRECTIONS,
+    )
+    result.insert(0, "k", int(k))
+    result.insert(0, "cohort_flag", COHORT_FLAG)
+    result.insert(2, "analysis", "raw_standardized_8_variable_kmeans")
+    return result
 
 
 def run_log_pca_bootstrap_stability(
-    pc_scores: np.ndarray,
-    x_scaled: np.ndarray,
+    df: pd.DataFrame,
     reference_phenotype: pd.Series,
     k: int,
 ) -> pd.DataFrame:
-    """Bootstrap 评估 log1p + PCA K-means phenotype assignment 稳定性。"""
-    rng = np.random.default_rng(RANDOM_SEED)
-    reference = reference_phenotype.astype(int).to_numpy()
-    rows = []
-    n = pc_scores.shape[0]
-
-    for iteration in range(1, BOOTSTRAP_N + 1):
-        sample_idx = rng.integers(0, n, size=n)
-        model = KMeans(n_clusters=k, random_state=RANDOM_SEED + iteration, n_init=50)
-        model.fit(pc_scores[sample_idx])
-        raw_labels = model.predict(pc_scores)
-        _, label_map = build_ordered_phenotype_labels(x_scaled, raw_labels, features=FEATURES)
-        ordered_labels = np.array([label_map[int(label)] for label in raw_labels])
-        rows.append(
-            {
-                "cohort_flag": COHORT_FLAG,
-                "analysis": "log1p_creatinine_inr_pca_kmeans_k3",
-                "k": int(k),
-                "iteration": int(iteration),
-                "adjusted_rand_index_vs_primary": float(adjusted_rand_score(reference, ordered_labels)),
-                "adjusted_rand_index_vs_log_pca": float(adjusted_rand_score(reference, ordered_labels)),
-                "same_ordered_label_rate": float(np.mean(reference == ordered_labels)),
-                "min_cluster_n": int(pd.Series(ordered_labels).value_counts().min()),
-            }
-        )
-
-    return pd.DataFrame(rows)
+    """按 subject_id 重采样并在每轮重拟合 imputer/scaler/PCA/K-means。"""
+    result = run_grouped_pipeline_bootstrap(
+        df,
+        features=FEATURES,
+        reference_phenotype=reference_phenotype,
+        subject_column="subject_id",
+        k=k,
+        random_seed=RANDOM_SEED,
+        n_bootstrap=BOOTSTRAP_N,
+        severity_directions=SEVERITY_DIRECTIONS,
+        log_features=LOG_TRANSFORM_FEATURES,
+        pca_components=PCA_COMPONENTS,
+    )
+    result.insert(0, "k", int(k))
+    result.insert(0, "analysis", "log1p_creatinine_inr_pca_kmeans_k3")
+    result.insert(0, "cohort_flag", COHORT_FLAG)
+    result["adjusted_rand_index_vs_log_pca"] = result["adjusted_rand_index_vs_primary"]
+    return result
 
 
 def run_hb_free_sensitivity(df: pd.DataFrame, primary_assignments: pd.DataFrame):
@@ -1766,28 +1756,20 @@ def build_baseline_characteristics(assignments: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build_prediction_design(assignments: pd.DataFrame, predictors: list[str]) -> pd.DataFrame:
-    """构造 logistic prediction 的设计矩阵。"""
-    data = assignments[predictors].copy()
-    for col in data.columns:
-        if pd.api.types.is_numeric_dtype(data[col]):
-            data[col] = pd.to_numeric(data[col], errors="coerce")
-            data[col] = data[col].fillna(data[col].median())
-        else:
-            data[col] = data[col].astype("object").where(data[col].notna(), "Unknown")
-    design = pd.get_dummies(data, columns=[col for col in data.columns if not pd.api.types.is_numeric_dtype(data[col])], drop_first=True)
-    return design.astype(float)
-
-
 def evaluate_prediction_model(assignments: pd.DataFrame, model_name: str, predictors: list[str]) -> dict:
-    """用交叉验证评估死亡预测增量。"""
+    """用 subject_id 分组交叉验证评估探索性死亡预测增量。"""
     y = assignments["hospital_mortality"].astype(int).to_numpy()
-    x = build_prediction_design(assignments, predictors)
-    min_class_n = int(pd.Series(y).value_counts().min())
-    n_splits = max(2, min(CV_FOLDS, min_class_n))
-    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_SEED)
-    model = LogisticRegression(max_iter=2000, solver="liblinear")
-    pred = cross_val_predict(model, x, y, cv=cv, method="predict_proba")[:, 1]
+    subject_outcomes = assignments.groupby("subject_id")["hospital_mortality"].max()
+    min_subject_class_n = int(subject_outcomes.value_counts().min())
+    n_splits = max(2, min(CV_FOLDS, min_subject_class_n))
+    pred, _fold_ids = grouped_logistic_predictions(
+        assignments,
+        predictors=predictors,
+        outcome="hospital_mortality",
+        subject_column="subject_id",
+        n_splits=n_splits,
+        random_seed=RANDOM_SEED,
+    )
     pred_clip = np.clip(pred, 1e-6, 1 - 1e-6)
     logit_pred = np.log(pred_clip / (1 - pred_clip)).reshape(-1, 1)
     calibration_model = LogisticRegression(max_iter=2000, solver="liblinear")
@@ -2846,18 +2828,33 @@ def run_sensitivity_cohort_summaries(df: pd.DataFrame, primary_assignments: pd.D
             )
             continue
 
-        _, _, x_scaled_sens, _, _, _ = preprocess_feature_matrix(sub_df, FEATURES)
+        (
+            _x_raw_sens,
+            _x_transformed_sens,
+            x_scaled_sens,
+            pc_scores_sens,
+            _pc_columns_sens,
+            _pca_sens,
+            _imputer_sens,
+            _scaler_sens,
+            _missing_summary_sens,
+        ) = preprocess_log_pca_feature_matrix(sub_df)
         model = KMeans(n_clusters=PRIMARY_K, random_state=RANDOM_SEED, n_init=100)
-        raw_labels = model.fit_predict(x_scaled_sens)
+        raw_labels = model.fit_predict(pc_scores_sens)
         _, label_map = build_ordered_phenotype_labels(x_scaled_sens, raw_labels)
         assignments = build_assignments(sub_df, raw_labels, label_map)
         assignments = assignments.merge(reference, on="stay_id", how="left")
         counts = assignments["phenotype"].value_counts()
-        ari = adjusted_rand_score(
-            assignments["primary_phenotype"].astype(int),
-            assignments["phenotype"].astype(int),
-        ) if assignments["primary_phenotype"].notna().all() else np.nan
-        silhouette = float(silhouette_score(x_scaled_sens, assignments["phenotype"]))
+        matched = assignments["primary_phenotype"].notna()
+        ari = (
+            adjusted_rand_score(
+                assignments.loc[matched, "primary_phenotype"].astype(int),
+                assignments.loc[matched, "phenotype"].astype(int),
+            )
+            if matched.sum() >= 2
+            else np.nan
+        )
+        silhouette = float(silhouette_score(pc_scores_sens, assignments["phenotype"]))
 
         for phenotype, group in assignments.groupby("phenotype"):
             rows.append(
@@ -2874,7 +2871,7 @@ def run_sensitivity_cohort_summaries(df: pd.DataFrame, primary_assignments: pd.D
                     "min_cluster_n": int(counts.min()),
                     "min_cluster_frac": float(counts.min() / len(assignments)),
                     "ari_vs_primary_subset": float(ari) if not pd.isna(ari) else np.nan,
-                    "note": "",
+                    "note": "Sensitivity cohort refits the primary log1p + PCA + K-means pipeline; ARI uses stays overlapping the primary cohort.",
                 }
             )
 
@@ -3908,7 +3905,8 @@ def build_k3_k4_refinement_crosstab(primary_assignments: pd.DataFrame, explorato
 # =============================================================================
 
 
-df = read_table_from_bigquery()
+analysis_source_df = read_table_from_bigquery()
+df = analysis_source_df[analysis_source_df[COHORT_FLAG] == 1].copy().reset_index(drop=True)
 validate_input(df)
 
 print("\n总体样本快速检查：")
@@ -3981,13 +3979,12 @@ display(k3_k4_crosstab)
 plot_k3_k4_refinement_crosstab(k3_k4_crosstab)
 
 raw_bootstrap_stability = run_bootstrap_stability(
-    x_scaled,
+    df,
     raw_reference["assignments"]["phenotype"],
     PRIMARY_K,
 )
 log_pca_bootstrap_stability = run_log_pca_bootstrap_stability(
-    log_pca_kmeans_sensitivity["pc_scores"],
-    log_pca_kmeans_sensitivity["x_scaled"],
+    df,
     primary["assignments"]["phenotype"],
     PRIMARY_K,
 )
@@ -4062,7 +4059,7 @@ anemia_stratified_models = run_anemia_stratified_regression(primary["assignments
 print("\n各 K=3 phenotype 内早期贫血调整后死亡模型：")
 display(anemia_stratified_models)
 
-sensitivity_cohort_summary = run_sensitivity_cohort_summaries(df, primary["assignments"])
+sensitivity_cohort_summary = run_sensitivity_cohort_summaries(analysis_source_df, primary["assignments"])
 print("\n敏感性子队列 K=3 重新聚类汇总：")
 display(sensitivity_cohort_summary)
 

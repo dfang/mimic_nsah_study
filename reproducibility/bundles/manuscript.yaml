@@ -4,15 +4,15 @@ artifacts:
   - role: canonical_english_manuscript
     path: dist/manuscript_non_traumatic_sah_phenotypes.md
     version: "2026-07-16"
-    sha256: "3a13e5bbc01b8fdf9106042f544399381317334be8312d56d45dae5b9fb53a47"
+    sha256: "95b5ee74d3e592dd2e8e450e56080964ccb060cf561fa8d46c76e88058ca3ae6"
   - role: chinese_reference_manuscript
     path: dist/manuscript_non_traumatic_sah_phenotypes_cn.md
     version: "2026-07-16"
-    sha256: "0c14a7bfac8de51c10315e0a6ddf17ff2c22a13aa7479a5ece0bd79fa4d75c90"
+    sha256: "eb366b9c0b03397dba85b6ef560adda910a8b2523acd21e71ff3930cec72b250"
   - role: electronic_supplementary_material
     path: dist/electronic_supplementary_material.md
     version: "2026-07-16"
-    sha256: "6e768d2d9d2c2e4705d4303349ba1a877b92db33780acbd61707a836a4043cc2"
+    sha256: "b9660139408df1f02e3ca5b41eba7ace5a098cd1e2955c26a3abf68256333c16"
   - role: bibliography
     path: dist/references.bib
     version: "2026-07-16"

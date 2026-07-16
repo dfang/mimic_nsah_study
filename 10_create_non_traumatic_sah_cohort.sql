@@ -214,10 +214,12 @@ SELECT
     COUNT(DISTINCT subject_id) AS patients_with_aneurysm_procedure
 FROM `mimic-study-498508.non_traumatic_sah_study.aneurysm_procedure_flags`;
 
-SELECT *
+SELECT
+    aneurysm_procedure_codes,
+    COUNT(*) AS admissions
 FROM `mimic-study-498508.non_traumatic_sah_study.aneurysm_procedure_flags`
-ORDER BY subject_id, hadm_id
-LIMIT 10;
+GROUP BY aneurysm_procedure_codes
+ORDER BY admissions DESC;
 
 -- 目的：建立宽松 SAH/non-traumatic SAH 候选住院表，并保留诊断层级。
 -- 原因：后续 flowchart 和敏感性分析需要知道每个住院满足哪一档 non-traumatic SAH 定义。
@@ -1966,8 +1968,12 @@ SELECT
     c.has_aneurysm_procedure,
     c.aneurysm_dx_codes,
     c.unruptured_aneurysm_dx_codes,
+    c.admittime,
+    c.dischtime,
+    c.deathtime,
     c.icu_intime,
     c.icu_outtime,
+    DATETIME_ADD(c.icu_intime, INTERVAL 48 HOUR) AS feature_window_end,
     c.icu_los_hours,
     c.icu_los_hours / 24.0 AS icu_los_days,
     c.hospital_los_days,
@@ -2222,6 +2228,7 @@ SELECT
     COUNTIF(aneurysm_securing_hosp = 1) AS aneurysm_securing_hosp_rows,
     COUNTIF(fluid_balance_l_48h IS NOT NULL) AS fluid_balance_nonmissing,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0) AS eligible_primary_analysis_rows,
+    COUNTIF(core_feature_missing_count <= 2) AS eligible_include_massive_transfusion_sensitivity_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND icu_los_hours >= 48) AS eligible_48h_los_sensitivity_rows,
     COUNTIF(core_feature_missing_count <= 2 AND massive_transfusion_24h = 0 AND any_rbc_transfusion_48h = 0) AS eligible_no_rbc_sensitivity_rows
 FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`;
@@ -2251,6 +2258,10 @@ SELECT
         ELSE 0
     END AS eligible_primary_analysis,
     CASE
+        WHEN core_feature_missing_count <= 2 THEN 1
+        ELSE 0
+    END AS eligible_include_massive_transfusion_sensitivity,
+    CASE
         WHEN core_feature_missing_count <= 2
          AND massive_transfusion_24h = 0
          AND icu_los_hours >= 48 THEN 1
@@ -2268,6 +2279,7 @@ FROM `mimic-study-498508.non_traumatic_sah_study.analysis_features_48h`;
 SELECT
     COUNT(*) AS all_feature_rows,
     COUNTIF(eligible_primary_analysis = 1) AS primary_analysis_rows,
+    COUNTIF(eligible_include_massive_transfusion_sensitivity = 1) AS include_massive_transfusion_sensitivity_rows,
     COUNTIF(eligible_primary_analysis = 1 AND has_aneurysm_dx = 1) AS primary_has_aneurysm_dx_rows,
     COUNTIF(eligible_primary_analysis = 1 AND has_aneurysm_procedure = 1) AS primary_has_aneurysm_procedure_rows,
     COUNTIF(eligible_primary_analysis = 1 AND nsah_evidence_level = 2) AS primary_evidence_level_2_rows,

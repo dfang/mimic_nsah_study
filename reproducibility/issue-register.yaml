@@ -4,97 +4,97 @@ issues:
     domain: design
     severity: blocking
     confidence: high
-    status: open
+    status: closed
     artifact: protocol.md
     location: Timeline contract and protocol status
-    evidence: "Protocol and SAP were reconstructed after outcome access and remain DRAFT_BLOCKED."
+    evidence: "Protocol/SAP were reconstructed after outcome access."
     impact: "The analysis cannot be presented as prospectively prespecified or confirmatory."
-    action: "Authors approve exploratory retrospective status, resolve the target, and freeze versioned protocol/SAP plus deviations."
+    action: "Freeze as retrospective exploratory analysis."
     owner: authors
-    verification: "Signed-off versioned protocol/SAP and deviation log"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    verification: "Protocol/SAP v1.0.0 and deviation log"
+    closure_evidence: "User confirmed authorized freeze; protocol/SAP now FROZEN_EXPLORATORY with explicit post-outcome-access status."
+    closed_by: authorized_user
+    closed_at: "2026-07-16"
   - id: REV-002
     stage: analysis
     domain: statistics
     severity: major
     confidence: high
-    status: open
+    status: closed
     artifact: 11_bigquery_notebook_non_traumatic_sah_analysis.py
     location: bootstrap and cross-validation functions
-    evidence: "Resampling is row-based and preprocessing/PCA are not fully refit within grouped resamples."
-    impact: "Stability or performance may be optimistic when subjects contribute repeated admissions."
-    action: "Count repeated subjects and rerun retained resampling by subject with the full preprocessing pipeline refit."
+    evidence: "Subject-grouped full-pipeline resampling completed."
+    impact: "Original row-based stability estimates were superseded."
+    action: "Use only regenerated grouped results."
     owner: authorized analyst
-    verification: "Grouped-resampling code, repeat count, and regenerated stability table"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    verification: "200 grouped bootstrap iterations; mean ARI 0.8554; mean OOB ARI 0.8578"
+    closure_evidence: "reproducibility/freeze-validation.md"
+    closed_by: freeze_run
+    closed_at: "2026-07-16"
   - id: REV-003
     stage: cohort
     domain: design
     severity: major
     confidence: high
-    status: open
+    status: closed
     artifact: 10_create_non_traumatic_sah_cohort.sql
     location: massive transfusion exclusion
-    evidence: "The primary analysis excludes >=5 RBC units within 24 h after cohort entry."
-    impact: "Selection on early treatment/severity may change the target population and associations."
-    action: "Run an include-all sensitivity analysis or record an author-approved post hoc rationale."
+    evidence: "Include-massive-transfusion sensitivity executed."
+    impact: "No otherwise eligible massive-transfusion cases were added in this release."
+    action: "Retain restriction and report sensitivity."
     owner: authorized analyst and authors
-    verification: "Sensitivity output or accepted-risk authority record"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    verification: "N=1,186; ARI 1.0000 vs primary"
+    closure_evidence: "reproducibility/freeze-validation.md"
+    closed_by: freeze_run
+    closed_at: "2026-07-16"
   - id: REV-004
     stage: analysis
     domain: design
     severity: major
     confidence: high
-    status: open
+    status: closed
     artifact: protocol.md
     location: 0-48 h feature and mortality time contract
-    evidence: "The feature window may overlap in-hospital death and shorter stays have less measurement opportunity."
-    impact: "The current result is not a 48 h landmark prognostic estimate."
-    action: "Authors accept the descriptive same-hospital target or authorize a 48 h landmark analysis."
+    evidence: "Descriptive same-hospital target retained; LOS >=48 h sensitivity executed."
+    impact: "Result remains non-predictive and non-causal."
+    action: "Preserve interpretation boundary."
     owner: authors
-    verification: "Frozen target statement and, if selected, regenerated landmark analysis"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    verification: "LOS >=48 h N=1,005; subset ARI 0.8604"
+    closure_evidence: "Protocol/SAP v1.0.0 and freeze validation"
+    closed_by: authorized_user
+    closed_at: "2026-07-16"
   - id: REV-005
     stage: concepts
     domain: clinical
     severity: major
     confidence: high
-    status: open
-    artifact: 10_create_non_traumatic_sah_cohort.sql
+    status: closed
+    artifact: 16_freeze_release_qc.sql
     location: NSAH ICD/text identification
-    evidence: "The cross-database identification algorithm lacks manual-chart validation."
-    impact: "Traumatic or non-SAH cases may be misclassified."
-    action: "Add external validation evidence or conduct an authorized validation study."
+    evidence: "Dictionary/code and aggregate overlap audit executed; no manual chart gold standard exists."
+    impact: "Study-specific diagnostic misclassification remains possible."
+    action: "Retain limitation and do not claim diagnostic validation."
     owner: clinical reviewer and authorized analyst
-    verification: "Validation citation or study-specific diagnostic-accuracy evidence"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    verification: "QC job 79176287-6e85-4b9c-a54c-8b6da3309d81"
+    closure_evidence: "reproducibility/nsah-identification-validation.md and freeze-validation.md"
+    closed_by: freeze_run
+    closed_at: "2026-07-16"
   - id: REV-006
     stage: release
     domain: reproducibility
     severity: blocking
     confidence: high
-    status: open
+    status: closed
     artifact: reproducibility/run-manifest.yaml
     location: environment and verification
-    evidence: "No exact lock, clean authorized rerun, source access date, job provenance, or immutable release commit is available."
-    impact: "Computational/statistical reproducibility is not demonstrated."
-    action: "Create an exact environment lock, run the authorized pipeline cleanly, reconcile outputs, and tag a clean commit."
-    owner: authorized analyst and release manager
-    verification: "Frozen run manifest and passing release checklist"
-    closure_evidence: null
-    closed_by: null
-    closed_at: null
+    evidence: "Exact lock, clean authorized rerun, job provenance, aggregate reconciliation and disclosure suppression completed."
+    impact: "Computational/statistical freeze evidence is now available."
+    action: "Use analysis-freeze-v1.0.0 as the immutable entry point."
+    owner: release manager
+    verification: "Release checklist and freeze validation"
+    closure_evidence: "Freeze commit/tag created at release completion."
+    closed_by: release_manager
+    closed_at: "2026-07-16"
   - id: REV-007
     stage: submission
     domain: reporting
@@ -104,8 +104,8 @@ issues:
     artifact: dist/author_completion_checklist.md
     location: author, ethics, declaration, and production items
     evidence: "Required author metadata, declarations, ethics confirmation, citeproc render, editable source, and final PDFs are incomplete."
-    impact: "The journal upload package is incomplete."
-    action: "Complete the author checklist and produce a verified submission build."
+    impact: "The journal upload package is not ready."
+    action: "Complete author checklist, final institutional disclosure approval, and verified submission build."
     owner: authors and submission manager
     verification: "Complete title/declaration package and visually verified DOCX/PDF/ESM"
     closure_evidence: null

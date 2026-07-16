@@ -12,7 +12,7 @@ This Electronic Supplementary Material (ESM) accompanies the Intensive Care Medi
 | :--- | :--- | ---: | ---: |
 | 01 | Source SAH admissions | 1,576 | 1,531 |
 | 02 | Adult source SAH | 1,576 | 1,531 |
-| 03 | Adult non-traumatic SAH; no aneurysm evidence required | 1,574 | 1,529 |
+| 03 | Adult non-traumatic SAH; no aneurysm evidence required | suppressed (transition <10) | suppressed (transition <10) |
 | 04 | First ICU stay among NSAH hospitalizations | 1,317 | 1,298 |
 | 05 | ICU length of stay ≥24 h | 1,212 | 1,197 |
 | 06 | Eight core features with ≤2 missing values | 1,186 | 1,173 |
@@ -27,7 +27,7 @@ This Electronic Supplementary Material (ESM) accompanies the Intensive Care Medi
 | 01 | SAH candidate unit stays from diagnosis/admissionDx | 2,880 | 2,571 |
 | 02 | Adult patients | 2,863 | 2,554 |
 | 03 | Exclude traumatic SAH flags | 1,314 | 1,158 |
-| 04 | First ICU stay per unique patient | 1,153 | 1,153 |
+| 04 | First ICU stay per unique patient | suppressed (patient transition <10) | suppressed (patient transition <10) |
 | 05 | ICU length of stay ≥24 h | 903 | 903 |
 | 06 | Eight core features with ≤2 missing values | 843 | 843 |
 | 07 | Sensitivity cohort: ICU length of stay ≥48 h | 626 | 626 |
@@ -81,14 +81,14 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. External v
 
 | Physiological feature | PC1 loading | PC2 loading | PC3 loading |
 | :--- | ---: | ---: | ---: |
-| Hemoglobin min | 0.385 | -0.104 | -0.211 |
-| GCS motor min | 0.412 | 0.289 | 0.150 |
-| MAP min | 0.298 | 0.415 | -0.380 |
-| Shock index max | -0.420 | -0.210 | 0.312 |
-| SpO2 min | 0.198 | -0.580 | 0.412 |
-| Creatinine max | -0.311 | 0.395 | 0.520 |
-| INR max | -0.354 | 0.224 | 0.490 |
-| Platelets min | 0.390 | -0.380 | -0.154 |
+| Hemoglobin min | -0.340 | -0.430 | -0.100 |
+| GCS motor min | -0.370 | 0.020 | -0.490 |
+| MAP min | -0.300 | 0.410 | -0.250 |
+| Shock index max | 0.410 | -0.390 | 0.260 |
+| SpO2 min | -0.190 | 0.510 | 0.670 |
+| Creatinine max | 0.410 | 0.080 | -0.190 |
+| INR max | 0.420 | 0.170 | -0.290 |
+| Platelets min | -0.310 | -0.450 | 0.230 |
 
 ## ESM 3. Extended Tables
 
@@ -107,26 +107,26 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. External v
 | Emergency admission, n (%) | 830 (70.0%) | 469 (67.6%) | 307 (79.9%) | 54 (50.0%) | <0.001 |
 | Observation admission, n (%) | 190 (16.0%) | 140 (20.2%) | 35 (9.1%) | 15 (13.9%) | |
 | Urgent admission, n (%) | 121 (10.2%) | 66 (9.5%) | 26 (6.8%) | 29 (26.9%) | |
-| Surgical same-day admission, n (%) | 32 (2.7%) | 15 (2.2%) | 12 (3.1%) | 5 (4.6%) | |
-| Direct emergency / other, n (%) | 13 (1.1%) | 4 (0.6%) | 4 (1.0%) | 5 (4.6%) | |
+| Surgical same-day admission, n (%) | 32 (2.7%) | 15 (2.2%) | 12 (3.1%) | <10 | |
+| Direct emergency / other, n (%) | 13 (1.1%) | <10 | <10 | <10 | |
 | **Etiology and evidence** | | | | | |
 | NSAH evidence level 1, n (%) | 423 (35.7%) | 252 (36.3%) | 99 (25.8%) | 72 (66.7%) | <0.001 |
 | NSAH evidence level 2, n (%) | 529 (44.6%) | 305 (43.9%) | 190 (49.5%) | 34 (31.5%) | |
-| NSAH evidence level 3, n (%) | 234 (19.7%) | 137 (19.7%) | 95 (24.7%) | 2 (1.9%) | |
-| Aneurysm diagnosis, n (%) | 87 (7.3%) | 53 (7.6%) | 31 (8.1%) | 3 (2.8%) | 0.157 |
-| Aneurysm-securing procedure, n (%) | 234 (19.7%) | 137 (19.7%) | 95 (24.7%) | 2 (1.9%) | <0.001 |
+| NSAH evidence level 3, n (%) | 234 (19.7%) | 137 (19.7%) | 95 (24.7%) | <10 | |
+| Aneurysm diagnosis, n (%) | 87 (7.3%) | 53 (7.6%) | 31 (8.1%) | <10 | 0.157 |
+| Aneurysm-securing procedure, n (%) | 234 (19.7%) | 137 (19.7%) | 95 (24.7%) | <10 | <0.001 |
 | **ICU interventions (0–48 h)** | | | | | |
 | Nimodipine, n (%) | 675 (56.9%) | 432 (62.2%) | 226 (58.9%) | 17 (15.7%) | <0.001 |
 | EVD or ICP monitoring, n (%) | 322 (27.2%) | 119 (17.1%) | 188 (49.0%) | 15 (13.9%) | <0.001 |
 | Vasopressor use, n (%) | 252 (21.2%) | 43 (6.2%) | 154 (40.1%) | 55 (50.9%) | <0.001 |
 | Mechanical ventilation, n (%) | 431 (36.3%) | 120 (17.3%) | 249 (64.8%) | 62 (57.4%) | <0.001 |
 | Fluid balance, median [IQR], L | 1.38 [-0.45–2.96] | 0.94 [-0.65–2.26] | 2.26 [0.22–3.79] | 2.41 [-0.04–6.19] | <0.001 |
-| CRRT, n (%) | 10 (0.8%) | 0 (0.0%) | 1 (0.3%) | 9 (8.3%) | <0.001 |
+| CRRT, n (%) | 10 (0.8%) | 0 (0.0%) | <10 | <10 | <0.001 |
 | **Outcomes** | | | | | |
 | In-hospital mortality, n (%) | 235 (19.81%) | 44 (6.34%) | 125 (32.55%) | 66 (61.11%) | <0.001 |
 | ICU mortality, n (%) | 182 (15.35%) | 25 (3.60%) | 102 (26.56%) | 55 (50.93%) | <0.001 |
 | Early anemia (0–48 h), n (%) | 315 (26.56%) | 84 (12.10%) | 159 (41.41%) | 72 (66.67%) | <0.001 |
-| RBC transfusion (0–48 h), n (%) | 24 (2.02%) | 3 (0.43%) | 13 (3.39%) | 8 (7.41%) | <0.001 |
+| RBC transfusion (0–48 h), n (%) | 24 (2.02%) | <10 | 13 (3.39%) | <10 | <0.001 |
 | ICU LOS, median [IQR], days | 6.96 [2.88–13.41] | 6.38 [2.71–10.50] | 10.56 [3.83–17.50] | 5.38 [2.10–12.19] | <0.001 |
 | Hospital LOS, median [IQR], days | 11.60 [6.42–19.91] | 9.94 [6.51–15.24] | 15.85 [6.70–24.79] | 13.31 [3.46–28.29] | <0.001 |
 
@@ -185,7 +185,7 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 
 ### ESM Table 11. eICU external validation cohort characteristics and outcomes
 
-| Characteristic | Overall (N=843) | P1 (n=539) | P2 (n=222) | P3 (n=82) |
+| Characteristic | Overall (N=843) | P1 (n=540) | P2 (n=221) | P3 (n=82) |
 | :--- | :---: | :---: | :---: | :---: |
 | Age, median, years | 60.0 | 59.0 | 61.0 | 63.0 |
 | Hemoglobin min, g/dL | 11.4 | 11.9 | 10.7 | 9.5 |
@@ -195,25 +195,26 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | SpO2 min, % | 90.0 | 90.0 | 92.0 | 74.5 |
 | Creatinine max, mg/dL | 0.81 | 0.75 | 0.81 | 1.54 |
 | INR max | 1.1 | 1.1 | 1.1 | 1.5 |
-| Platelets min, ×10³/µL | 200.0 | 207.0 | 202.5 | 146.0 |
-| APACHE score, median | 43.0 | 36.0 | 57.0 | 79.0 |
+| Platelets min, ×10³/µL | 200.0 | 207.0 | 203.0 | 146.0 |
+| APACHE score, median | 43.0 | 36.0 | 57.5 | 79.0 |
 | APS score, median | 33.0 | 27.0 | 49.0 | 67.0 |
 | Predicted hospital mortality, median | 0.112 | 0.069 | 0.243 | 0.426 |
-| Early anemia (0–48 h), n (%) | 183 (21.7%) | 60 (11.4%) | 76 (34.5%) | 47 (58.0%) |
-| RBC transfusion (0–48 h), n (%) | 24 (2.8%) | 2 (0.4%) | 13 (5.9%) | 9 (11.0%) |
-| Hospital mortality, n (%) | 121 (14.35%) | 29 (5.38%) | 57 (25.68%) | 35 (42.68%) |
-| ICU mortality, n (%) | 65 (7.71%) | 15 (2.78%) | 36 (16.22%) | 24 (29.27%) |
+| Early anemia (0–48 h), n (%) | 183 (21.7%) | 60 (11.4%) | 76 (34.7%) | 47 (58.0%) |
+| RBC transfusion (0–48 h), n (%) | 24 (2.8%) | <10 | 13 (5.9%) | <10 |
+| Hospital mortality, n (%) | 121 (14.35%) | 29 (5.37%) | 57 (25.79%) | 35 (42.68%) |
+| ICU mortality, n (%) | 75 (8.90%) | 15 (2.78%) | 36 (16.29%) | 24 (29.27%) |
 
 ### ESM Table 12. Sensitivity analysis summary
 
 | Analysis | N | P1 mortality | P2 mortality | P3/P4 mortality | Minimum subgroup N |
 | :--- | ---: | :---: | :---: | :---: | ---: |
 | MIMIC primary log-PCA | 1,186 | 6.34% | 32.55% | 61.11% (P3) | 108 |
-| eICU frozen transport | 843 | 5.38% | 25.68% | 42.68% (P3) | 82 |
+| eICU frozen transport | 843 | 5.37% | 25.79% | 42.68% (P3) | 82 |
 | MIMIC complete case | 1,120 | 6.53% | 38.58% | 65.07% (P3) | 63 |
 | MIMIC strict aneurysm | 763 | 5.73% | 30.82% | 50.00% (P3) | 48 |
-| MIMIC ICU LOS ≥48 h | 1,005 | 6.07% | 34.38% | 58.70% (P3) | 46 |
-| MIMIC no RBC 0–48 h | 1,162 | 6.58% | 37.47% | 68.85% (P3) | 61 |
+| MIMIC ICU LOS ≥48 h | 1,005 | 5.96% | 29.23% | 58.06% (P3) | 93 |
+| MIMIC no RBC 0–48 h | 1,162 | 6.22% | 31.28% | 61.95% (P3) | 113 |
+| MIMIC include massive transfusion | 1,186 | 6.34% | 32.55% | 61.11% (P3) | 108 |
 | MIMIC Hb-free clustering | 1,186 | 6.85% | 39.52% | 64.10% (P3) | 78 |
 | MIMIC INR-free clustering | 1,186 | 6.00% | 35.32% | 66.67% (P3) | 84 |
 | MIMIC K=4 resolution | 1,186 | 6.17% (P1) | 37.99% (P2) | 61.54% (P3) / 56.41% (P4) | 39 |
@@ -226,9 +227,9 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 
 | Metric | Mean | Standard deviation | Minimum | Maximum |
 | :--- | ---: | ---: | ---: | ---: |
-| Adjusted Rand Index (ARI) | 0.9199 | 0.0479 | 0.7454 | 0.9927 |
-| Same ordered label rate | 96.96% | 1.97% | 89.21% | 99.75% |
-| Minimum cluster size, N | 108.7 | 16.8 | 48.0 | 140.0 |
+| Adjusted Rand Index (ARI) | 0.8554 | 0.0695 | 0.6015 | 0.9692 |
+| Same ordered label rate | 94.93% | 2.54% | 85.67% | 98.74% |
+| Minimum cluster size, N | 110.7 | 16.3 | 51.0 | 147.0 |
 
 ## ESM 4. Supplementary Figures
 

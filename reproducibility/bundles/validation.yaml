@@ -3,9 +3,9 @@ stage: validation
 artifacts:
   - role: eicu_cohort_sql
     path: 14_create_eicu_external_validation_cohort.sql
-    version: "working-tree-20260716"
+    version: "analysis-freeze-v1.0.0"
     sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
   - role: frozen_transport_analysis
     path: scripts/15_run_eicu_external_validation.py
-    version: "working-tree-20260716"
-    sha256: "6e8d8eb450d6eaed5a46a408613fb11c4376e6f6edf7c68eab9ad2e66715f553"
+    version: "analysis-freeze-v1.0.0"
+    sha256: "91e81442d4681c02797be2bcc099d9467ef77ed9a86fc65df05119d4cf3f5949"

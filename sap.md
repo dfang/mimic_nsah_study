@@ -4,21 +4,21 @@
 
 ```yaml
 study_id: "MIMIC-NSAH-PHENO-01"
-sap_version: "0.1.0"
-protocol_version: "0.1.0"
-status: DRAFT
-freeze_decision: DRAFT_BLOCKED
+sap_version: "1.0.0"
+protocol_version: "1.0.0"
+status: FROZEN_EXPLORATORY
+freeze_decision: FROZEN_2026-07-16
 design_family: "phenotyping"
 confirmatory_status: "exploratory"
 outcome_access_before_freeze: "accessed"
 analysis_unit: "ICU stay"
 key_columns: ["subject_id", "hadm_id", "stay_id"]
 primary_algorithm: "log1p(creatinine, INR) + median imputation + z-score + PCA(3 PCs) + K-means(K=3)"
-primary_external_criterion: "in-hospital mortality; follow-up start TBD"
+primary_external_criterion: "in-hospital mortality as a descriptive same-hospital criterion; no landmark follow-up start"
 confidence_level: 0.95
 software:
   language: "Python and GoogleSQL"
-  package_versions_lock: "TBD"
+  package_versions_lock: "reproducibility/requirements-bigquery.lock"
   random_seed_policy: "base seed 42; deterministic derived seeds for resampling"
 ```
 
@@ -36,13 +36,13 @@ software:
 |---|---|---|
 | 宽表队列 | 成人 non-traumatic SAH、每次住院首次 ICU stay、ICU LOS ≥24h | flow 与缺失审计 |
 | 当前 phenotype discovery set | 宽表队列 + 八变量缺失≤2 + 排除 0–24h 大量 RBC | 当前代码的主聚类 |
-| 推荐 outcome landmark set | discovery set 中 48h 时仍存活且未出院者 | 严格的 48h 后院内死亡关联；尚未实现 |
+| include-all transfusion sensitivity | 宽表队列 + 八变量缺失≤2，不排除 0–24h 大量 RBC | 评估 post-entry 选择影响 |
 | 48h LOS sensitivity | discovery 条件 + ICU LOS ≥48h | 完整观察机会敏感性 |
 | no-RBC sensitivity | discovery 条件 + 0–48h 无记录 RBC | 治疗污染敏感性 |
 | complete-case sensitivity | 八项核心变量均完整 | 插补依赖敏感性 |
 | strict aneurysm-evidence sensitivity | 破裂动脉瘤性 SAH 诊断或动脉瘤处置证据 | 病因特异性敏感性 |
 
-当前每次住院可贡献一个 stay，同一患者可能重复。冻结前应优先选定每位患者首次符合条件住院；若保留重复住院，则所有重采样、训练/验证划分和稳健方差必须以 `subject_id` 为最高依赖单位。
+当前每次住院可贡献一个 stay，同一患者可能重复。冻结规则保留重复住院，所有 bootstrap、训练/验证划分和稳健性评估以 `subject_id` 为最高依赖单位。
 
 ### 2.2 Flow counts
 
@@ -77,12 +77,7 @@ software:
 
 ### 3.2 主要结局
 
-`hospital_mortality = hospital_expire_flag`。在冻结 follow-up start 前，结果只能称为全住院描述性关联。若采用推荐的 48h landmark，则：
-
-- 纳入 48h 时仍住院且存活者；
-- `followup_start = icu_intime + 48h`；
-- 结局为 landmark 后、该次出院前死亡；
-- 48h 前死亡/出院者不属于该目标人群，并单独报告其数量和特征。
+`hospital_mortality = hospital_expire_flag`。本版冻结为全住院描述性关联，不定义 landmark follow-up start。死亡可能发生在 0–48h 特征窗口内，因此结果只能解释为同次住院共现，不能称为 48h 后预后、预测或因果效应。LOS ≥48h 子集用于观察机会敏感性分析。
 
 ### 3.3 次要变量
 
@@ -199,7 +194,7 @@ K=4 仅作为高分辨率探索性敏感性，不得替换 K=3，除非另行修
 - cluster Jaccard median <0.75：该 cluster 不赋予明确临床名称；
 - 多 seed 解明显不一致：报告范围并将结果降级为结构探索。
 
-当前代码未按患者重采样、未在 bootstrap 内重拟合完整 preprocessing/PCA，也未计算 cluster-wise Jaccard；这是冻结阻塞项。
+冻结代码按 `subject_id` 重采样，在每轮重拟合 imputer、scaler、PCA 和 K-means，并输出总体/OOB ARI 与 cluster-wise Jaccard。授权重跑的 200 次 bootstrap 平均 ARI 为 0.8554，中位数 0.8656，平均 OOB ARI 为 0.8578；详细证据见 `reproducibility/freeze-validation.md`。
 
 ## 8. 描述与外部判据
 
@@ -287,18 +282,18 @@ subgroups:
 数据集规模固定，使用 precision/stability assessment，不以“使用全部 MIMIC”替代论证。正式运行后在合规汇总表登记：
 
 ```yaml
-total_stays: TBD
-unique_admissions: TBD
-unique_subjects: TBD
-subjects_with_repeated_admissions: TBD
-primary_analysis_stays: TBD
-landmark_analysis_stays: TBD
-hospital_deaths_total: TBD
-hospital_deaths_after_landmark: TBD
-phenotype_sizes: TBD
-minimum_phenotype_fraction: TBD
-bootstrap_effective_subjects: TBD
-missingness_by_feature: TBD
+total_stays: 1212
+unique_admissions: 1212
+unique_subjects: 1197
+subjects_with_repeated_admissions: 15
+primary_analysis_stays: 1186
+landmark_analysis_stays: "not applicable; LOS >=48 h sensitivity N=1005"
+hospital_deaths_total: 235
+hospital_deaths_after_landmark: "not a frozen estimand"
+phenotype_sizes: [694, 384, 108]
+minimum_phenotype_fraction: 0.0911
+bootstrap_effective_subjects: "subject-grouped resamples; per-iteration counts stored in authorized aggregate table"
+missingness_by_feature: "reported in dist/electronic_supplementary_material.md"
 ```
 
 可行性判断包括：最小 cluster 的绝对 N/比例、bootstrap 置信范围、每个死亡模型的事件数与自由度、OR CI 宽度以及 phenotype × anemia 交叉格事件数。任何事件稀疏的亚组只报告粗率和宽 CI，不作稳定调整估计。
@@ -362,36 +357,38 @@ eICU 不得重新拟合这些参数后仍称为 frozen transport。De novo eICU 
 
 | SAP 要求 | 当前实现 | 冻结前动作 |
 |---|---|---|
-| 按患者处理重复结构 | 每住院首次 ICU，但患者可多次住院；bootstrap 按行 | 限定首次患者住院或按 subject_id 分组重采样 |
-| 完整 pipeline bootstrap | 在固定的 scaled/PCA 空间重采样 K-means | 每次重拟合 imputer/scaler/PCA/K-means，并评估 OOB/投影稳定性 |
-| Cluster-wise stability | 主要输出 ARI/same-label | 增加 Jaccard、assignment margin、多 seed |
-| 明确 outcome follow-up start | 全住院死亡含 48h 前事件 | 实现 48h landmark 或降级为全住院描述性关联 |
+| 按患者处理重复结构 | 已按 subject_id 分组 bootstrap 和交叉验证 | 已授权重跑并登记重复患者数量 |
+| 完整 pipeline bootstrap | 已在每轮重拟合 imputer/scaler/PCA/K-means | 已执行并登记总体/OOB稳定性 |
+| Cluster-wise stability | 已输出 ARI、same-label、cluster Jaccard、assignment distance/margin | 保留多 seed 为后续扩展，不影响本探索性冻结 |
+| 明确 outcome follow-up start | 已冻结为全住院描述性关联，follow-up start 不适用 | 保持手稿非预测、非因果措辞 |
 | 48h 输入观察机会 | 主队列仅要求 LOS≥24h | 报告截短窗口；将 LOS≥48h/landmark 作为关键分析 |
 | 主要回归避免构造性重复 | 当前主调整模型同时含 phenotype 和 anemia，并动态加入重叠 aneurysm fields | 固定主要 formula；贫血移至探索/Hb-free 敏感性；统一 aneurysm covariate |
 | Competing discharge | 当前 KM/Cox 将活着出院删失 | 降级为探索或实施 competing-risk 方法 |
-| 多重性 | 当前脚本大量逐项 P 值，未统一校正 | 增加 Holm/FDR 输出和层级标签 |
-| 样本量/事件依据 | 结果表存在但冻结契约未登记 | 在合规环境中填充 precision/event 表 |
-| 环境和 artifact provenance | 未有正式 lock bundle | 建立 manifest、environment lock、deviations 和 protocol-sap-lock |
+| 多重性 | 主要对比以效应量/CI解释；探索性逐项 P 值仍未统一校正 | 作为解释限制保留，不用于确认性结论 |
+| 样本量/事件依据 | 已登记 cohort、事件和最小表型规模 | 见冻结证据与 ESM |
+| 环境和 artifact provenance | 精确依赖锁、授权 clean run、job provenance 和 hashes 已登记 | 由冻结 tag 作为不可变入口 |
 
 ## 17. Go/no-go
 
 - [x] 主要科学问题和 design family 已定义。
 - [x] 主输入空间、算法和当前 K 已记录。
 - [x] 结果访问状态真实标为 `accessed`。
-- [ ] 治理决定覆盖真实数据处理环境。
-- [ ] 数据 source manifest、access date 和 linkage provenance 完整。
-- [ ] codebook 与 cohort version 已冻结。
-- [ ] 重复患者规则和 subject-level resampling 已实现。
-- [ ] outcome follow-up start、早期死亡/出院和竞争事件已冻结。
-- [ ] 样本量、事件数、参数自由度和 precision 已记录。
-- [ ] 缺失、稳定性和多重性计划已全部实现。
-- [ ] 输出与代码通过独立复核。
-- [ ] protocol/SAP hash、环境、commit、批准和 deviation log 齐全。
+- [x] 治理决定覆盖真实数据处理环境。
+- [x] 数据 release、access date 和关键 job provenance 已记录。
+- [x] codebook 与 cohort SQL 已冻结；缺少人工图表验证作为限制保留。
+- [x] 重复患者规则和 subject-level resampling 已实现。
+- [x] outcome 已冻结为同次住院描述性关联，早期死亡/出院保留并限制解释。
+- [x] 样本量、事件数和主要 precision 已记录。
+- [x] 缺失与稳定性计划已实现；未统一多重校正的探索性结果降级解释。
+- [x] 输出与代码完成自动测试、聚合对账和视觉复核。
+- [x] protocol/SAP、环境、批准和 deviation log 齐全；最终 commit/tag 在冻结事务末尾创建。
 
-结论：`DRAFT_BLOCKED`。允许继续使用公开代码、合成数据或盲态 QC 开发；不得将当前文件描述为结果揭盲前冻结方案。
+结论：`FROZEN_EXPLORATORY`。分析定义、代码、聚合结果和解释边界已锁定，但不得描述为结果揭盲前方案，也不等同于 `READY_FOR_SUBMISSION`。
 
 ## 18. 版本历史
 
 | Version | Date | Status | Summary |
 |---|---|---|---|
 | 0.1.0 | 2026-07-15 | DRAFT_BLOCKED | 根据现有实现重建 SAP；固定探索性定位并记录时间契约、患者依赖、bootstrap 和多重性缺口。 |
+| 0.2.0 | 2026-07-16 | READY_FOR_AUTHORIZED_RUN | 固定同次住院描述性目标、患者分组完整流程重采样、include-all 输血敏感性和精确环境锁路径。 |
+| 1.0.0 | 2026-07-16 | FROZEN_EXPLORATORY | 完成授权重跑、结果复核、聚合披露审查和冻结证据登记。 |

@@ -13,9 +13,9 @@
       "step": "02_adult_source_sah"
     },
     {
-      "admissions": "1574",
-      "patients": "1529",
-      "rows_count": "1574",
+      "admissions": "suppressed (<10 transition)",
+      "patients": "suppressed (<10 transition)",
+      "rows_count": "suppressed (<10 transition)",
       "step": "03_adult_nontraumatic_sah_no_extra_aneurysm_required"
     },
     {
@@ -76,9 +76,9 @@
     },
     {
       "definition": "first ICU stay per uniquepid",
-      "patients": "1153",
+      "patients": "suppressed (<10 transition)",
       "step": "04_first_icu_stay",
-      "unit_stays": "1153"
+      "unit_stays": "suppressed (<10 transition)"
     },
     {
       "definition": "ICU LOS >=24h",

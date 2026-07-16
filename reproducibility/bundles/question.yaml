@@ -3,8 +3,8 @@ stage: question
 artifacts:
   - role: protocol_question_and_objectives
     path: protocol.md
-    version: "0.1.0"
-    sha256: "fe931d178e738e5b72dbf9c5d4e6e975a4009da68fe7d3499bd41cb83327815e"
+    version: "1.0.0-FROZEN_EXPLORATORY"
+    sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
   - role: literature_and_citation_audit
     path: dist/citation_update_report.md
     version: "2026-07-16"
