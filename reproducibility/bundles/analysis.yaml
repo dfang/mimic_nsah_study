@@ -1,0 +1,11 @@
+bundle_version: "1.0"
+stage: analysis
+artifacts:
+  - role: phenotyping_and_association_analysis
+    path: 11_bigquery_notebook_non_traumatic_sah_analysis.py
+    version: "working-tree-20260716"
+    sha256: "d5e81b8391302327cfe08067aa485e7d07c9a3637ab285bdf693a1b40bdfb383"
+  - role: analysis_runner
+    path: scripts/13_run_non_traumatic_sah_analysis.py
+    version: "working-tree-20260716"
+    sha256: "5affff7ef1151104163a2eb22aff16e7973a20e87648ce8338950e4f774115f1"

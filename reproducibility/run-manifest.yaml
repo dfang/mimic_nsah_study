@@ -1,0 +1,41 @@
+release_id: "MIMIC-NSAH-PHENO-01-draft-20260716"
+created_at_utc: "2026-07-16T00:00:00Z"
+git_commit: "09b80ecab75963b050efbef81f46f36b874acd90"
+worktree_clean: false
+reproducibility_level: "conceptual; computational verification incomplete"
+data_sources:
+  - name: "MIMIC-IV"
+    version: "3.1"
+    access_required: true
+  - name: "eICU-CRD"
+    version: "2.0"
+    access_required: true
+derived_concepts:
+  source: "MIMIC-IV community derived tables and repository SQL"
+  revision: "exact mimic-code commit not recorded"
+environment:
+  os: "macOS 26.5.2 arm64"
+  architecture: "arm64"
+  python: "3.12.9"
+  r: "not used"
+  sql_dialect: "GoogleSQL"
+  lockfiles: []
+seeds:
+  - "42: PCA, K-means, resampling, eICU validation, figure illustration"
+pipeline_entrypoint: "scripts/run_non_traumatic_sah_bigquery_pipeline.sh"
+verification:
+  clean_run: "not_run: restricted data access not authorized in this review"
+  tests: "passed: 25 focused repository tests on 2026-07-16"
+  notebook_qc: "not_applicable: executable analysis is a Python script, not a notebook file"
+  sql_qc: "not_run: credentials/authorized-user status not confirmed"
+  result_comparison: "partial: manuscript numbers previously reconciled to aggregate result artifacts; no clean rerun"
+public_root: "."
+restricted_root: "external authorized BigQuery projects; no restricted local root declared"
+known_gaps:
+  - "Dirty working tree and no release tag"
+  - "No exact dependency lock"
+  - "No clean authorized end-to-end rerun"
+  - "No recorded MIMIC-Code commit or exact query-job provenance"
+  - "No completed disclosure review for aggregate outputs"
+  - "Protocol/SAP and several analysis gates remain blocked"
+  - "Pandoc/Typst unavailable; submission PDF build remains blocked"

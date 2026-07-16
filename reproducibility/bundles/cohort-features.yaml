@@ -1,0 +1,11 @@
+bundle_version: "1.0"
+stage: cohort
+artifacts:
+  - role: mimic_cohort_and_feature_sql
+    path: 10_create_non_traumatic_sah_cohort.sql
+    version: "working-tree-20260716"
+    sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+  - role: mimic_sql_runner
+    path: scripts/12_run_non_traumatic_sah_cohort_sql.py
+    version: "working-tree-20260716"
+    sha256: "b09f64ccc1c3a6648b10f779f09ba468617103c324bb2679df1d458930e8fc8e"

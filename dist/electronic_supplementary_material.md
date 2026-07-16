@@ -253,6 +253,9 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 ![eICU validation performance](figures/fig_s7_eicu_external_validation.png)
 **ESM Fig. 7.** eICU validation performance, including transported phenotype calibration, calibration slope, and de novo clustering comparison metrics.
 
+![Cohort flowchart and analysis design](figures/fig1_cohort_flowchart.png)
+**ESM Fig. 8.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and eICU fixed transport.
+
 ## ESM 5. Reproducibility Notes
 
 ### Analysis scripts
@@ -261,7 +264,7 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | :--- | :--- | :--- |
 | Cohort SQL execution | `scripts/12_run_non_traumatic_sah_cohort_sql.py` | Runs `10_create_non_traumatic_sah_cohort.sql` in BigQuery |
 | Phenotype analysis | `scripts/13_run_non_traumatic_sah_analysis.py` | Executes `11_bigquery_notebook_non_traumatic_sah_analysis.py` locally |
-| Figure generation | `scripts/generate_manuscript_figures.py` | Regenerates all main and supplementary figures |
+| Figure generation | `scripts/generate_manuscript_figures.py` | Regenerates 600 dpi PNG and vector PDF versions of all main and supplementary figures |
 | PDF rendering | `scripts/convert_manuscript_to_pdf.py` | Converts manuscript and ESM markdown files to PDF |
 | Cohort-flow counts | `dist/figures/fig1_cohort_flowchart_data.json` | Stores BigQuery-derived MIMIC and eICU flow counts |
 

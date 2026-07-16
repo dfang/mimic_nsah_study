@@ -26,9 +26,9 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 12c | Explain how missing data were addressed | Methods; ESM Table 5 | Addressed |
 | 12d | Explain cohort follow-up or matching methods | Methods; ESM cohort-flow tables | Addressed |
 | 12e | Describe sensitivity analyses | Methods; ESM Table 12 | Addressed |
-| 13a | Report numbers at each stage of study | Figure 1; ESM Tables 1–2 | Addressed |
-| 13b | Give reasons for non-participation/exclusion | Figure 1; Methods; ESM Tables 1–2 | Addressed |
-| 13c | Consider use of a flow diagram | Figure 1 | Addressed |
+| 13a | Report numbers at each stage of study | ESM Fig. 8; ESM Tables 1–2 | Addressed |
+| 13b | Give reasons for non-participation/exclusion | Methods; ESM Fig. 8; ESM Tables 1–2 | Addressed |
+| 13c | Consider use of a flow diagram | ESM Fig. 8 | Addressed |
 | 14a | Give characteristics of study participants | Results; ESM Table 7 | Addressed |
 | 14b | Indicate number with missing data for each variable | ESM Table 5 | Addressed |
 | 14c | Summarize follow-up time | ESM Tables 7 and 11 include length of stay; Cox model uses hospital stay | Partly addressed |
@@ -36,7 +36,7 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 16a | Give unadjusted and adjusted estimates with precision | Results; ESM Tables 9–10 | Addressed |
 | 16b | Report category boundaries for categorized continuous variables | Methods; ESM variable definitions | Addressed |
 | 16c | Consider translating relative risk into absolute risk | Results include absolute mortality gradients | Addressed |
-| 17 | Report other analyses, including sensitivity analyses | Results; ESM Table 12; ESM Figs. 1–7 | Addressed |
+| 17 | Report other analyses, including sensitivity analyses | Results; ESM Table 12; ESM Figs. 1–8 | Addressed |
 | 18 | Summarize key results with reference to objectives | Discussion, first paragraph | Addressed |
 | 19 | Discuss limitations and direction/magnitude of potential bias | Discussion, limitations | Addressed |
 | 20 | Give cautious overall interpretation | Discussion and Conclusions | Addressed |
@@ -50,4 +50,5 @@ This checklist is prepared for journal submission and should be reviewed by all 
 - Complete conflicts of interest.
 - Complete author contributions.
 - Confirm final code and data availability statements.
-- Export final references from a reference manager and verify all bibliographic details.
+- Render the final references with Pandoc/citeproc and visually verify numbering, DOI links, and typography.
+- Review the companion `record_checklist.md` and resolve its partial/open items.

@@ -1,0 +1,11 @@
+bundle_version: "1.0"
+stage: question
+artifacts:
+  - role: protocol_question_and_objectives
+    path: protocol.md
+    version: "0.1.0"
+    sha256: "fe931d178e738e5b72dbf9c5d4e6e975a4009da68fe7d3499bd41cb83327815e"
+  - role: literature_and_citation_audit
+    path: dist/citation_update_report.md
+    version: "2026-07-16"
+    sha256: "f83e399cfc4cf150205a8928a1821f288b75526718b572d4f410579f3de9e701"

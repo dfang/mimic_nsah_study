@@ -1,0 +1,27 @@
+bundle_version: "1.0"
+stage: manuscript
+artifacts:
+  - role: canonical_english_manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes.md
+    version: "2026-07-16"
+    sha256: "3a13e5bbc01b8fdf9106042f544399381317334be8312d56d45dae5b9fb53a47"
+  - role: chinese_reference_manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cn.md
+    version: "2026-07-16"
+    sha256: "0c14a7bfac8de51c10315e0a6ddf17ff2c22a13aa7479a5ece0bd79fa4d75c90"
+  - role: electronic_supplementary_material
+    path: dist/electronic_supplementary_material.md
+    version: "2026-07-16"
+    sha256: "6e768d2d9d2c2e4705d4303349ba1a877b92db33780acbd61707a836a4043cc2"
+  - role: bibliography
+    path: dist/references.bib
+    version: "2026-07-16"
+    sha256: "207f4b04e345868d0595572f937f7829014a62278a8889b270182724312ac583"
+  - role: strobe_mapping
+    path: dist/strobe_checklist.md
+    version: "2026-07-16"
+    sha256: "e1448467c36ce3d226723f721e6c9dedd653151c252e79fa33aa4297f98dfb73"
+  - role: record_mapping
+    path: dist/record_checklist.md
+    version: "2026-07-16"
+    sha256: "dd1236ee698383edb250d2cc69c64e3dc38f948aff6259c0e2c32f5811fcb917"

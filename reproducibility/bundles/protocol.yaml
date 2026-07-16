@@ -1,0 +1,15 @@
+bundle_version: "1.0"
+stage: protocol
+artifacts:
+  - role: protocol
+    path: protocol.md
+    version: "0.1.0-DRAFT_BLOCKED"
+    sha256: "fe931d178e738e5b72dbf9c5d4e6e975a4009da68fe7d3499bd41cb83327815e"
+  - role: statistical_analysis_plan
+    path: sap.md
+    version: "0.1.0-DRAFT_BLOCKED"
+    sha256: "a8ea4fcc7c5fd73eb4af48f17628730ceaa582d7cac8230c91be28ddc3df5898"
+  - role: deviation_log
+    path: reproducibility/deviation-log.md
+    version: "draft-20260716"
+    sha256: "b825e329fe50f07b69fabc96b1aa506e7ec22a3051787bdf5ef571386d28d9fb"

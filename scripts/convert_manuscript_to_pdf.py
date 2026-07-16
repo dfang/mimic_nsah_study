@@ -358,10 +358,15 @@ def build_html(body_html, css, lang="en"):
 
 def convert(md_path, pdf_path, css, lang="en"):
     """Full conversion pipeline: MD → HTML → PDF."""
+    md_content = preprocess_markdown(md_path)
+    if re.search(r"\[@[A-Za-z0-9_:-]+", md_content):
+        raise RuntimeError(
+            "Submission PDF generation requires a citeproc-resolved Markdown "
+            "source; unresolved Pandoc citation keys were found."
+        )
     pdf_dir = os.path.dirname(pdf_path)
     if pdf_dir:
         os.makedirs(pdf_dir, exist_ok=True)
-    md_content = preprocess_markdown(md_path)
     body_html = md_to_html(md_content)
     body_html = wrap_figures(body_html)
     full_html = build_html(body_html, css, lang)

@@ -1,0 +1,96 @@
+manifest_version: "2.0"
+manifest_scope: "single_primary_question"
+study:
+  id: "MIMIC-NSAH-PHENO-01"
+  title: "Early physiological phenotypes and outcomes in critically ill adults with non-traumatic subarachnoid hemorrhage"
+  question: "Which early neuro-systemic physiological phenotypes are observed among critically ill adults with non-traumatic SAH, and how do their same-hospital outcomes differ?"
+  design_family: "phenotyping"
+  design_subtype: "not_applicable"
+  modalities: ["structured"]
+  intended_use: "Exploratory physiological phenotyping and cohort stratification for future research; not treatment selection or bedside prediction"
+governance:
+  classification: "restricted-mimic"
+  execution_environment: "local"
+  external_llm_allowed: false
+  compliance_evidence: "DATA_GOVERNANCE.md"
+data:
+  sources:
+    - project: "MIMIC-IV"
+      module: "hosp"
+      release: "3.1"
+      schema: "physionet-data.mimiciv_3_1_hosp"
+      access_date: "unknown"
+      linkage_provenance:
+        status: "assessed"
+        artifact: "10_create_non_traumatic_sah_cohort.sql"
+        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+    - project: "MIMIC-IV"
+      module: "icu"
+      release: "3.1"
+      schema: "physionet-data.mimiciv_3_1_icu"
+      access_date: "unknown"
+      linkage_provenance:
+        status: "assessed"
+        artifact: "10_create_non_traumatic_sah_cohort.sql"
+        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+    - project: "MIMIC-Code-derived"
+      module: "derived"
+      release: "MIMIC-IV 3.1 hosted derived schema"
+      schema: "physionet-data.mimiciv_3_1_derived"
+      access_date: "unknown"
+      linkage_provenance:
+        status: "assessed"
+        artifact: "10_create_non_traumatic_sah_cohort.sql"
+        sha256: "47470ff8919f9f9a2f0c5bc1ea87de85f943acfa202934e2b9b70a56cb698770"
+    - project: "other"
+      module: "other"
+      release: "eICU-CRD 2.0"
+      schema: "physionet-data.eicu_crd"
+      access_date: "unknown"
+      linkage_provenance:
+        status: "assessed"
+        artifact: "14_create_eicu_external_validation_cohort.sql"
+        sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
+  derived_metadata:
+    mimic_version: "3.1 declared in code; execution metadata not frozen"
+    mimic_code_version: "unknown"
+    mimic_code_commit_hash: "unknown"
+analysis_contract:
+  grain:
+    unit: "stay"
+    key_columns: ["subject_id", "hadm_id", "stay_id"]
+    repeat_structure: "One ICU stay per hospital admission; a subject may contribute multiple admissions and must be grouped in resampling"
+  estimand_or_target: "Descriptive same-hospital association between outcome-blind physiological phenotype and observed in-hospital mortality"
+  times:
+    eligibility_time: "Retrospectively after hospital diagnosis coding and complete stay data are available"
+    cohort_entry_time: "ICU intime of the first eligible ICU stay within each hospital admission"
+    index_time: "ICU intime"
+    feature_window_start: "ICU intime, inclusive"
+    feature_window_end: "ICU intime + 48 hours, exclusive"
+    prediction_landmark: "not_applicable"
+    target_ascertainment_window: "not_applicable"
+    reference_standard_time: "not_applicable"
+    treatment_assignment_time: "not_applicable"
+    exposure_end: "not_applicable"
+    followup_start: "Current descriptive analysis has no landmark; author decision remains open"
+    censoring_time: "Hospital discharge for the binary in-hospital outcome"
+    outcome_time: "In-hospital death time when available; may overlap the feature window"
+stages:
+  question: {status: "ready_for_review", artifact: "reproducibility/bundles/question.yaml", sha256: "b7ef4877f7391462084acfbaf696d1691dc3d070937486115d3c247ec3dc5e43"}
+  protocol: {status: "blocked", artifact: "reproducibility/bundles/protocol.yaml", sha256: "b945f11b6f85058d115dbf7459c8c5afc05da377c2347e5e7852322c4e5b54ce"}
+  concepts: {status: "blocked", artifact: "", sha256: ""}
+  cohort: {status: "blocked", artifact: "reproducibility/bundles/cohort-features.yaml", sha256: "bca929d219acf69c3e017b8eb132e61c9141af49a1835a576d5b758cbacf4c58"}
+  features: {status: "blocked", artifact: "", sha256: ""}
+  analysis: {status: "blocked", artifact: "reproducibility/bundles/analysis.yaml", sha256: "15d3b1ffc855849b0adab0964df57d9384558dd399c782efad19dbbc798b6cd6"}
+  validation: {status: "ready_for_review", artifact: "reproducibility/bundles/validation.yaml", sha256: "52e0805cefe2fa41a3201091ffa66b2e8cd542a3527a688b9d5eff0e689e1a6b", rationale: "Exploratory eICU frozen transport exists but was not preceded by an independently frozen protocol."}
+  analysis_review: {status: "blocked", artifact: "", sha256: ""}
+  manuscript: {status: "ready_for_review", artifact: "reproducibility/bundles/manuscript.yaml", sha256: "742cdd587cf62e0ee20ee6993fb6de6a982041e4aecda906ad12ff7dacfb22d0"}
+  manuscript_review: {status: "blocked", artifact: "reproducibility/bundles/manuscript-review.yaml", sha256: "9e1d71ba8568fb21da2324f1175d72d895619799ca17161104ce1ffe6fd6ca19"}
+  release: {status: "in_progress", artifact: "reproducibility/bundles/release.yaml", sha256: "1be202f6631995a924839a11b5e2271196b92fb0c712ff34e67933264b9645a6"}
+  submission: {status: "blocked", artifact: "", sha256: ""}
+provenance:
+  repository_commit: "09b80ecab75963b050efbef81f46f36b874acd90"
+  environment_lock: "not_available; reproducibility/environment-observed.txt is not a lock"
+  random_seed_registry: "reproducibility/random-seeds.md"
+  issue_register: "reproducibility/issue-register.yaml"
+  deviation_log: "reproducibility/deviation-log.md"

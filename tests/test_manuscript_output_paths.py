@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from scripts.convert_manuscript_to_pdf import preprocess_markdown
+import pytest
+
+from scripts.convert_manuscript_to_pdf import CSS_EN, convert, preprocess_markdown
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,3 +49,13 @@ def test_preprocess_resolves_canonical_relative_figure_path(tmp_path: Path) -> N
     result = preprocess_markdown(manuscript)
 
     assert f"](file://{tmp_path}/figures/figure.png)" in result
+
+
+def test_pdf_conversion_refuses_unresolved_pandoc_citations(tmp_path: Path) -> None:
+    manuscript = tmp_path / "manuscript.md"
+    manuscript.write_text("A claim [@verified_key].\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="citeproc-resolved"):
+        convert(manuscript, tmp_path / "manuscript.pdf", CSS_EN)
+
+    assert not (tmp_path / "manuscript.pdf").exists()

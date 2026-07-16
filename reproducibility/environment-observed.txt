@@ -1,0 +1,30 @@
+Observed local environment on 2026-07-16
+========================================
+
+This is an observation record, not an exact dependency lock.
+
+OS: macOS 26.5.2 arm64
+Python: 3.12.9
+BigQuery CLI: 2.1.33
+Git: 2.50.1 (Apple Git-155)
+
+Python packages:
+- google-cloud-bigquery 3.42.1
+- db-dtypes 1.7.0
+- pyarrow 23.0.1
+- numpy 2.4.3
+- pandas 2.3.3
+- scipy 1.17.1
+- scikit-learn 1.6.1
+- matplotlib 3.10.3
+- Markdown 3.10.2
+- WeasyPrint 69.0
+- Pillow 11.3.0
+- pytest 9.0.2
+
+Rendering tools:
+- Pandoc: unavailable
+- Typst: unavailable
+- Google Chrome: available under /Applications
+
+Known limitation: `scripts/requirements-bigquery.txt` contains lower bounds and unpinned packages; it is not a fully resolved environment lock.

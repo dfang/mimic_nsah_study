@@ -76,9 +76,15 @@ EICU_STEP_LABELS = {
 
 
 def savefig(name: str) -> None:
-    plt.savefig(f"{figures_dir}/{name}")
+    base_name, extension = os.path.splitext(name)
+    if extension.lower() != ".png":
+        raise ValueError("Manuscript figure names must use the .png extension")
+    png_path = f"{figures_dir}/{name}"
+    pdf_path = f"{figures_dir}/{base_name}.pdf"
+    plt.savefig(png_path, dpi=600)
+    plt.savefig(pdf_path)
     plt.close()
-    print(f"{name} saved")
+    print(f"{name} and {base_name}.pdf saved")
 
 
 def _run_bq_json(sql: str) -> list[dict[str, object]]:
@@ -168,7 +174,7 @@ def fig1_cohort_flowchart() -> None:
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 7.2)
     ax.axis("off")
-    ax.set_title("Figure 1. Cohort selection and analysis framework", fontweight="bold", loc="left", pad=10)
+    ax.set_title("Cohort selection and analysis framework", fontweight="bold", loc="left", pad=10)
 
     mimic_color = "#1F5A85"
     eicu_color = "#7B3294"
@@ -423,7 +429,7 @@ def fig2_primary_log_pca_heatmap() -> None:
     ax.set_xticklabels(features)
     ax.set_yticks(range(3))
     ax.set_yticklabels(labels)
-    ax.set_title("Figure 2. Primary log-PCA K=3 standardized centers", fontweight="bold", loc="left")
+    ax.set_title("Early physiological profiles: standardized centers", fontweight="bold", loc="left")
     cbar = fig.colorbar(im, ax=ax, shrink=0.84, pad=0.02)
     cbar.set_label("Z-score center")
     savefig("fig2_primary_log_pca_heatmap.png")
@@ -445,7 +451,7 @@ def fig3_outcomes_anemia() -> None:
         ax.set_ylabel("Percent")
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width() / 2, val + 1, f"{val:.1f}{suffix}", ha="center", fontsize=8.5, fontweight="bold")
-    fig.suptitle("Figure 3. Outcomes, anemia, and transfusion by phenotype", fontweight="bold", x=0.01, ha="left")
+    fig.suptitle("Outcomes, anemia, and transfusion by phenotype", fontweight="bold", x=0.01, ha="left")
     fig.tight_layout()
     savefig("fig3_outcomes_anemia.png")
 
@@ -465,7 +471,7 @@ def fig4_external_severity_validation() -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(PHENOTYPES)
     ax.set_ylabel("Median score")
-    ax.set_title("Figure 4. External severity validation", fontweight="bold", loc="left")
+    ax.set_title("External severity-score comparison", fontweight="bold", loc="left")
     ax.legend(frameon=False)
     ax.grid(axis="y", alpha=0.25)
     savefig("fig4_external_severity_validation.png")
@@ -651,7 +657,7 @@ def main(argv: list[str] | None = None) -> None:
             "axes.titlesize": 12,
             "axes.labelsize": 10,
             "figure.dpi": 300,
-            "savefig.dpi": 300,
+            "savefig.dpi": 600,
             "savefig.bbox": "tight",
             "savefig.pad_inches": 0.12,
         }

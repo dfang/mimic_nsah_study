@@ -1,0 +1,113 @@
+issues:
+  - id: REV-001
+    stage: protocol
+    domain: design
+    severity: blocking
+    confidence: high
+    status: open
+    artifact: protocol.md
+    location: Timeline contract and protocol status
+    evidence: "Protocol and SAP were reconstructed after outcome access and remain DRAFT_BLOCKED."
+    impact: "The analysis cannot be presented as prospectively prespecified or confirmatory."
+    action: "Authors approve exploratory retrospective status, resolve the target, and freeze versioned protocol/SAP plus deviations."
+    owner: authors
+    verification: "Signed-off versioned protocol/SAP and deviation log"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-002
+    stage: analysis
+    domain: statistics
+    severity: major
+    confidence: high
+    status: open
+    artifact: 11_bigquery_notebook_non_traumatic_sah_analysis.py
+    location: bootstrap and cross-validation functions
+    evidence: "Resampling is row-based and preprocessing/PCA are not fully refit within grouped resamples."
+    impact: "Stability or performance may be optimistic when subjects contribute repeated admissions."
+    action: "Count repeated subjects and rerun retained resampling by subject with the full preprocessing pipeline refit."
+    owner: authorized analyst
+    verification: "Grouped-resampling code, repeat count, and regenerated stability table"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-003
+    stage: cohort
+    domain: design
+    severity: major
+    confidence: high
+    status: open
+    artifact: 10_create_non_traumatic_sah_cohort.sql
+    location: massive transfusion exclusion
+    evidence: "The primary analysis excludes >=5 RBC units within 24 h after cohort entry."
+    impact: "Selection on early treatment/severity may change the target population and associations."
+    action: "Run an include-all sensitivity analysis or record an author-approved post hoc rationale."
+    owner: authorized analyst and authors
+    verification: "Sensitivity output or accepted-risk authority record"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-004
+    stage: analysis
+    domain: design
+    severity: major
+    confidence: high
+    status: open
+    artifact: protocol.md
+    location: 0-48 h feature and mortality time contract
+    evidence: "The feature window may overlap in-hospital death and shorter stays have less measurement opportunity."
+    impact: "The current result is not a 48 h landmark prognostic estimate."
+    action: "Authors accept the descriptive same-hospital target or authorize a 48 h landmark analysis."
+    owner: authors
+    verification: "Frozen target statement and, if selected, regenerated landmark analysis"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-005
+    stage: concepts
+    domain: clinical
+    severity: major
+    confidence: high
+    status: open
+    artifact: 10_create_non_traumatic_sah_cohort.sql
+    location: NSAH ICD/text identification
+    evidence: "The cross-database identification algorithm lacks manual-chart validation."
+    impact: "Traumatic or non-SAH cases may be misclassified."
+    action: "Add external validation evidence or conduct an authorized validation study."
+    owner: clinical reviewer and authorized analyst
+    verification: "Validation citation or study-specific diagnostic-accuracy evidence"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-006
+    stage: release
+    domain: reproducibility
+    severity: blocking
+    confidence: high
+    status: open
+    artifact: reproducibility/run-manifest.yaml
+    location: environment and verification
+    evidence: "No exact lock, clean authorized rerun, source access date, job provenance, or immutable release commit is available."
+    impact: "Computational/statistical reproducibility is not demonstrated."
+    action: "Create an exact environment lock, run the authorized pipeline cleanly, reconcile outputs, and tag a clean commit."
+    owner: authorized analyst and release manager
+    verification: "Frozen run manifest and passing release checklist"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: REV-007
+    stage: submission
+    domain: reporting
+    severity: blocking
+    confidence: high
+    status: open
+    artifact: dist/author_completion_checklist.md
+    location: author, ethics, declaration, and production items
+    evidence: "Required author metadata, declarations, ethics confirmation, citeproc render, editable source, and final PDFs are incomplete."
+    impact: "The journal upload package is incomplete."
+    action: "Complete the author checklist and produce a verified submission build."
+    owner: authors and submission manager
+    verification: "Complete title/declaration package and visually verified DOCX/PDF/ESM"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
