@@ -25,7 +25,8 @@
 #   phenotype_anemia_stratified_models            (anemia OR within each K=3 phenotype)
 #   phenotype_candidate_feature_audit             (ePVS/troponin/blood gas audit)
 #   phenotype_baseline_characteristics            (Table 1 baseline by phenotype)
-#   phenotype_sensitivity_cohort_summary          (no RBC and ICU LOS >=48h sensitivity)
+#   phenotype_sensitivity_cohort_summary          (no RBC, ICU LOS >=48h, and include massive transfusion sensitivities;
+#                                                   includes overlap ARI and raw/standardized feature profiles)
 #   phenotype_epvs_sensitivity_summary            (candidate ePVS clustering sensitivity)
 #   phenotype_*_k4_exploratory                    (K=4 high-resolution sensitivity)
 #   phenotype_k3_k4_refinement_crosstab
@@ -1182,56 +1183,72 @@ def run_sensitivity_cohort_summaries(df: pd.DataFrame, primary_assignments: pd.D
             continue
         sub_df = df[df[flag_col] == 1].copy()
         if len(sub_df) < PRIMARY_K * 20:
-            rows.append(
-                {
-                    "cohort_flag": COHORT_FLAG,
-                    "analysis": analysis_name,
-                    "flag_column": flag_col,
-                    "phenotype": np.nan,
-                    "n": int(len(sub_df)),
-                    "hospital_deaths": int((sub_df["hospital_mortality"] == 1).sum()) if len(sub_df) else 0,
-                    "hospital_mortality_rate": float(sub_df["hospital_mortality"].mean()) if len(sub_df) else np.nan,
-                    "early_anemia_rate": float(sub_df["early_anemia_all"].mean()) if len(sub_df) else np.nan,
-                    "silhouette": np.nan,
-                    "min_cluster_n": np.nan,
-                    "min_cluster_frac": np.nan,
-                    "ari_vs_primary_subset": np.nan,
-                    "note": "Sensitivity cohort too small for stable K=3 re-clustering.",
-                }
+            primary_overlap_n = int(
+                sub_df["stay_id"].isin(primary_assignments["stay_id"]).sum()
             )
+            row = {
+                "cohort_flag": flag_col,
+                "analysis": analysis_name,
+                "flag_column": flag_col,
+                "phenotype": np.nan,
+                "n": int(len(sub_df)),
+                "primary_overlap_n": primary_overlap_n,
+                "hospital_deaths": int((sub_df["hospital_mortality"] == 1).sum()) if len(sub_df) else 0,
+                "hospital_mortality_rate": float(sub_df["hospital_mortality"].mean()) if len(sub_df) else np.nan,
+                "early_anemia_rate": float(sub_df["early_anemia_all"].mean()) if len(sub_df) else np.nan,
+                "silhouette": np.nan,
+                "min_cluster_n": np.nan,
+                "min_cluster_frac": np.nan,
+                "ari_vs_primary_subset": np.nan,
+                "note": "Sensitivity cohort too small for stable K=3 re-clustering.",
+            }
+            for feature in FEATURES:
+                row[f"{feature}_mean"] = np.nan
+                row[f"{feature}_standardized_center"] = np.nan
+            rows.append(row)
             continue
 
         _, _, x_scaled_sens, _, _, _ = preprocess_feature_matrix(sub_df, FEATURES)
         model = KMeans(n_clusters=PRIMARY_K, random_state=RANDOM_SEED, n_init=100)
         raw_labels = model.fit_predict(x_scaled_sens)
-        _, label_map = build_ordered_phenotype_labels(x_scaled_sens, raw_labels)
+        centers, label_map = build_ordered_phenotype_labels(x_scaled_sens, raw_labels)
         assignments = build_assignments(sub_df, raw_labels, label_map)
         assignments = assignments.merge(reference, on="stay_id", how="left")
         counts = assignments["phenotype"].value_counts()
-        ari = adjusted_rand_score(
-            assignments["primary_phenotype"].astype(int),
-            assignments["phenotype"].astype(int),
-        ) if assignments["primary_phenotype"].notna().all() else np.nan
+        overlap = assignments.dropna(subset=["primary_phenotype"])
+        ari = (
+            adjusted_rand_score(
+                overlap["primary_phenotype"].astype(int),
+                overlap["phenotype"].astype(int),
+            )
+            if len(overlap) >= 2
+            else np.nan
+        )
         silhouette = float(silhouette_score(x_scaled_sens, assignments["phenotype"]))
 
         for phenotype, group in assignments.groupby("phenotype"):
-            rows.append(
-                {
-                    "cohort_flag": COHORT_FLAG,
-                    "analysis": analysis_name,
-                    "flag_column": flag_col,
-                    "phenotype": int(phenotype),
-                    "n": int(len(group)),
-                    "hospital_deaths": int((group["hospital_mortality"] == 1).sum()),
-                    "hospital_mortality_rate": float(group["hospital_mortality"].mean()),
-                    "early_anemia_rate": float(group["early_anemia_all"].mean()),
-                    "silhouette": silhouette,
-                    "min_cluster_n": int(counts.min()),
-                    "min_cluster_frac": float(counts.min() / len(assignments)),
-                    "ari_vs_primary_subset": float(ari) if not pd.isna(ari) else np.nan,
-                    "note": "",
-                }
-            )
+            row = {
+                "cohort_flag": flag_col,
+                "analysis": analysis_name,
+                "flag_column": flag_col,
+                "phenotype": int(phenotype),
+                "n": int(len(group)),
+                "primary_overlap_n": int(len(overlap)),
+                "hospital_deaths": int((group["hospital_mortality"] == 1).sum()),
+                "hospital_mortality_rate": float(group["hospital_mortality"].mean()),
+                "early_anemia_rate": float(group["early_anemia_all"].mean()),
+                "silhouette": silhouette,
+                "min_cluster_n": int(counts.min()),
+                "min_cluster_frac": float(counts.min() / len(assignments)),
+                "ari_vs_primary_subset": float(ari) if not pd.isna(ari) else np.nan,
+                "note": "",
+            }
+            for feature in FEATURES:
+                row[f"{feature}_mean"] = float(group[feature].mean())
+                row[f"{feature}_standardized_center"] = float(
+                    centers.loc[centers["phenotype"] == phenotype, feature].iloc[0]
+                )
+            rows.append(row)
 
     return pd.DataFrame(rows).sort_values(["analysis", "phenotype"])
 
@@ -1751,5 +1768,5 @@ print("9. phenotype_regression_models：调整年龄、性别、入院类型、a
 print("10. phenotype_candidate_feature_audit：ePVS/troponin 是否适合作敏感性增强变量或仅描述")
 print("11. phenotype_baseline_characteristics：总体与 K=3 phenotype 分层基线特征是否平衡、是否可作为 Table 1")
 print("12. phenotype_anemia_stratified_models：各 phenotype 内贫血 aOR 是否稳定，稀疏格子仅作探索解释")
-print("13. phenotype_sensitivity_cohort_summary：排除 RBC 和 ICU LOS >=48h 后 K=3 结构是否保留")
+print("13. phenotype_sensitivity_cohort_summary：无 RBC、ICU LOS >=48h 与纳入大量输血三类敏感性队列的 K=3 结构、重叠 ARI、原始特征谱和标准化中心")
 print("14. phenotype_epvs_sensitivity_summary：加入/替换 ePVS 后 assignment 是否明显改变")
