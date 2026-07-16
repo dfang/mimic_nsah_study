@@ -29,3 +29,26 @@ Remaining author-completion items before journal submission:
 - Complete funding, conflicts of interest, author contributions, and acknowledgements.
 - Verify final reference metadata using a reference manager.
 - Confirm code repository or supplementary-code release plan.
+
+Codex citation-update provenance (2026-07-16)
+================================================
+
+- Update model: Codex
+- Scope: targeted citation update and final static audit; not a systematic review
+- Target journal: Intensive Care Medicine Original Paper
+- Source manuscripts (preserved, not overwritten):
+  - dist/manuscript_non_traumatic_sah_phenotypes.md
+  - dist/manuscript_non_traumatic_sah_phenotypes_cn.md
+- Citation-update artifacts:
+  - dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+  - dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
+  - dist/references.bib
+  - dist/journal.csl
+  - dist/citation_key_map.csv
+  - dist/citation_claim_audit.csv
+  - dist/literature_search_log.md
+  - dist/literature_evidence_table.csv
+  - dist/citation_verification.csv
+  - dist/citation_update_report.md
+- Verification limitation: static citation, bibliography, CSL, bilingual, YAML, hash, and research-number checks passed; Pandoc/citeproc and BibTeX parser executables/modules were unavailable, so actual rendering was not run.
+- Review gate: mimic-review/journal-reviewer has not yet been performed; the package is not frozen or submission-ready.
