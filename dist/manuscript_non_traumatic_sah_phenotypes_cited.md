@@ -7,7 +7,7 @@ reference-section-title: References
 
 # Early physiological phenotypes and outcomes in critically ill adults with non-traumatic subarachnoid hemorrhage
 
-## Take-home message
+## Take-home message 1234
 
 In critically ill adults with non-traumatic subarachnoid hemorrhage, eight routine physiological variables measured during the first 48 hours separated patients into three neuro-systemic phenotypes with different observed in-hospital mortality. A classifier trained in MIMIC-IV preserved this mortality ordering when applied to eICU. Early anemia was more common in phenotypes with greater systemic derangement, but it was not associated with mortality after phenotype adjustment.
 
