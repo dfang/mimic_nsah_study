@@ -84,7 +84,7 @@ stages:
   analysis: {status: "frozen_exploratory", artifact: "reproducibility/bundles/analysis.yaml", sha256: "99b68a20f60889f32949991227216a99547107b893eacb3f6d303a71bed5c5d0"}
   validation: {status: "frozen_exploratory", artifact: "reproducibility/bundles/validation.yaml", sha256: "9c146aef79557c31a7a6c8452105e79a20905eba1ca144eaec75bb9a566d8ec7", rationale: "Exploratory eICU frozen transport was outcome-accessed and is not confirmatory external validation."}
   analysis_review: {status: "complete_for_freeze", artifact: "reproducibility/freeze-validation.md", sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"}
-  manuscript: {status: "analysis_content_frozen", artifact: "reproducibility/bundles/manuscript.yaml", sha256: "b65e1387a4d0a7ec08b750ecb6538430b19ea87557465dea82c160ef65b209ec"}
+  manuscript: {status: "bilingual_content_reconciled_2026-07-23", artifact: "reproducibility/bundles/manuscript.yaml", sha256: "f459b01ea629104736e37bfb2b0b4b960a82e9cb298ddd7667ad5aaf56c61fa3", rationale: "English submission source, aligned Chinese reference, and ESM reconciled to frozen stay/subject counts, grouped stability, exploratory eICU transport, same-window outcome boundary, citations, and figure-to-text correspondence."}
   manuscript_review: {status: "blocked", artifact: "reproducibility/bundles/manuscript-review.yaml", sha256: "9e1d71ba8568fb21da2324f1175d72d895619799ca17161104ce1ffe6fd6ca19"}
   release: {status: "frozen_exploratory", artifact: "reproducibility/bundles/release.yaml", sha256: "dc6cabb8529f17e57ca3106a18332162ce03fd5a6a16b13be7e7746e49cd6bbf"}
   submission: {status: "blocked", artifact: "", sha256: ""}

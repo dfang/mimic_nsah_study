@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Convert markdown manuscripts to publication-quality PDF.
+Convert the reviewed English manuscript and supplements to publication-quality PDF.
 Professional typography with journal-style formatting.
 """
 import os
@@ -378,24 +378,17 @@ def convert(md_path, pdf_path, css, lang="en"):
 
 # ═══════════════════════════════════════════════════════════════
 def main() -> None:
-    """Generate canonical manuscript PDFs under dist/pdf/."""
+    """Generate the reviewed English manuscript and supporting PDFs under dist/pdf/."""
     accept_legacy_date_arg(sys.argv[1:], "convert_manuscript_to_pdf.py")
     base = "dist"
 
     print(f"Converting manuscripts to PDF in {base}...\n")
 
     convert(
-        f"{base}/manuscript_non_traumatic_sah_phenotypes.md",
+        f"{base}/manuscript_non_traumatic_sah_phenotypes_cited.md",
         f"{base}/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf",
         CSS_EN,
         lang="en",
-    )
-
-    convert(
-        f"{base}/manuscript_non_traumatic_sah_phenotypes_cn.md",
-        f"{base}/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf",
-        CSS_EN + CSS_CN,
-        lang="zh",
     )
 
     optional_outputs = [

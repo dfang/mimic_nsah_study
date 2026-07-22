@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 import pytest
 
@@ -26,20 +27,107 @@ def test_active_instructions_use_canonical_manuscript_paths() -> None:
 
     assert "`dist/manuscript_non_traumatic_sah_phenotypes.md`" in agents
     assert "`dist/pdf/`" in agents
+    assert "`dist/manuscript_non_traumatic_sah_phenotypes_cited.md`" in prompt
     assert "dist/YYYYMMDD/manuscript_non_traumatic_sah_phenotypes" not in prompt
     assert "dist/YYYYMMDD/electronic_supplementary_material" not in prompt
     assert "dist/YYYYMMDD/strobe_checklist" not in prompt
     assert "convert_manuscript_to_pdf.py YYYYMMDD" not in prompt
 
 
-def test_canonical_manuscripts_reference_canonical_figures() -> None:
-    english = read_text("dist/manuscript_non_traumatic_sah_phenotypes.md")
-    chinese = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cn.md")
+def test_bilingual_manuscripts_and_esm_reference_canonical_figures() -> None:
+    english = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cited.md")
+    chinese = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md")
     supplement = read_text("dist/electronic_supplementary_material.md")
 
     for document in (english, chinese, supplement):
         assert "](figures/" in document
         assert "](20260711/figures/" not in document
+
+
+def test_reviewed_english_abstract_and_frozen_results_are_consistent() -> None:
+    english = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cited.md")
+    supplement = read_text("dist/electronic_supplementary_material.md")
+
+    abstract = english.split("## Structured abstract", 1)[1].split("**Keywords:**", 1)[0]
+    abstract_body = re.sub(r"^### .+$", "", abstract, flags=re.MULTILINE)
+    abstract_words = abstract_body.split()
+    take_home = english.split("## Take-home message", 1)[1].split("## Structured abstract", 1)[0]
+    take_home_words = take_home.split()
+
+    assert 150 <= len(abstract_words) <= 250
+    assert len(take_home_words) <= 65
+    assert all(f"### {heading}" in abstract for heading in ("Purpose", "Methods", "Results", "Conclusion"))
+    assert "### Conclusions" not in abstract
+
+    for expected in (
+        "1,186 ICU stays from 1,173",
+        "K=2 to K=5",
+        "0.8554",
+        "540, 221, and 82",
+        "0.0005",
+        "post hoc exploratory sensitivity analysis",
+    ):
+        assert expected in english
+
+    for stale in (
+        "1,186 patients",
+        "K=2 to K=6",
+        "0.920",
+        "539 patients",
+        "222 to P2",
+        "prespecified sensitivity",
+        "In unadjusted Cox",
+    ):
+        assert stale not in english
+
+    assert "ESM Note 1. Time-to-event analysis boundary" in supplement
+    assert "ESM Table 10. eICU exploratory fixed-transport" in supplement
+    assert "ESM Table 10. Cox" not in supplement
+    assert "fig4_external_severity_validation" not in english
+    assert "fig_s7_eicu_external_validation" not in supplement
+    assert "**ESM Fig. 6.** Cohort selection and analysis design" in supplement
+
+
+def test_chinese_cited_manuscript_is_aligned_with_reviewed_english_source() -> None:
+    english = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cited.md")
+    chinese = read_text("dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md")
+
+    citation_keys = lambda text: set(re.findall(r"@([A-Za-z0-9_:-]+)", text))
+    figure_paths = lambda text: re.findall(r"\]\((figures/[^)]+)\)", text)
+
+    assert citation_keys(chinese) == citation_keys(english)
+    assert len(citation_keys(chinese)) == 18
+    assert figure_paths(chinese) == figure_paths(english)
+
+    for expected in (
+        "1,173 例患者、1,186 次 ICU 住院",
+        "K=2 至 K=5",
+        "0.8554",
+        "540、221 和 82",
+        "0.0005",
+        "1.54（1.06-2.22）",
+        "事后、探索性敏感性分析",
+        "ESM 图 6",
+        "time-to-event 分析边界",
+    ):
+        assert expected in chinese
+
+    for stale in (
+        "开发队列纳入 1,186 例患者",
+        "539 例",
+        "222 例",
+        "0.920",
+        "-0.003",
+        "Cox",
+        "ESM 图 8",
+        "fig4_external_severity_validation",
+        "作为外部验证队列",
+    ):
+        assert stale not in chinese
+
+    assert all(f"### {heading}" in chinese for heading in ("目的", "方法", "结果", "结论"))
+    assert "## 声明" in chinese
+    assert "## 电子补充材料" in chinese
 
 
 def test_preprocess_resolves_canonical_relative_figure_path(tmp_path: Path) -> None:

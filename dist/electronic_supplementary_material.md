@@ -20,7 +20,7 @@ This Electronic Supplementary Material (ESM) accompanies the Intensive Care Medi
 | 08 | Sensitivity cohort: ICU length of stay ≥48 h | 1,005 | 996 |
 | 09 | Sensitivity cohort: no recorded RBC transfusion in 0–48 h | 1,162 | 1,149 |
 
-### ESM Table 2. eICU cohort-flow counts
+### ESM Table 2. eICU fixed-transport cohort-flow counts
 
 | Step | Definition | Unit stays | Patients |
 | :--- | :--- | ---: | ---: |
@@ -62,7 +62,7 @@ The algorithm intentionally did not require aneurysm diagnosis or aneurysm-secur
 | Hematologic | `hb_min_48h_all` | Minimum hemoglobin | 0–48 h after ICU admission | Z-score standardization |
 | Hematologic | `platelet_min_48h` | Minimum platelet count | 0–48 h after ICU admission | Z-score standardization |
 
-Missing values were imputed using MIMIC-IV derivation-cohort medians. External validation used frozen MIMIC-IV medians, scaler parameters, PCA loadings, and K-means centroids.
+Missing values were imputed using MIMIC-IV derivation-cohort medians. The exploratory eICU transport assessment used frozen MIMIC-IV medians, scaler parameters, PCA loadings, and K-means centroids.
 
 ### ESM Table 5. Feature availability and data quality
 
@@ -168,22 +168,11 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. External v
 
 Model 1 adjusted for baseline demographics, admission type, NSAH evidence level, aneurysm diagnosis, and early anemia. Model 2 additionally included process-of-care variables and is exploratory.
 
-### ESM Table 10. Cox proportional hazards models for in-hospital survival
+### ESM Note 1. Time-to-event analysis boundary
 
-| Variable | Unadjusted HR (95% CI) | p-value | Clinical-adjusted HR (95% CI) | p-value | Process-adjusted HR (95% CI) | p-value |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Phenotype 2 vs P1 | 4.20 (2.97–5.94) | <0.001 | 4.45 (3.11–6.37) | <0.001 | 3.08 (2.09–4.54) | <0.001 |
-| Phenotype 3 vs P1 | 7.94 (5.38–11.70) | <0.001 | 8.62 (5.50–13.52) | <0.001 | 5.24 (3.25–8.47) | <0.001 |
-| Early anemia | — | — | 0.76 (0.56–1.01) | 0.062 | 0.73 (0.54–0.99) | 0.044 |
-| Age, per year | — | — | 1.02 (1.01–1.03) | <0.001 | 1.02 (1.01–1.03) | <0.001 |
-| Male sex | — | — | 0.96 (0.74–1.26) | 0.788 | 0.88 (0.67–1.16) | 0.365 |
-| Nimodipine | — | — | — | — | 0.59 (0.40–0.87) | 0.007 |
-| Vasopressor use | — | — | — | — | 2.15 (1.57–2.94) | <0.001 |
-| Mechanical ventilation | — | — | — | — | 1.79 (1.29–2.50) | <0.001 |
+Cox estimates are not reported because phenotype assignment uses measurements collected during 0-48 h while deaths can occur during that same interval. Starting follow-up at ICU admission would therefore use future-informed phenotype assignments, and treating live discharge as non-informative censoring would not address the competing-event structure. The submitted analysis is limited to descriptive same-hospital mortality associations. A future survival analysis would require a fixed landmark after phenotype ascertainment and an explicitly defined competing-risk estimand.
 
-The process-adjusted Cox model includes 0–48 h interventions as fixed exploratory contextual covariates. It is vulnerable to treatment-selection and immortal time bias and should not be interpreted as estimating treatment effects.
-
-### ESM Table 11. eICU external validation cohort characteristics and outcomes
+### ESM Table 10. eICU exploratory fixed-transport cohort characteristics and outcomes
 
 | Characteristic | Overall (N=843) | P1 (n=540) | P2 (n=221) | P3 (n=82) |
 | :--- | :---: | :---: | :---: | :---: |
@@ -204,7 +193,7 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | Hospital mortality, n (%) | 121 (14.35%) | 29 (5.37%) | 57 (25.79%) | 35 (42.68%) |
 | ICU mortality, n (%) | 75 (8.90%) | 15 (2.78%) | 36 (16.29%) | 24 (29.27%) |
 
-### ESM Table 12. Sensitivity analysis summary
+### ESM Table 11. Sensitivity analysis summary
 
 | Analysis | N | P1 mortality | P2 mortality | P3/P4 mortality | Minimum subgroup N |
 | :--- | ---: | :---: | :---: | :---: | ---: |
@@ -223,7 +212,16 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | eICU strict SAH | 605 | 6.6% | 30.5% | 45.6% (P3) | 68 |
 | eICU INR-free transport | 868 | 4.6% | 24.4% | 38.7% (P3) | 124 |
 
-### ESM Table 13. Bootstrap stability analysis
+### ESM Table 11A. Sensitivity of the adjusted anemia-mortality association to phenotype specification
+
+| Phenotype specification used for adjustment | Early-anemia aOR (95% CI) | p-value | Interpretation |
+| :--- | :---: | :---: | :--- |
+| Primary phenotypes including minimum hemoglobin | 0.99 (0.68–1.44) | 0.955 | Potential overadjustment because hemoglobin informed both phenotype assignment and anemia status |
+| Phenotypes re-derived without hemoglobin | 1.54 (1.06–2.22) | 0.022 | Association differed after removal of hemoglobin from phenotype derivation |
+
+Both models adjusted for age, sex, admission type, NSAH evidence level, and aneurysm diagnosis. The differing estimates indicate sensitivity to phenotype specification and do not establish a causal effect of anemia.
+
+### ESM Table 12. Bootstrap stability analysis
 
 | Metric | Mean | Standard deviation | Minimum | Maximum |
 | :--- | ---: | ---: | ---: | ---: |
@@ -237,7 +235,7 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 **ESM Fig. 1.** Cluster-quality metrics across K=2 to K=5 for raw standardized and primary log-PCA pipelines.
 
 ![Bootstrap ARI distribution](figures/fig_s2_bootstrap.png)
-**ESM Fig. 2.** Adjusted Rand Index distribution across 200 bootstrap iterations compared with the primary K-means K=3 partition.
+**ESM Fig. 2.** Subject-grouped, full-pipeline adjusted Rand Index distribution across 200 bootstrap iterations compared with the primary K-means K=3 partition.
 
 ![Sensitivity summaries](figures/fig_s3_sensitivity_summary.png)
 **ESM Fig. 3.** Standardized cluster centers for sensitivity partitions, demonstrating alignment with the primary log-PCA centroids.
@@ -248,14 +246,8 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 ![PCA loadings](figures/fig_s5_pca_loadings.png)
 **ESM Fig. 5.** Loadings of the eight physiological variables on the first three principal components.
 
-![SHAP forest plot](figures/fig_s6_forest_plot.png)
-**ESM Fig. 6.** Forest plot showing multivariable logistic regression and Cox proportional hazards odds/hazard ratios with 95% confidence intervals for primary and sensitivity models.
-
-![eICU validation performance](figures/fig_s7_eicu_external_validation.png)
-**ESM Fig. 7.** eICU validation performance, including transported phenotype calibration, calibration slope, and de novo clustering comparison metrics.
-
 ![Cohort flowchart and analysis design](figures/fig1_cohort_flowchart.png)
-**ESM Fig. 8.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and eICU fixed transport.
+**ESM Fig. 6.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and exploratory eICU fixed transport.
 
 ## ESM 5. Reproducibility Notes
 
@@ -285,7 +277,7 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | K-means random state | 42 |
 | K-means n_init | 100 |
 | Bootstrap iterations | 200 |
-| External validation | Frozen MIMIC medians, scaler, PCA loadings, and centroids applied to eICU |
+| External transport assessment | Frozen MIMIC medians, scaler, PCA loadings, and centroids applied to eICU; interpreted as exploratory |
 
 ### BigQuery provenance
 

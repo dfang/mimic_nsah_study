@@ -16,12 +16,12 @@ This is the single handoff list for work that cannot be completed from the curre
 
 ## B. Authorized reanalysis or design decisions
 
-- [ ] Choose and document the estimand: retain the current descriptive same-hospital association, or rerun a 48 h landmark analysis among patients alive and observed at 48 h.
-- [ ] Count distinct `subject_id` values and repeated admissions; rerun bootstrap and any retained cross-validation with patient-grouped resampling if repeats exist.
+- [x] Retained and documented the descriptive same-hospital association; the current manuscript does not present a 48 h landmark or bedside prediction estimand.
+- [x] Counted 1,173 distinct `subject_id` values among 1,186 stays (13 repeated-subject admission rows) and froze subject-grouped full-pipeline bootstrap results.
 - [ ] Run an include-all sensitivity analysis without the post-entry `>=5 units/24 h` red-cell exclusion, or justify and freeze the exclusion as a post hoc design choice.
 - [ ] Validate or externally support the ICD/text NSAH identification algorithm, especially traumatic-SAH exclusion, and report expected misclassification.
-- [ ] Reconcile implemented analyses with `protocol.md` and `sap.md`; freeze both as retrospective/post-outcome documents and maintain a deviations log.
-- [ ] Freeze data provenance: query dates, source table versions, row counts, analysis environment, package lock, and immutable artifact hashes.
+- [x] Reconciled implemented analyses with `protocol.md` and `sap.md`; both are frozen as retrospective/post-outcome documents with a deviations log.
+- [x] Froze data provenance: query dates, source table versions, row counts, analysis environment, package lock, and immutable analysis artifact hashes.
 - [ ] Conduct a final disclosure-control review of all aggregate tables and figures before public release.
 
 ## C. Technical production before upload
@@ -37,10 +37,14 @@ This is the single handoff list for work that cannot be completed from the curre
 - [x] Verified all cited identities and metadata; no unresolved cited key, duplicate DOI/PMID, or known retraction was found.
 - [x] Added the official MIMIC-IV 3.1, eICU-CRD 2.0, PhysioNet, STROBE, and RECORD citations where they support the text.
 - [x] Corrected SAHARA publication metadata and narrowed the claim to its supported 12-month outcome.
-- [x] Promoted citation-aware English and Chinese manuscripts to canonical filenames and synchronized their citation sets.
-- [x] Reduced the structured abstract to the ICM limit, kept five keywords, and reduced the main display set to three figures.
-- [x] Removed non-central prediction-model results from the submission manuscript because the current cross-validation has unresolved leakage/grouping risk.
+- [x] Designated `manuscript_non_traumatic_sah_phenotypes_cited.md` as the reviewed English submission source and aligned `manuscript_non_traumatic_sah_phenotypes_cn_cited.md` to it on 2026-07-23.
+- [x] Reduced the structured abstract to 242 words, kept five keywords, reduced the 65-word take-home message to 53 words, and retained two correctly matched main figures.
+- [x] Removed non-central prediction-model results from the submission manuscript because the current analysis does not establish a time-anchored, leakage-free bedside prediction estimand.
 - [x] Reframed mortality findings as descriptive same-hospital associations and documented the 0-48 h outcome-overlap limitation.
+- [x] Removed the admission-origin Cox/Kaplan-Meier results from the submission manuscript and documented the future-informed phenotype, within-window death, and competing-discharge boundary in the ESM.
+- [x] Corrected the analysis unit to 1,186 ICU stays from 1,173 patients and synchronized the subject-grouped bootstrap ARI (mean 0.8554).
+- [x] Corrected eICU fixed-transport counts to 540/221/82, de novo ARI to 0.0005, and candidate K range to K=2-5; interpretation is exploratory transport rather than confirmatory external validation.
+- [x] Reclassified the hemoglobin-free anemia analysis as post hoc exploratory and reported the specification-sensitive odds ratios (0.99 versus 1.54).
 - [x] Completed a language/humanization pass without changing reported study estimates.
 - [x] Prepared STROBE and RECORD mappings and a submission-readiness review.
 - [x] Regenerated all referenced figures as 600 dpi PNG plus vector PDF and removed conflicting embedded figure numbers.
@@ -48,3 +52,4 @@ This is the single handoff list for work that cannot be completed from the curre
 - [x] Reconciled phenotype label ordering with the outcome-blind physiological severity-score implementation.
 - [x] Added draft governance, study/run manifests, DAG, provenance, seed, deviation, issue-register, and release-audit artifacts.
 - [x] Added a tested PDF-build guard that blocks unresolved Pandoc citation syntax.
+- [x] Passed Pandoc 3.10 citeproc preflights for the reviewed English and aligned Chinese manuscripts with no unresolved citation keys; no stale PDF was overwritten.

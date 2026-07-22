@@ -178,7 +178,7 @@ EICU_STEP_LABELS = {
     "03_non_traumatic": "Non-traumatic SAH",
     "04_first_icu_stay": "First ICU stay",
     "05_icu_los_ge_24h": "ICU LOS >=24 h",
-    "06_core_features_le_2_missing": "External validation\n(<=2 missing core features)",
+    "06_core_features_le_2_missing": "Transport eligible\n(<=2 missing core features)",
     "07_icu_los_ge_48h_sensitivity": "ICU LOS >=48 h",
     "08_no_rbc_sensitivity": "No recorded RBC 0-48 h",
     "09_strict_sah_sensitivity": "Strict SAH evidence",
@@ -398,7 +398,7 @@ def fig1_cohort_flowchart() -> None:
     cohort_w = 3.85
 
     box(left_x, 6.75, cohort_w, 0.42, "MIMIC-IV 3.1", "Development cohort (2008-2022)", mimic_color, "#FFFFFF", body_size=7.4, lw=0)
-    box(right_x, 6.75, cohort_w, 0.42, "eICU-CRD", "External validation cohort (2014-2015)", eicu_color, "#FFFFFF", body_size=7.4, lw=0)
+    box(right_x, 6.75, cohort_w, 0.42, "eICU-CRD", "Exploratory transport cohort (2014-2015)", eicu_color, "#FFFFFF", body_size=7.4, lw=0)
     ax.plot([0.75, 4.55], [6.47, 6.47], color=mimic_color, linewidth=2.0, solid_capstyle="round")
     ax.plot([5.45, 9.25], [6.47, 6.47], color=eicu_color, linewidth=2.0, solid_capstyle="round")
 
@@ -477,7 +477,7 @@ def fig1_cohort_flowchart() -> None:
         y_final,
         cohort_w,
         0.78,
-        "Final eICU validation cohort",
+        "Final eICU transport cohort",
         "",
         eicu_color,
         eicu_color,
@@ -528,7 +528,7 @@ def fig1_cohort_flowchart() -> None:
         a_w,
         0.86,
         "Transport validation",
-        "frozen eICU projection\nAPACHE + bootstrap checks",
+        "frozen eICU projection\nAPACHE + sensitivity checks",
         eicu_color,
         light_purple,
         title_size=8.2,
@@ -545,7 +545,7 @@ def fig1_cohort_flowchart() -> None:
         (
             "Counts from BigQuery intermediate tables: non_traumatic_sah_study.cohort_flowchart_counts and "
             "eicu_sah_validation.eicu_cohort_flowchart_counts.\n"
-            "MIMIC was used for phenotype derivation; eICU was used for external transport validation."
+            "MIMIC was used for phenotype derivation; eICU was used for exploratory fixed transport."
         ),
         ha="left",
         va="bottom",
@@ -616,7 +616,7 @@ def fig4_external_severity_validation() -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(PHENOTYPES)
     ax.set_ylabel("Median score")
-    ax.set_title("External severity-score comparison", fontweight="bold", loc="left")
+    ax.set_title("MIMIC severity-score comparison (not clustering inputs)", fontweight="bold", loc="left")
     ax.legend(frameon=False)
     ax.grid(axis="y", alpha=0.25)
     savefig("fig4_external_severity_validation.png")
@@ -780,7 +780,7 @@ def fig_s7_eicu_external_validation() -> None:
         ax.set_ylabel("Percent")
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width() / 2, val + 1, f"{val:.1f}{suffix}", ha="center", fontsize=8.5, fontweight="bold")
-    fig.suptitle("Supplementary Figure 7. eICU frozen-transport external validation", fontweight="bold", x=0.01, ha="left")
+    fig.suptitle("eICU exploratory fixed transport", fontweight="bold", x=0.01, ha="left")
     fig.tight_layout()
     savefig("fig_s7_eicu_external_validation.png")
 
