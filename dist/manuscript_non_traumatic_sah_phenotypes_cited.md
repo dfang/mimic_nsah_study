@@ -15,19 +15,19 @@ In critically ill adults with non-traumatic subarachnoid hemorrhage, eight routi
 
 ### Purpose
 
-Neurological scales do not capture the full range of systemic physiology in non-traumatic subarachnoid hemorrhage (NSAH). We aimed to derive early physiological phenotypes, test fixed transport to an external ICU database, and assess their associations with mortality and anemia.
+Patients with non-traumatic subarachnoid hemorrhage (NSAH) demonstrate substantial heterogeneity in clinical trajectory and outcome, even among those with similar neurological severity. Conventional neurological assessment may not fully capture early systemic physiological responses. We aimed to identify early physiological phenotypes among critically ill adults with NSAH, evaluate their associations with mortality and early anemia, and assess fixed phenotype transport in an independent ICU cohort.
 
 ### Methods
 
-We retrospectively studied adults with NSAH and an ICU stay >=24 h in MIMIC-IV 3.1 (2008-2022) and eICU (2014-2015). Eight variables measured during the first 48 h represented neurological, circulatory, respiratory, renal, hematologic, and coagulation domains. After median imputation, skewed variables were log1p transformed, all variables were standardized, and patients were clustered by K-means after principal component analysis. eICU validation used fixed MIMIC preprocessing parameters, loadings, and centroids.
+We conducted a retrospective two-database cohort study of adults with NSAH and an ICU stay >=24 h, using MIMIC-IV 3.1 (2008-2022) for phenotype derivation and eICU-CRD 2.0 (2014-2015) for external validation. Eight routinely available variables measured during the first 48 h represented neurological, circulatory, respiratory, renal, hematologic, and coagulation domains. After median imputation, skewed variables were transformed using log1p (natural logarithm of 1 + x), and all variables were standardized. Principal component analysis was used for dimensionality reduction, followed by K-means clustering in the retained component space. The number of clusters was selected using internal validity metrics, cluster stability, minimum cluster size, and clinical interpretability. Associations between phenotype assignment and in-hospital mortality were evaluated using multivariable logistic regression. External validation in eICU used fixed MIMIC preprocessing parameters, loadings, and centroids.
 
 ### Results
 
-Among 1,186 MIMIC patients, P1 had mild neuro-systemic impairment (n=694), P2 had severe neurological impairment with limited systemic dysfunction (n=384), and P3 had severe neurological impairment with multisystem dysfunction (n=108). In-hospital mortality was 6.34%, 32.55%, and 61.11%, respectively. Compared with P1, adjusted odds ratios for death were 7.59 (95% CI 5.07-11.36) for P2 and 21.21 (95% CI 12.08-37.26) for P3. Anemia was not independently associated with mortality after phenotype adjustment. In eICU (N=843), transported phenotypes retained the mortality ordering (5.4%, 25.7%, and 42.7%).
+Among 1,186 MIMIC patients, P1 had relatively preserved neuro-systemic physiology (n=694), P2 had severe neurological impairment with limited systemic dysfunction (n=384), and P3 had severe neurological impairment with multisystem dysfunction (n=108). Observed in-hospital mortality increased across P1, P2, and P3 (6.34%, 32.55%, and 61.11%, respectively; p < 0.001). Compared with P1, adjusted odds ratios for death were 7.59 (95% CI 5.07-11.36) for P2 and 21.21 (95% CI 12.08-37.26) for P3. Early anemia was more frequent in P2 and P3 but was not associated with mortality after phenotype adjustment (adjusted odds ratio 0.99, 95% CI 0.68-1.44). In eICU (N=843), fixed transport retained the mortality ordering (5.4%, 25.7%, and 42.7%).
 
 ### Conclusions
 
-Early routine physiology identified NSAH phenotypes with ordered observed mortality in two databases. Prospective studies are needed before clinical use; this analysis is descriptive and does not estimate treatment effects.
+Early physiological measurements available during routine ICU care identified three clinically interpretable NSAH phenotypes with graded observed mortality and preserved ordering after transport to an independent database. Multidomain physiological assessment may complement conventional neurological evaluation by characterizing systemic heterogeneity, but prospective studies are required before clinical use; this descriptive analysis does not estimate treatment effects.
 
 **Keywords:** subarachnoid hemorrhage; critical care; phenotyping; unsupervised learning; external validation.
 
