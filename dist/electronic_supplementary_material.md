@@ -223,6 +223,15 @@ The process-adjusted Cox model includes 0–48 h interventions as fixed explorat
 | eICU strict SAH | 605 | 6.6% | 30.5% | 45.6% (P3) | 68 |
 | eICU INR-free transport | 868 | 4.6% | 24.4% | 38.7% (P3) | 124 |
 
+### ESM Table 12A. Sensitivity of the adjusted anemia-mortality association to phenotype specification
+
+| Phenotype specification used for adjustment | Early-anemia aOR (95% CI) | p-value | Interpretation |
+| :--- | :---: | :---: | :--- |
+| Primary phenotypes including minimum hemoglobin | 0.99 (0.68–1.44) | 0.955 | Potential overadjustment because hemoglobin informed both phenotype assignment and anemia status |
+| Phenotypes re-derived without hemoglobin | 1.54 (1.06–2.22) | 0.022 | Association differed after removal of hemoglobin from phenotype derivation |
+
+Both models adjusted for age, sex, admission type, NSAH evidence level, and aneurysm diagnosis. The differing estimates indicate sensitivity to phenotype specification and do not establish a causal effect of anemia.
+
 ### ESM Table 13. Bootstrap stability analysis
 
 | Metric | Mean | Standard deviation | Minimum | Maximum |
