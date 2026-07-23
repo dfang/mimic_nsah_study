@@ -9,25 +9,25 @@ reference-section-title: References
 
 ## Take-home message
 
-Among eligible ICU stays for adults with non-traumatic subarachnoid hemorrhage, a three-cluster solution based on eight routine physiological measures separated early clinical courses with graded observed mortality. Applying the fixed MIMIC assignment rule to eICU produced the same crude mortality order, although de novo clusters did not agree. The anemia estimate changed when hemoglobin was removed from phenotype derivation.
+Among eligible ICU stays for non-traumatic subarachnoid hemorrhage, clustering eight routine physiological measures during the first 48 h yielded three early-course groups with stepwise increases in observed hospital mortality. Applying the frozen MIMIC assignment rule to eICU preserved the crude mortality ordering, but de novo clustering did not reproduce the same boundaries. The adjusted anemia-mortality association was sensitive to whether clustering included hemoglobin.
 
 ## Structured abstract
 
 ### Purpose
 
-To derive 0-48 h physiological phenotypes in critically ill adults with non-traumatic subarachnoid hemorrhage (NSAH), describe observed in-hospital mortality, assess whether anemia estimates depend on phenotype specification, and examine fixed eICU assignment.
+To derive data-driven 0-48 h neuro-systemic physiological phenotypes in critically ill adults with non-traumatic subarachnoid hemorrhage (NSAH), describe same-hospital mortality associations, assess anemia-estimate sensitivity to phenotype specification, and explore frozen eICU assignment.
 
 ### Methods
 
-This post-outcome exploratory analysis included 1,186 ICU stays from 1,173 MIMIC-IV 3.1 patients and 843 eICU-CRD 2.0 patients. Eight 0-48 h variables underwent PCA and K-means clustering after preprocessing. K=3 was frozen after outcome access and compared with K=2-5 internal metrics; mortality was not used for clustering or label ordering. Stay-level logistic regression estimated mortality associations; P values were unadjusted for multiplicity. This was not landmark prediction because deaths could occur during ascertainment. A post hoc hemoglobin-free analysis examined anemia. Fixed MIMIC parameters and centroids assigned eICU patients.
+This post-outcome exploratory analysis included 1,186 MIMIC-IV 3.1 ICU stays from 1,173 patients and 843 eICU-CRD 2.0 patients. Creatinine and INR were log-transformed; eight variables were median-imputed, standardized, PCA-reduced, and K-means-clustered. K=3 was frozen after outcome review. K=2-5 comparisons used internal metrics and minimum cluster size; K=3 patient-grouped stability and clinical interpretability were assessed. Mortality informed neither K selection, fitting, nor label ordering. Stay-level logistic regression estimated associations; P values were unadjusted for multiplicity. Deaths during ascertainment precluded landmark prediction. Post hoc exploratory hemoglobin-free re-derivation assessed anemia. Frozen MIMIC transforms and centroids assigned eICU phenotypes.
 
 ### Results
 
-P1 (n=694) had relatively preserved physiology, P2 (n=384) had severe neurological impairment, and P3 (n=108) had neurological and multisystem dysfunction. In-hospital mortality was 6.34%, 32.55%, and 61.11%, respectively. Adjusted odds ratios versus P1 were 7.59 (95% CI 5.07-11.36) and 21.21 (12.08-37.26). Mean subject-grouped bootstrap adjusted Rand index was 0.8554. Anemia odds ratios were 0.99 (0.68-1.44) with hemoglobin-containing phenotypes and 1.54 (1.06-2.22) with hemoglobin-free phenotypes. Fixed eICU transport assigned 540, 221, and 82 patients to P1, P2, and P3; mortality was 5.4%, 25.8%, and 42.7%.
+P1 (n=694) was relatively preserved, P2 (n=384) had severe neurological dysfunction, and P3 (n=108) had neurological and multisystem dysfunction. Hospital mortality was 6.34%, 32.55%, and 61.11%. Adjusted odds ratios versus P1 were 7.59 (95% CI 5.07-11.36) for P2 and 21.21 (12.08-37.26) for P3. Mean patient-grouped bootstrap adjusted Rand index was 0.8554. Adjusted anemia odds ratios were 0.99 (0.68-1.44) with hemoglobin-containing phenotypes and 1.54 (1.06-2.22) after hemoglobin-free re-derivation. Frozen eICU assignment gave P1/P2/P3 counts of 540, 221, and 82; mortality was 5.4%/25.8%/42.7%.
 
 ### Conclusion
 
-Eligible ICU stays formed three groups with graded in-hospital mortality. Fixed eICU assignment yielded the same crude mortality order but not the cluster boundaries. The anemia estimate depended on phenotype specification. Prospective, time-anchored studies are needed before clinical use; these data do not estimate treatment effects.
+Eligible ICU stays formed three groups with stepwise observed mortality. Frozen eICU assignment preserved crude ordering, not cluster boundaries. Anemia-mortality estimates were specification-sensitive. Independent prospective validation with a prespecified time anchor is needed; these data support neither bedside prediction nor treatment-effect estimation.
 
 **Keywords:** subarachnoid hemorrhage; critical care; phenotyping; unsupervised learning; transportability.
 
