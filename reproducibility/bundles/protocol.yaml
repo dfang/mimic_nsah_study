@@ -1,4 +1,4 @@
-bundle_version: "1.0"
+bundle_version: "1.1"
 stage: protocol
 artifacts:
   - role: protocol
@@ -7,9 +7,9 @@ artifacts:
     sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
   - role: statistical_analysis_plan
     path: sap.md
-    version: "1.0.0-FROZEN_EXPLORATORY"
-    sha256: "e8938b9094a1d4119405bd8460a6be99f8cb4802dc83be110f1b2b4b6b66ec5f"
+    version: "1.0.1-POST_FREEZE_DOCUMENTATION_CORRECTION"
+    sha256: "9025918a59cea1002ee0985e9a831595f090db7acf88bfda3d86da88c80e6d16"
   - role: deviation_log
     path: reproducibility/deviation-log.md
-    version: "freeze-20260716"
-    sha256: "07e235d072ce2469730b56c8a23dda8bb28561ca57b5cc7d4a115c09a35a1ced"
+    version: "review-20260723"
+    sha256: "50dd6153c25259f127e9616b0710d71c67bcef9c6166adb98e3c72f2baab1435"

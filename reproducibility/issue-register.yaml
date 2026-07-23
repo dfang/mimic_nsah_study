@@ -103,11 +103,91 @@ issues:
     status: open
     artifact: dist/author_completion_checklist.md
     location: author, ethics, declaration, and production items
-    evidence: "Required author metadata, declarations, ethics confirmation, citeproc render, editable source, and final PDFs are incomplete."
+    evidence: "Required author metadata, declarations, ethics confirmation, institutional disclosure approval, editable source, and fresh visually inspected PDFs are incomplete; citeproc preflight has passed."
     impact: "The journal upload package is not ready."
-    action: "Complete author checklist, final institutional disclosure approval, and verified submission build."
+    action: "Complete author checklist, final institutional disclosure approval, editable source, and verified visual submission build."
     owner: authors and submission manager
     verification: "Complete title/declaration package and visually verified DOCX/PDF/ESM"
     closure_evidence: null
     closed_by: null
     closed_at: null
+  - id: REV-008
+    stage: manuscript_review
+    domain: design
+    severity: major
+    confidence: high
+    status: closed
+    artifact: sap.md
+    location: implemented exploratory outcome association
+    evidence: "The manuscript implied a priori selection and SAP v1.0.0 did not reproduce the implemented main logistic formula."
+    impact: "Readers could mistake post-outcome choices for prespecification and could not reconstruct the reported adjusted ORs from the SAP."
+    action: "Document the implemented post-outcome exploratory formula and synchronize both manuscripts."
+    owner: manuscript reviewer
+    verification: "SAP v1.0.1; DEV-009; bilingual manuscript Methods"
+    closure_evidence: "Main formula matches build_adjusted_regression_formulas; frozen estimates unchanged."
+    closed_by: manuscript_review
+    closed_at: "2026-07-23"
+  - id: REV-009
+    stage: manuscript_review
+    domain: statistics
+    severity: major
+    confidence: high
+    status: closed
+    artifact: dist/electronic_supplementary_material.md
+    location: ESM Table 9 and process-of-care model
+    evidence: "Previously transcribed Model 2 intervals did not match the frozen log, and duplicate etiology indicators made the process model rank deficient."
+    impact: "The supplementary table implied unsupported inferential precision."
+    action: "Remove the process model from inferential reporting while preserving its audit trail."
+    owner: statistical reviewer
+    verification: "DEV-011; ESM Table 9 contains only the implemented main exploratory model."
+    closure_evidence: "No Model 2 or 0.000-inf interval remains; main estimates match frozen output."
+    closed_by: manuscript_review
+    closed_at: "2026-07-23"
+  - id: REV-010
+    stage: manuscript_review
+    domain: cohort
+    severity: major
+    confidence: high
+    status: closed
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: Methods cohort and eICU missingness
+    evidence: "MIMIC exclusions were written as cross-database rules, and 49.4% lacked its 903-patient pre-eligibility denominator."
+    impact: "The eICU cohort was not reproducible from manuscript prose and INR imputation burden could be misread."
+    action: "Separate database-specific rules and report both INR denominators."
+    owner: clinical and external-transport reviewers
+    verification: "DEV-012; ESM Tables 2 and 5; 446/903 and 390/843 reported."
+    closure_evidence: "English and Chinese cohort Methods now match database-specific code and aggregate flow."
+    closed_by: manuscript_review
+    closed_at: "2026-07-23"
+  - id: REV-011
+    stage: manuscript_review
+    domain: reporting
+    severity: minor
+    confidence: high
+    status: closed
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
+    location: bilingual Purpose, Methods, Conclusion, and limitations
+    evidence: "Formulaic repeated wording and raw mixed-language phrasing reduced readability."
+    impact: "Scientific boundaries were harder to read and text appeared machine-generated."
+    action: "Perform a bilingual humanization and unsupported-claim audit without changing estimates."
+    owner: manuscript editor
+    verification: "18 citation keys and figure paths aligned; no em/en dash or inflated validation claim remains."
+    closure_evidence: "Final language audit and manuscript output tests passed."
+    closed_by: manuscript_review
+    closed_at: "2026-07-23"
+  - id: REV-012
+    stage: manuscript_review
+    domain: gate
+    severity: blocking
+    confidence: high
+    status: closed
+    artifact: dist/manuscript_review_report.md
+    location: five-round scientific-content acceptance gate
+    evidence: "Five review rounds completed across clinical, statistical, phenotyping, external transport, bilingual, and reproducibility domains."
+    impact: "Determines whether reviewed manuscript content can proceed while submission production remains separate."
+    action: "Require zero open blocking or major scientific-content findings plus mechanical validation."
+    owner: independent manuscript reviewer
+    verification: "42 tests passed; bilingual Pandoc citeproc preflight passed; abstract 250 words; citation and figure alignment passed."
+    closure_evidence: "Scientific-content verdict READY; REV-007 remains open for journal upload."
+    closed_by: manuscript_review
+    closed_at: "2026-07-23"

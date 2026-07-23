@@ -7,25 +7,25 @@
 - Stage: Initial submission preparation
 - Requirements retrieved on: 2026-07-16
 - Authoritative instructions: https://link.springer.com/journal/134/submission-guidelines
-- Package verdict: **NOT READY — REVISE**
+- Package verdict: **NOT READY — AUTHOR/PRODUCTION BLOCKED**
 - English/Chinese cited-manuscript reconciliation checked on: 2026-07-23
 
 ## Upstream gates
 
 | Gate | Status | Verdict/manifest artifact | SHA-256 | Open blocking | Open major | Checked on |
 | :--- | :--- | :--- | :--- | ---: | ---: | :--- |
-| manuscript_review | Complete | `manuscript_review_report.md` | `b059803912f1c3402767f903750bb7a75c7a57d756078e103da3d6a55f0c0ec0` | 3 | 4 | 2026-07-16 |
-| reproducibility_release | Analysis frozen | `reproducibility/bundles/release.yaml`; tag `analysis-freeze-v1.0.0` | `dc6cabb8529f17e57ca3106a18332162ce03fd5a6a16b13be7e7746e49cd6bbf` | 0 analysis-freeze blockers | Submission risks remain | 2026-07-16 |
+| manuscript_review | Scientific content READY | `manuscript_review_report.md` | `3f0bd49b5e1bc8e81f5cc2ef8ba45395c9597ad8ab4529b722b485f722a0f051` | 0 scientific-content blockers | 0 | 2026-07-23 |
+| reproducibility_release | Analysis frozen; reporting corrected | `reproducibility/bundles/release.yaml`; tag `analysis-freeze-v1.0.0` | `476410239287950c144074e677b610920758f20288322ad0e676df230a00056a` | 0 analysis-freeze blockers | Submission production remains open | 2026-07-23 |
 
-The 2026-07-22 English correction pass resolved the selected Purpose/Methods/Results/Conclusion inconsistencies against frozen aggregate evidence. The Chinese cited manuscript was aligned to that source on 2026-07-23. This is not a replacement for a new independent full-package review after author metadata and final rendering are available.
+The 2026-07-23 five-round review resolved the identified Purpose/Methods/Results/Conclusion inconsistencies against frozen aggregate evidence and aligned the Chinese cited manuscript and ESM. The scientific content gate is READY. A new production review is still required after author metadata and final rendering are available.
 
 ## Live requirements
 
 | Requirement | Evidence/file | Status |
 | :--- | :--- | :--- |
-| Original Paper, main text <=3,000 words | Reviewed English Markdown: approximately 2,850 whitespace-delimited tokens including YAML, headings, abstract, declarations, and captions (a conservative superset of journal main text) | Pass |
-| Structured abstract 150-250 words | English abstract: 242 words | Pass |
-| Take-home message <=65 words | English take-home message: 53 words | Pass |
+| Original Paper, main text <=3,000 words | Reviewed English Markdown: 2,640 whitespace-delimited tokens including YAML, headings, abstract, declarations, and captions; Introduction through Conclusion is 2,039 words | Pass |
+| Structured abstract 150-250 words | English abstract: 250 words | Pass |
+| Take-home message <=65 words | English take-home message: 59 words | Pass |
 | 3-5 keywords | Five keywords | Pass |
 | <=30 references | 18 cited references | Pass static checks and Pandoc citeproc preflight; final render inspection pending |
 | Maximum five illustrations, normally three figures and two tables | Two main figures; cohort flow moved to ESM; mismatched severity-score artwork excluded | Pass |
@@ -40,19 +40,19 @@ The 2026-07-22 English correction pass resolved the selected Purpose/Methods/Res
 
 | File | Purpose | SHA-256 | Required | Status |
 | :--- | :--- | :--- | :---: | :--- |
-| `manuscript_non_traumatic_sah_phenotypes_cited.md` | Reviewed English submission manuscript | `077136b5e4e83b03f8d21b3b41ae7c03644899c592f97cd2f6c852095aab1d88` | Yes | Purpose/Methods/Results/Conclusion reconciled; mismatched artwork excluded; author fields/render pending |
-| `manuscript_non_traumatic_sah_phenotypes_cn_cited.md` | Aligned Chinese reference manuscript | `17171686f3ee6e0989113bbeb4248f9f5b41fb2fc523bebc83777f90526cec71` | No | Structure, citations, figures, quantitative results, and interpretation boundaries aligned on 2026-07-23 |
-| `electronic_supplementary_material.md` | ESM source | `8fe8ed083d934e4f5d91c11dbe40b1545b28df9e55b432076249df34f8c1c5c9` | Yes | Synchronized with same-hospital/time-to-event boundary and figure numbering; render pending |
+| `manuscript_non_traumatic_sah_phenotypes_cited.md` | Reviewed English submission manuscript | `73aafe9a10f9f21c248fe6a204012024f1aaded1400f0c9b05b25348591b3088` | Yes | Scientific content READY; author fields and fresh render pending |
+| `manuscript_non_traumatic_sah_phenotypes_cn_cited.md` | Aligned Chinese reference manuscript | `77d1ac9b36fca0358036d93757508545a5a751eb40bfc87bfeb0329027e67c9d` | No | Structure, citations, figures, quantitative results, cohort rules, and interpretation boundaries aligned |
+| `electronic_supplementary_material.md` | ESM source | `143202510b96006a627327aab9de153f330e32c24e3a4494b3091d526ea6ccfc` | Yes | Main model, eICU missingness denominators, time-to-event boundary, and figure numbering reconciled; render pending |
 | `references.bib` | Verified bibliography | `207f4b04e345868d0595572f937f7829014a62278a8889b270182724312ac583` | Build input | Static checks and Pandoc citeproc preflight pass; final render inspection pending |
 | `journal.csl` | ICM parent citation style | `2f39b2c93cf7a90cb41c72a2945700c4d227ad233682d7fe843c77364a11ba82` | Build input | Pinned and verified |
-| `strobe_checklist.md` | STROBE mapping | `699a38284d71c7f9fca8c970fbe4305d6302a976db582f65309e4cfcf7d3ea99` | Yes | Same-hospital association wording and ESM cross-references synchronized; author review pending |
-| `record_checklist.md` | RECORD extension mapping | `94435b72a9986c06f4319240f3b42c505f7a48c4a3a09c520b5929290831f7d9` | Yes | Exploratory fixed-transport wording and ESM cross-references synchronized; open items documented |
-| `author_completion_checklist.md` | Single author/reanalysis handoff list | `9791f4292a6d0559bb72b036f49980f50a63985b6a64a282e642662c2f8f086f` | Internal | Current |
-| `reproducibility/bundles/manuscript.yaml` | Bilingual manuscript-stage bundle | `f459b01ea629104736e37bfb2b0b4b960a82e9cb298ddd7667ad5aaf56c61fa3` | Internal | English/Chinese manuscript hashes synchronized on 2026-07-23 |
+| `strobe_checklist.md` | STROBE mapping | `23c420160eda601d90922eec3afdba38c221140cd96022b3b9ed3477cf6cc9b5` | Yes | Statistical-method and limitations cross-references synchronized; author review pending |
+| `record_checklist.md` | RECORD extension mapping | `63b3cb0cadddf954315c9e1cefe7ce295b69c4f394597a97a23d0ce910df71a2` | Yes | Exploratory transport, missingness, and code-validation limits synchronized |
+| `author_completion_checklist.md` | Single author/reanalysis handoff list | `89889bbeb24bc270b246076e8a88f572434eb48121f760b67c4cc5354ce6121b` | Internal | Current |
+| `reproducibility/bundles/manuscript.yaml` | Bilingual manuscript-stage bundle | `df48dd7ee508a3dc991b49332cdac812cfa844c7750f6a9baf6d065d693ab35b` | Internal | English/Chinese/ESM/checklist hashes synchronized on 2026-07-23 |
 
 ## Blockers
 
 - Complete the author/title-page/declaration/ethics package and ICMJE forms.
-- Resolve or justify the remaining authorized-design items in `author_completion_checklist.md`, including the post-entry transfusion exclusion and NSAH identification validation.
+- Review and accept the explicitly disclosed residual scientific limitations, including absent manual chart validation and non-clustered regression/eICU uncertainty.
 - Obtain final author/institution disclosure approval for public journal release.
 - Render and visually inspect citations, DOCX/PDF, and ESM; use the new vector/600 dpi figures and do not use the current stale manuscript PDFs.

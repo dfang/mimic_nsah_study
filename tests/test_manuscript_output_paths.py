@@ -77,8 +77,27 @@ def test_reviewed_english_abstract_and_frozen_results_are_consistent() -> None:
         "222 to P2",
         "prespecified sensitivity",
         "In unadjusted Cox",
+        "a priori",
+        "before outcome analyses",
+        "selected because it provided the best balance",
+        "We hypothesized",
     ):
         assert stale not in english
+
+    for required_boundary in (
+        "post-outcome exploratory",
+        "unadjusted for multiplicity",
+        "49.4%",
+        "390 of 843 transported patients (46.3%)",
+        "stay-level model covariance",
+        "not clustered by `subject_id`",
+        "no red-cell threshold was applied because eICU transfusion units were heterogeneous",
+        "The process-of-care model was rank deficient and was not interpreted",
+    ):
+        assert required_boundary in english
+
+    assert "—" not in english
+    assert "–" not in english
 
     assert "ESM Note 1. Time-to-event analysis boundary" in supplement
     assert "ESM Table 10. eICU exploratory fixed-transport" in supplement
@@ -122,12 +141,39 @@ def test_chinese_cited_manuscript_is_aligned_with_reviewed_english_source() -> N
         "ESM 图 8",
         "fig4_external_severity_validation",
         "作为外部验证队列",
+        "预先选择",
+        "我们假设",
     ):
         assert stale not in chinese
+
+    for required_boundary in (
+        "结局访问后探索性",
+        "P 值未经多重性校正",
+        "49.4%",
+        "390/843 例（46.3%）",
+        "ICU 住院层面的模型协方差",
+        "未按 `subject_id` 聚类",
+        "由于 eICU 输血计量单位不一致，未设置红细胞输注硬排除",
+        "秩亏的诊疗过程模型未作推断性解释",
+    ):
+        assert required_boundary in chinese
+
+    assert "—" not in chinese
+    assert "–" not in chinese
 
     assert all(f"### {heading}" in chinese for heading in ("目的", "方法", "结果", "结论"))
     assert "## 声明" in chinese
     assert "## 电子补充材料" in chinese
+
+
+def test_supplement_does_not_present_rank_deficient_process_model_as_inference() -> None:
+    supplement = read_text("dist/electronic_supplementary_material.md")
+
+    assert "ESM Table 9. Implemented exploratory logistic regression" in supplement
+    assert "Model 2 aOR" not in supplement
+    assert "0.000–inf" not in supplement
+    assert "is not presented as an inferential result" in supplement
+    assert "390 (46.3%) had missing INR" in supplement
 
 
 def test_preprocess_resolves_canonical_relative_figure_path(tmp_path: Path) -> None:

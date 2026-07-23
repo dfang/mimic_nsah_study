@@ -1,11 +1,11 @@
-bundle_version: "1.0"
+bundle_version: "1.1"
 stage: manuscript_review
 artifacts:
   - role: independent_review_report
     path: dist/manuscript_review_report.md
-    version: "2026-07-16-REVISE"
-    sha256: "b059803912f1c3402767f903750bb7a75c7a57d756078e103da3d6a55f0c0ec0"
+    version: "2026-07-23-READY"
+    sha256: "3f0bd49b5e1bc8e81f5cc2ef8ba45395c9597ad8ab4529b722b485f722a0f051"
   - role: author_and_authorized_reanalysis_actions
     path: dist/author_completion_checklist.md
-    version: "2026-07-16"
-    sha256: "ffc57d9409237c2a7e980b38c19261af198be8a1bcc6592361e794c0cd9c1ec1"
+    version: "2026-07-23"
+    sha256: "89889bbeb24bc270b246076e8a88f572434eb48121f760b67c4cc5354ce6121b"
