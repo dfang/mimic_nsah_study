@@ -1,14 +1,14 @@
 # Submission Render Preflight
 
-**Checked:** 2026-07-16
-**Verdict:** BLOCKED before citeproc resolution
+**Checked:** 2026-07-23
+**Verdict:** CITEPROC PREFLIGHT PASSED; final DOCX/PDF production remains blocked on author metadata and visual inspection
 
 ## Tool availability
 
 | Tool | Status | Role |
 | :--- | :--- | :--- |
-| Pandoc | Unavailable | Required citation resolution and bibliography generation |
-| Typst | Unavailable | Preferred optional PDF layout engine |
+| Pandoc | Available (3.10) | Citation resolution and bibliography generation |
+| Typst | Available (0.15.0) | Optional PDF layout engine; not used in this preflight |
 | Google Chrome | Available | Possible PDF renderer after Pandoc creates resolved HTML |
 | WeasyPrint | Available (Python package 69.0) | Diagnostic renderer only after citations are resolved |
 
@@ -20,12 +20,16 @@
 
 This prevents a visually plausible but bibliographically invalid PDF from being mistaken for a submission build.
 
-## Commands to run when Pandoc is available
+## Current citation preflight
+
+Pandoc 3.10 successfully rendered `manuscript_non_traumatic_sah_phenotypes_cited.md` on 2026-07-22 and `manuscript_non_traumatic_sah_phenotypes_cn_cited.md` on 2026-07-23 with `--citeproc`, `references.bib`, `journal.csl`, and `--fail-if-warnings` into temporary HTML files. No unresolved `[@key]` syntax remained. The ESM contains no Pandoc citation keys. Temporary output was not copied into `dist/`, and the existing stale PDFs were not overwritten.
+
+## Commands for the final render
 
 Run from `dist/` so relative bibliography, CSL, and figure paths resolve consistently:
 
 ```bash
-pandoc manuscript_non_traumatic_sah_phenotypes.md \
+pandoc manuscript_non_traumatic_sah_phenotypes_cited.md \
   --citeproc \
   --bibliography=references.bib \
   --csl=journal.csl \

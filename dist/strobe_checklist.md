@@ -2,7 +2,7 @@
 
 Study: Early physiological phenotypes and outcomes in critically ill adults with non-traumatic subarachnoid hemorrhage
 
-Design: Retrospective cohort study using MIMIC-IV 3.1 with external validation in eICU-CRD.
+Design: Retrospective cohort study using MIMIC-IV 3.1 with an exploratory fixed-transport assessment in eICU-CRD.
 
 This checklist is prepared for journal submission and should be reviewed by all authors before upload.
 
@@ -22,24 +22,24 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 10 | Explain study size | Cohort flow; ESM Tables 1–2 | Addressed |
 | 11 | Explain quantitative variables and grouping | Methods, Variables and preprocessing; ESM Tables 4–6 | Addressed |
 | 12a | Describe all statistical methods, including confounding control | Methods, Outcomes and statistical analysis | Addressed |
-| 12b | Describe methods used to examine subgroups/interactions | Methods, sensitivity analyses; ESM Table 12 | Addressed |
+| 12b | Describe methods used to examine subgroups/interactions | Methods, sensitivity analyses; ESM Tables 11 and 11A | Addressed |
 | 12c | Explain how missing data were addressed | Methods; ESM Table 5 | Addressed |
 | 12d | Explain cohort follow-up or matching methods | Methods; ESM cohort-flow tables | Addressed |
-| 12e | Describe sensitivity analyses | Methods; ESM Table 12 | Addressed |
-| 13a | Report numbers at each stage of study | ESM Fig. 8; ESM Tables 1–2 | Addressed |
-| 13b | Give reasons for non-participation/exclusion | Methods; ESM Fig. 8; ESM Tables 1–2 | Addressed |
-| 13c | Consider use of a flow diagram | ESM Fig. 8 | Addressed |
+| 12e | Describe sensitivity analyses | Methods; ESM Tables 11 and 11A | Addressed |
+| 13a | Report numbers at each stage of study | ESM Fig. 6; ESM Tables 1–2 | Addressed |
+| 13b | Give reasons for non-participation/exclusion | Methods; ESM Fig. 6; ESM Tables 1–2 | Addressed |
+| 13c | Consider use of a flow diagram | ESM Fig. 6 | Addressed |
 | 14a | Give characteristics of study participants | Results; ESM Table 7 | Addressed |
 | 14b | Indicate number with missing data for each variable | ESM Table 5 | Addressed |
-| 14c | Summarize follow-up time | ESM Tables 7 and 11 include length of stay; Cox model uses hospital stay | Partly addressed |
-| 15 | Report outcome event numbers or summary measures | Results; ESM Tables 7, 11, 12 | Addressed |
-| 16a | Give unadjusted and adjusted estimates with precision | Results; ESM Tables 9–10 | Addressed |
+| 14c | Summarize follow-up time | ESM Tables 7 and 10 include length of stay; the primary outcome is descriptive same-hospital mortality, not a landmark time-to-event estimand | Partly addressed |
+| 15 | Report outcome event numbers or summary measures | Results; ESM Tables 7, 10, and 11 | Addressed |
+| 16a | Give unadjusted and adjusted estimates with precision | Results; ESM Tables 9 and 11A | Addressed |
 | 16b | Report category boundaries for categorized continuous variables | Methods; ESM variable definitions | Addressed |
 | 16c | Consider translating relative risk into absolute risk | Results include absolute mortality gradients | Addressed |
-| 17 | Report other analyses, including sensitivity analyses | Results; ESM Table 12; ESM Figs. 1–8 | Addressed |
+| 17 | Report other analyses, including sensitivity analyses | Results; ESM Tables 11, 11A, and 12; ESM Figs. 1–6 | Addressed |
 | 18 | Summarize key results with reference to objectives | Discussion, first paragraph | Addressed |
 | 19 | Discuss limitations and direction/magnitude of potential bias | Discussion, limitations | Addressed |
-| 20 | Give cautious overall interpretation | Discussion and Conclusions | Addressed |
+| 20 | Give cautious overall interpretation | Discussion and Conclusion | Addressed |
 | 21 | Discuss generalisability | Discussion, limitations | Addressed |
 | 22 | Give source of funding and role of funders | Declarations | Needs author completion |
 
