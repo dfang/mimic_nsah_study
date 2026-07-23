@@ -19,7 +19,7 @@ Source: Benchimol EI, et al. The RECORD Statement. PLoS Med. 2015;12:e1001885. D
 | 12.2 | Describe data-cleaning methods | Methods, Variables and preprocessing; ESM Tables 4-6; analysis code | Addressed |
 | 12.3 | State whether person-, institution-, or other-level linkage occurred and describe linkage quality | MIMIC and eICU cohorts were analyzed separately; no cross-database linkage | Not applicable |
 | 13.1 | Detail participant selection, including data-quality, availability, and linkage filters | Methods; ESM Fig. 6; ESM Tables 1-2 | Addressed |
-| 19.1 | Discuss implications of data not collected for the research question, including misclassification, unmeasured confounding, missingness, and changing eligibility | Discussion, limitations | Addressed; code-validation limitation remains open |
+| 19.1 | Discuss implications of data not collected for the research question, including misclassification, unmeasured confounding, missingness, and changing eligibility | Discussion, limitations, including absent chart validation and 49.4% eICU INR missingness | Addressed as limitations; code validation remains desirable |
 | 22.1 | Explain access to protocol, raw data, or programming code | Data and Code availability; ESM reproducibility notes | Partly addressed; repository/release URL pending |
 
 ## Open items before submission

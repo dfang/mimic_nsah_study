@@ -1,4 +1,4 @@
-bundle_version: "1.0"
+bundle_version: "1.1"
 stage: release
 artifacts:
   - role: data_governance_decision
@@ -23,24 +23,24 @@ artifacts:
     sha256: "41de68c69df3a36b00cb0a97656cafab42dd51b0914b30faae9a8e3b567138bc"
   - role: artifact_provenance
     path: reproducibility/artifact-provenance.csv
-    version: "freeze-2026-07-16"
-    sha256: "209f0add964159ee288b068a52ecf60a540857298f74eff1dbf2fe9664a49450"
+    version: "review-2026-07-23"
+    sha256: "07bc1a29c789d827a5d87b6a63da0273446195ed8ad30b5ad71f4aad5c4bc0ee"
   - role: release_checklist
     path: reproducibility/release-checklist.md
     version: "freeze-2026-07-16"
     sha256: "0fd187f3ebf1e24ab9d6bddf88c67cc7ae0e31cd5aa06dcb2b0e895b75485f93"
   - role: issue_register
     path: reproducibility/issue-register.yaml
-    version: "2026-07-16"
-    sha256: "4f473c5f507c848b957990eb4ffb76a50a4bc517e909ce8ad60a3dae7305763f"
+    version: "2026-07-23"
+    sha256: "89f704351da0e8c15b2bc030a88928abca9178673cdef887c27783fdc92f766a"
   - role: random_seed_registry
     path: reproducibility/random-seeds.md
     version: "2026-07-16"
     sha256: "e827b204819248a05ef34296cb681062b9feee8908a7c3adfee58b646e8a9909"
   - role: deviation_log
     path: reproducibility/deviation-log.md
-    version: "2026-07-16"
-    sha256: "07e235d072ce2469730b56c8a23dda8bb28561ca57b5cc7d4a115c09a35a1ced"
+    version: "2026-07-23"
+    sha256: "50dd6153c25259f127e9616b0710d71c67bcef9c6166adb98e3c72f2baab1435"
   - role: freeze_validation
     path: reproducibility/freeze-validation.md
     version: "freeze-2026-07-16"
@@ -48,4 +48,4 @@ artifacts:
   - role: render_preflight
     path: reproducibility/render-preflight.md
     version: "2026-07-16"
-    sha256: "16a828ef370e97fcb28048819cd40d6623b9255be9eb9602005aede967a3609a"
+    sha256: "dfede40fb0a83aadb70b8aff24c5b0428c3652727c04e8db24c33f621da22ef4"

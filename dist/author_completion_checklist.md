@@ -18,9 +18,9 @@ This is the single handoff list for work that cannot be completed from the curre
 
 - [x] Retained and documented the descriptive same-hospital association; the current manuscript does not present a 48 h landmark or bedside prediction estimand.
 - [x] Counted 1,173 distinct `subject_id` values among 1,186 stays (13 repeated-subject admission rows) and froze subject-grouped full-pipeline bootstrap results.
-- [ ] Run an include-all sensitivity analysis without the post-entry `>=5 units/24 h` red-cell exclusion, or justify and freeze the exclusion as a post hoc design choice.
+- [x] Ran the include-all sensitivity analysis without the post-entry `>=5 units/24 h` red-cell exclusion; it added no otherwise eligible cases and did not change the primary cohort.
 - [ ] Validate or externally support the ICD/text NSAH identification algorithm, especially traumatic-SAH exclusion, and report expected misclassification.
-- [x] Reconciled implemented analyses with `protocol.md` and `sap.md`; both are frozen as retrospective/post-outcome documents with a deviations log.
+- [x] Reconciled the implemented exploratory regression formula with `sap.md` v1.0.1 and recorded the post-outcome documentation correction, unadjusted multiplicity, and stay-level covariance in the deviations log; no analysis result changed.
 - [x] Froze data provenance: query dates, source table versions, row counts, analysis environment, package lock, and immutable analysis artifact hashes.
 - [ ] Conduct a final disclosure-control review of all aggregate tables and figures before public release.
 
@@ -38,14 +38,14 @@ This is the single handoff list for work that cannot be completed from the curre
 - [x] Added the official MIMIC-IV 3.1, eICU-CRD 2.0, PhysioNet, STROBE, and RECORD citations where they support the text.
 - [x] Corrected SAHARA publication metadata and narrowed the claim to its supported 12-month outcome.
 - [x] Designated `manuscript_non_traumatic_sah_phenotypes_cited.md` as the reviewed English submission source and aligned `manuscript_non_traumatic_sah_phenotypes_cn_cited.md` to it on 2026-07-23.
-- [x] Reduced the structured abstract to 242 words, kept five keywords, reduced the 65-word take-home message to 53 words, and retained two correctly matched main figures.
+- [x] Kept the English structured abstract within 250 words, retained five keywords, kept the take-home message within 65 words, and retained two correctly matched main figures.
 - [x] Removed non-central prediction-model results from the submission manuscript because the current analysis does not establish a time-anchored, leakage-free bedside prediction estimand.
 - [x] Reframed mortality findings as descriptive same-hospital associations and documented the 0-48 h outcome-overlap limitation.
 - [x] Removed the admission-origin Cox/Kaplan-Meier results from the submission manuscript and documented the future-informed phenotype, within-window death, and competing-discharge boundary in the ESM.
 - [x] Corrected the analysis unit to 1,186 ICU stays from 1,173 patients and synchronized the subject-grouped bootstrap ARI (mean 0.8554).
 - [x] Corrected eICU fixed-transport counts to 540/221/82, de novo ARI to 0.0005, and candidate K range to K=2-5; interpretation is exploratory transport rather than confirmatory external validation.
 - [x] Reclassified the hemoglobin-free anemia analysis as post hoc exploratory and reported the specification-sensitive odds ratios (0.99 versus 1.54).
-- [x] Completed a language/humanization pass without changing reported study estimates.
+- [x] Completed a bilingual language, AI-pattern, and unsupported-claim audit without changing reported study estimates.
 - [x] Prepared STROBE and RECORD mappings and a submission-readiness review.
 - [x] Regenerated all referenced figures as 600 dpi PNG plus vector PDF and removed conflicting embedded figure numbers.
 - [x] Corrected the MIMIC-IV 3.1 coverage period to 2008-2022 against the official version page.

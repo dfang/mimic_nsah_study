@@ -66,7 +66,7 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 
 ### ESM Table 5. Feature availability and data quality
 
-| Feature | MIMIC missing N | MIMIC missing % | eICU missing N | eICU missing % |
+| Feature | MIMIC missing N (N=1,186) | MIMIC missing % | eICU missing N (N=903 before feature-completeness eligibility) | eICU missing % |
 | :--- | ---: | ---: | ---: | ---: |
 | `inr_max_48h` | 65 | 5.48% | 446 | 49.4% |
 | `creatinine_max_48h` | 1 | 0.08% | 31 | 3.4% |
@@ -76,6 +76,8 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 | `map_min_48h` | 0 | 0.00% | 10 | 1.1% |
 | `spo2_min_48h` | 0 | 0.00% | 10 | 1.1% |
 | `gcs_motor_min_48h` | 0 | 0.00% | 5 | 0.6% |
+
+Among the 843 patients who passed eICU feature-completeness eligibility, 390 (46.3%) had missing INR and received frozen MIMIC median imputation. The INR-free transport sensitivity expanded eligibility to 868 patients.
 
 ### ESM Table 6. Principal component loadings for the standardized feature space
 
@@ -94,7 +96,7 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 
 ### ESM Table 7. Baseline characteristics of the MIMIC-IV derivation cohort
 
-| Characteristic | Overall (N=1,186) | P1 (n=694) | P2 (n=384) | P3 (n=108) | p-value |
+| Characteristic | Overall (N=1,186) | P1 (n=694) | P2 (n=384) | P3 (n=108) | Unadjusted p-value |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Demographics** | | | | | |
 | Age, median [IQR], years | 61.0 [50.0–71.0] | 59.5 [49.0–70.0] | 62.0 [52.0–75.0] | 62.5 [48.0–70.0] | 0.026 |
@@ -132,7 +134,7 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 
 ### ESM Table 8. Early physiological profiles of identified phenotypes
 
-| Physiological variable (0–48 h) | Overall (N=1,186) | P1 (n=694) | P2 (n=384) | P3 (n=108) | p-value |
+| Physiological variable (0–48 h) | Overall (N=1,186) | P1 (n=694) | P2 (n=384) | P3 (n=108) | Unadjusted p-value |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | Hemoglobin min, g/dL | 11.10 [9.80–12.40] | 11.70 [10.80–12.80] | 10.25 [9.10–11.50] | 8.85 [7.38–10.43] | <0.001 |
 | GCS motor min | 5.00 [1.00–6.00] | 6.00 [5.00–6.00] | 1.00 [1.00–4.00] | 1.00 [1.00–5.00] | <0.001 |
@@ -143,34 +145,27 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 | INR max | 1.20 [1.10–1.30] | 1.10 [1.10–1.20] | 1.20 [1.10–1.30] | 1.80 [1.40–2.30] | <0.001 |
 | Platelets min, ×10³/µL | 188.0 [150.0–232.0] | 204.0 [169.25–245.0] | 174.0 [140.0–213.5] | 92.0 [40.75–160.25] | <0.001 |
 
-### ESM Table 9. Multivariable logistic regression models for in-hospital mortality
+### ESM Table 9. Implemented exploratory logistic regression for in-hospital mortality
 
-| Variable | Model 1 aOR (95% CI) | Model 1 p-value | Model 2 aOR (95% CI) | Model 2 p-value |
-| :--- | :---: | :---: | :---: | :---: |
-| Phenotype 2 vs P1 | 7.59 (5.07–11.36) | <0.001 | 4.02 (2.60–6.24) | <0.001 |
-| Phenotype 3 vs P1 | 21.21 (12.08–37.26) | <0.001 | 11.75 (6.52–21.20) | <0.001 |
-| Early anemia | 0.99 (0.68–1.44) | 0.955 | 1.01 (0.69–1.50) | 0.941 |
-| Age, per year | 1.03 (1.02–1.04) | <0.001 | 1.03 (1.02–1.04) | <0.001 |
-| Male sex | 1.21 (0.86–1.70) | 0.274 | 1.15 (0.81–1.63) | 0.430 |
-| Aneurysm diagnosis | 0.52 (0.24–1.14) | 0.101 | 0.55 (0.25–1.24) | 0.148 |
-| NSAH evidence level 2 | 0.88 (0.60–1.29) | 0.499 | 0.91 (0.59–1.42) | 0.686 |
-| NSAH evidence level 3 | 0.65 (0.38–1.09) | 0.102 | 0.78 (0.000–inf) | 1.000 |
-| Emergency admission | 2.13 (0.75–6.06) | 0.156 | 2.53 (0.76–8.38) | 0.129 |
-| Observation admission | 1.81 (0.59–5.54) | 0.298 | 2.21 (0.58–8.43) | 0.244 |
-| Urgent admission | 3.38 (1.11–10.33) | 0.033 | 3.63 (0.95–13.95) | 0.060 |
-| Nimodipine | — | — | 0.52 (0.46–0.58) | <0.001 |
-| Vasopressor use | — | — | 2.63 (1.74–3.98) | <0.001 |
-| Mechanical ventilation | — | — | 2.09 (1.40–3.11) | <0.001 |
-| RBC transfusion | — | — | 0.39 (0.13–1.17) | 0.094 |
-| CRRT | — | — | 0.80 (0.17–3.72) | 0.781 |
-| EVD or ICP monitoring | — | — | 1.41 (1.00–1.99) | 0.052 |
-| Fluid balance, L | — | — | 0.97 (0.92–1.02) | 0.233 |
+| Variable | aOR (95% CI) | Unadjusted p-value |
+| :--- | :---: | :---: |
+| Phenotype 2 vs P1 | 7.59 (5.07–11.36) | <0.001 |
+| Phenotype 3 vs P1 | 21.21 (12.08–37.26) | <0.001 |
+| Early anemia | 0.99 (0.68–1.44) | 0.955 |
+| Age, per year | 1.03 (1.02–1.04) | <0.001 |
+| Male sex | 1.21 (0.86–1.70) | 0.274 |
+| Aneurysm diagnosis | 0.52 (0.24–1.14) | 0.101 |
+| NSAH evidence level 2 | 0.88 (0.60–1.29) | 0.499 |
+| NSAH evidence level 3 | 0.65 (0.38–1.09) | 0.102 |
+| Emergency admission | 2.13 (0.75–6.06) | 0.156 |
+| Observation admission | 1.81 (0.59–5.54) | 0.298 |
+| Urgent admission | 3.38 (1.11–10.33) | 0.033 |
 
-Model 1 adjusted for baseline demographics, admission type, NSAH evidence level, aneurysm diagnosis, and early anemia. Model 2 additionally included process-of-care variables and is exploratory.
+The implemented model included phenotype, age, sex, admission type, NSAH evidence level, aneurysm diagnosis, and early anemia. The formula was documented after outcome access. Reported p-values were not adjusted for multiplicity, and confidence intervals used stay-level model covariance rather than `subject_id`-clustered covariance. A frozen process-of-care model is retained in the reproducibility output but is not presented as an inferential result: it included same-window treatment variables, NSAH evidence level, and an aneurysm-securing indicator that exactly duplicated evidence level 3, leaving those etiology coefficients non-estimable.
 
 ### ESM Note 1. Time-to-event analysis boundary
 
-Cox estimates are not reported because phenotype assignment uses measurements collected during 0-48 h while deaths can occur during that same interval. Starting follow-up at ICU admission would therefore use future-informed phenotype assignments, and treating live discharge as non-informative censoring would not address the competing-event structure. The submitted analysis is limited to descriptive same-hospital mortality associations. A future survival analysis would require a fixed landmark after phenotype ascertainment and an explicitly defined competing-risk estimand.
+Cox estimates are not reported because phenotype assignment uses measurements collected during 0-48 h while deaths can occur during that same interval. Starting follow-up at ICU admission would therefore use future-informed phenotype assignments, and treating live discharge as non-informative censoring would not address the competing-event structure. The submitted analysis is limited to descriptive associations with in-hospital mortality. A future survival analysis would require a fixed landmark after phenotype ascertainment and an explicitly defined competing-risk estimand.
 
 ### ESM Table 10. eICU exploratory fixed-transport cohort characteristics and outcomes
 
@@ -214,12 +209,12 @@ Cox estimates are not reported because phenotype assignment uses measurements co
 
 ### ESM Table 11A. Sensitivity of the adjusted anemia-mortality association to phenotype specification
 
-| Phenotype specification used for adjustment | Early-anemia aOR (95% CI) | p-value | Interpretation |
+| Phenotype specification used for adjustment | Early-anemia aOR (95% CI) | Unadjusted p-value | Interpretation |
 | :--- | :---: | :---: | :--- |
 | Primary phenotypes including minimum hemoglobin | 0.99 (0.68–1.44) | 0.955 | Potential overadjustment because hemoglobin informed both phenotype assignment and anemia status |
 | Phenotypes re-derived without hemoglobin | 1.54 (1.06–2.22) | 0.022 | Association differed after removal of hemoglobin from phenotype derivation |
 
-Both models adjusted for age, sex, admission type, NSAH evidence level, and aneurysm diagnosis. The differing estimates indicate sensitivity to phenotype specification and do not establish a causal effect of anemia.
+Both models included early anemia and adjusted for phenotype, age, sex, admission type, NSAH evidence level, and aneurysm diagnosis; phenotype assignment differed as shown in the first column. These post-outcome exploratory estimates used stay-level model covariance, and p-values were not adjusted for multiplicity. The differing estimates indicate sensitivity to phenotype specification and do not establish an independent prognostic or causal effect of anemia.
 
 ### ESM Table 12. Bootstrap stability analysis
 

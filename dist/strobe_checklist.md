@@ -21,7 +21,7 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 9 | Describe efforts to address sources of bias | Methods; Discussion limitations; sensitivity analyses | Addressed |
 | 10 | Explain study size | Cohort flow; ESM Tables 1–2 | Addressed |
 | 11 | Explain quantitative variables and grouping | Methods, Variables and preprocessing; ESM Tables 4–6 | Addressed |
-| 12a | Describe all statistical methods, including confounding control | Methods, Outcomes and statistical analysis | Addressed |
+| 12a | Describe all statistical methods, including confounding control | Methods, Outcomes and statistical analysis; ESM Table 9 notes the implemented formula, unadjusted multiplicity, and stay-level covariance | Addressed |
 | 12b | Describe methods used to examine subgroups/interactions | Methods, sensitivity analyses; ESM Tables 11 and 11A | Addressed |
 | 12c | Explain how missing data were addressed | Methods; ESM Table 5 | Addressed |
 | 12d | Explain cohort follow-up or matching methods | Methods; ESM cohort-flow tables | Addressed |
@@ -38,7 +38,7 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 16c | Consider translating relative risk into absolute risk | Results include absolute mortality gradients | Addressed |
 | 17 | Report other analyses, including sensitivity analyses | Results; ESM Tables 11, 11A, and 12; ESM Figs. 1–6 | Addressed |
 | 18 | Summarize key results with reference to objectives | Discussion, first paragraph | Addressed |
-| 19 | Discuss limitations and direction/magnitude of potential bias | Discussion, limitations | Addressed |
+| 19 | Discuss limitations and direction/magnitude of potential bias | Discussion, limitations, including post-outcome specification, outcome-window overlap, multiplicity, repeated admissions, and external missingness | Addressed |
 | 20 | Give cautious overall interpretation | Discussion and Conclusion | Addressed |
 | 21 | Discuss generalisability | Discussion, limitations | Addressed |
 | 22 | Give source of funding and role of funders | Declarations | Needs author completion |

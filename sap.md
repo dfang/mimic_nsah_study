@@ -4,10 +4,12 @@
 
 ```yaml
 study_id: "MIMIC-NSAH-PHENO-01"
-sap_version: "1.0.0"
+sap_version: "1.0.1"
 protocol_version: "1.0.0"
 status: FROZEN_EXPLORATORY
 freeze_decision: FROZEN_2026-07-16
+amendment_status: "POST_FREEZE_DOCUMENTATION_CORRECTION_2026-07-23"
+analysis_results_changed: false
 design_family: "phenotyping"
 confirmatory_status: "exploratory"
 outcome_access_before_freeze: "accessed"
@@ -209,19 +211,20 @@ K=4 仅作为高分辨率探索性敏感性，不得替换 K=3，除非另行修
 
 ## 9. 主要关联模型
 
-### 9.1 Primary outcome association
+### 9.1 Frozen implemented exploratory outcome association
 
-在 follow-up start 冻结后，拟合 logistic regression：
+当前结果表中的调整后 OR 来自以下已实现模型。该公式在结局访问后锁定，仅用于复现冻结的探索性结果，不是揭盲前预设的确认性主模型：
 
 ```text
-hospital_mortality ~ C(phenotype) + age + C(gender)
+hospital_mortality ~ C(phenotype) + early_anemia_all + age + C(gender)
                      + C(admission_type_group)
                      + C(nsah_evidence_level)
+                     + has_aneurysm_dx
 ```
 
-若 `nsah_evidence_level` 在分析人群中无变异则删除。P1 为参考，报告 P2 vs P1、P3 vs P1 的 OR、95% CI 和 P 值，并同时报告未调整模型。该模型估计条件性、非因果性关联。
+若 `nsah_evidence_level` 或 `has_aneurysm_dx` 无变异则删除。冻结运行中 `has_aneurysm_procedure` 与 `nsah_evidence_level = 3` 重复，因此未进入报告模型。P1 为参考，报告 P2 vs P1、P3 vs P1 的 OR、95% CI 和未校正 P 值。该模型估计条件性、非因果性关联。
 
-`has_aneurysm_dx`、`has_aneurysm_procedure` 与 evidence level 可能重复编码，冻结前应选定一个一致的诊断严重度表示，不能按拟合结果逐项挑选。
+由于 `early_anemia_all` 与聚类输入中的最低 Hb 来自同一窗口，该模型存在构造性重叠和过度调整风险。表型 OR 仅作为冻结的探索性关联报告；贫血项必须结合 9.2 节的 Hb-free 敏感性分析解释。未来独立验证应在结局访问前固定不含构造性重复的主要调整集。
 
 ### 9.2 Anemia analysis
 
@@ -238,6 +241,7 @@ hospital_mortality ~ C(phenotype) + age + C(gender)
 
 - 报告每个模型 N、events、参数自由度和收敛状态。
 - 检查完全/近完全分离、极端标准误、影响点和连续年龄线性假设。
+- 冻结回归使用 stay-level 模型协方差，未按 `subject_id` 聚类。主队列仅有 13 条重复患者住院记录，但 CI 仍可能略窄；该限制必须在手稿中披露。
 - 年龄非线性敏感性使用限制性立方样条（结点方案冻结后实施）。
 - 若稀疏或不收敛，减少非核心协变量或使用 Firth/惩罚 logistic；不得只报告成功模型。
 - 不以固定“10 EPV”作为充分性证明；按 CI 宽度、事件数和参数自由度判断信息量。
@@ -249,7 +253,7 @@ hospital_mortality ~ C(phenotype) + age + C(gender)
 - KM/Cox：活着出院是竞争事件，当前简单删失分析只作可视化/探索。若用于推断，预设 cumulative incidence 和 cause-specific hazard 或合适 competing-risk 方法。
 - 预测增量：GCS-only、连续八变量、phenotype-only 等仅为探索性描述；按 `subject_id` 分组的交叉验证，在每折内拟合全部 preprocessing。不得把 phenotype 研究改写为已验证预测模型。
 - 线性 logistic SHAP-style approximation：只解释死亡模型贡献，不解释 cluster assignment 或病因机制。
-- 0–48h 过程性治疗固定协变量模型：因时间依赖和 immortal-time/collider 风险，仅探索性，不进入主要结论。
+- 0–48h 过程性治疗固定协变量模型：因时间依赖和 immortal-time/collider 风险，仅探索性，不进入主要结论。冻结输出还同时纳入了与 `nsah_evidence_level = 3` 完全重复的动脉瘤处置指标，造成相关病因参数不可估计；该模型仅保留作审计，不作为推断结果展示。
 
 ## 11. 多重性
 
@@ -266,7 +270,7 @@ hypothesis_hierarchy:
     - "pairwise phenotype comparisons"
     - "process-of-care, survival, prediction and SHAP-style analyses"
     - "K=4 and alternative algorithms/features"
-control_method: "所有结果知情分析以效应量和 CI 为主；同一结局的 pairwise phenotype 比较用 Holm；成组次要特征检验用 Benjamini–Hochberg FDR；未校正探索性结果明确标注。"
+control_method: "冻结结果中的逐项 P 值未统一校正。所有结果知情分析以效应量和 CI 为主，并明确标注未校正和探索性；未来确认性验证应在结局访问前固定检验族及 Holm、FDR 或其他控制方法。"
 subgroups:
   prespecified:
     - "strict aneurysm evidence"
@@ -362,9 +366,9 @@ eICU 不得重新拟合这些参数后仍称为 frozen transport。De novo eICU 
 | Cluster-wise stability | 已输出 ARI、same-label、cluster Jaccard、assignment distance/margin | 保留多 seed 为后续扩展，不影响本探索性冻结 |
 | 明确 outcome follow-up start | 已冻结为全住院描述性关联，follow-up start 不适用 | 保持手稿非预测、非因果措辞 |
 | 48h 输入观察机会 | 主队列仅要求 LOS≥24h | 报告截短窗口；将 LOS≥48h/landmark 作为关键分析 |
-| 主要回归避免构造性重复 | 当前主调整模型同时含 phenotype 和 anemia，并动态加入重叠 aneurysm fields | 固定主要 formula；贫血移至探索/Hb-free 敏感性；统一 aneurysm covariate |
+| 主要回归避免构造性重复 | 冻结实现同时含 phenotype、anemia 和 `has_aneurysm_dx`；`has_aneurysm_procedure` 因与 evidence level 重复而跳过 | 已在 v1.0.1 固定实际报告公式；保持探索性定位，并将 Hb-free 分析作为贫血解释的必要敏感性分析 |
 | Competing discharge | 当前 KM/Cox 将活着出院删失 | 降级为探索或实施 competing-risk 方法 |
-| 多重性 | 主要对比以效应量/CI解释；探索性逐项 P 值仍未统一校正 | 作为解释限制保留，不用于确认性结论 |
+| 多重性 | 主要对比以效应量/CI解释；探索性逐项 P 值未统一校正 | 在手稿中明确标注未校正，不用于确认性结论 |
 | 样本量/事件依据 | 已登记 cohort、事件和最小表型规模 | 见冻结证据与 ESM |
 | 环境和 artifact provenance | 精确依赖锁、授权 clean run、job provenance 和 hashes 已登记 | 由冻结 tag 作为不可变入口 |
 
@@ -392,3 +396,4 @@ eICU 不得重新拟合这些参数后仍称为 frozen transport。De novo eICU 
 | 0.1.0 | 2026-07-15 | DRAFT_BLOCKED | 根据现有实现重建 SAP；固定探索性定位并记录时间契约、患者依赖、bootstrap 和多重性缺口。 |
 | 0.2.0 | 2026-07-16 | READY_FOR_AUTHORIZED_RUN | 固定同次住院描述性目标、患者分组完整流程重采样、include-all 输血敏感性和精确环境锁路径。 |
 | 1.0.0 | 2026-07-16 | FROZEN_EXPLORATORY | 完成授权重跑、结果复核、聚合披露审查和冻结证据登记。 |
+| 1.0.1 | 2026-07-23 | POST_FREEZE_DOCUMENTATION_CORRECTION | 按独立稿件复核纠正实际回归公式、结局访问状态、多重性和重复患者协方差说明；未重跑分析，冻结数值不变。 |
