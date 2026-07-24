@@ -2,7 +2,7 @@
 
 Study: Early physiological phenotypes and outcomes in critically ill adults with non-traumatic subarachnoid hemorrhage
 
-Design: Retrospective cohort study using MIMIC-IV 3.1 with an exploratory fixed-transport assessment in eICU-CRD.
+Design: Retrospective cohort study using MIMIC-IV 3.1 with exploratory frozen transport of the MIMIC-anchored assignment rule to eICU-CRD; authorized immutable-transform rerun completed.
 
 This checklist is prepared for journal submission and should be reviewed by all authors before upload.
 
@@ -25,7 +25,7 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 12b | Describe methods used to examine subgroups/interactions | Methods, sensitivity analyses; ESM Tables 11 and 11A | Addressed |
 | 12c | Explain how missing data were addressed | Methods; ESM Table 5 | Addressed |
 | 12d | Explain cohort follow-up or matching methods | Methods; ESM cohort-flow tables | Addressed |
-| 12e | Describe sensitivity analyses | Methods; ESM Tables 11 and 11A | Addressed |
+| 12e | Describe sensitivity analyses | Methods; ESM Tables 10A, 11, and 11A | Addressed |
 | 13a | Report numbers at each stage of study | ESM Fig. 6; ESM Tables 1–2 | Addressed |
 | 13b | Give reasons for non-participation/exclusion | Methods; ESM Fig. 6; ESM Tables 1–2 | Addressed |
 | 13c | Consider use of a flow diagram | ESM Fig. 6 | Addressed |
@@ -36,7 +36,7 @@ This checklist is prepared for journal submission and should be reviewed by all 
 | 16a | Give unadjusted and adjusted estimates with precision | Results; ESM Tables 9 and 11A | Addressed |
 | 16b | Report category boundaries for categorized continuous variables | Methods; ESM variable definitions | Addressed |
 | 16c | Consider translating relative risk into absolute risk | Results include absolute mortality gradients | Addressed |
-| 17 | Report other analyses, including sensitivity analyses | Results; ESM Tables 11, 11A, and 12; ESM Figs. 1–6 | Addressed |
+| 17 | Report other analyses, including sensitivity analyses | Results; ESM Tables 10A, 11, 11A, and 12; ESM Figs. 1–6 | Addressed |
 | 18 | Summarize key results with reference to objectives | Discussion, first paragraph | Addressed |
 | 19 | Discuss limitations and direction/magnitude of potential bias | Discussion, limitations, including post-outcome specification, outcome-window overlap, multiplicity, repeated admissions, and external missingness | Addressed |
 | 20 | Give cautious overall interpretation | Discussion and Conclusion | Addressed |

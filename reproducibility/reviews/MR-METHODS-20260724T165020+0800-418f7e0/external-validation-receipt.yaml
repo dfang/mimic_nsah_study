@@ -1,0 +1,60 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: external-validation
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:4ff05e38e4fc6ed8832a7a278f648218bff76952b1da149c8d705e6cb79eadc6"
+input_hashes:
+  - role: validation-plan
+    path: reproducibility/eicu-validation-plan.yaml
+    sha256: "56dd095913bf2993d7055fbb5cafa54627757bdbaed1467e10d230a5cd0cd43a"
+  - role: validation-results
+    path: reproducibility/eicu-validation-results.yaml
+    sha256: "e4ef13fbc5efbd4dbf09316fd1546666082f5d0825a5e37313df6255d7ddcbb7"
+  - role: analysis
+    path: scripts/15_run_eicu_external_validation.py
+    sha256: "2594a609cbc498eca863b8837acd83b6405a0e72dc83809031e2515180127293"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Intended frozen-transport contract, current fail-closed evaluator, historical aggregate results, mapping, missingness, and external criteria."
+  not_assessed:
+    - "Exact private transform artifact, byte identity of the historical runtime, authorized rerun, and hospital-clustered uncertainty."
+recommendation: revise
+findings:
+  - id: "METH-001"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: validation
+    domain: reproducibility
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Take-home, abstract, introduction, and Discussion"
+    evidence: "The body documents MIMIC-only reconstruction and no fitting, tuning, or recalibration on eICU, supporting the frozen-transport method label; the exact historical serialized artifact is not retained."
+    risk: "The method label may be mistaken for proof of byte-identical historical reproducibility."
+    recommended_action: "Retain historical exploratory frozen transport and keep the artifact-level verification limitation explicit."
+    owner: authorized analyst and authors
+    verification: "Wording distinguishes no-eICU-refitting transport from exact artifact replay; a rerun is optional unless exact reproducibility is claimed."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-004"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: validation
+    domain: data
+    artifact: 14_create_eicu_external_validation_cohort.sql
+    location: "Feature mappings and multicenter uncertainty"
+    evidence: "Cross-database feature definitions differ, INR imputation is extensive and informative, and hospital-clustered uncertainty is not assessed."
+    risk: "Crude ordering may not represent transport of equivalent measurements across sites."
+    recommended_action: "Provide mapping deviations and keep external inference descriptive; add site-aware precision if rerun."
+    owner: analyst, statistician, and authors
+    verification: "Crosswalk and limitation are complete, or new hospital-aware results are reported."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

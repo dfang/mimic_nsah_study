@@ -7,9 +7,9 @@ artifacts:
     sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
   - role: statistical_analysis_plan
     path: sap.md
-    version: "1.0.1-POST_FREEZE_DOCUMENTATION_CORRECTION"
-    sha256: "9025918a59cea1002ee0985e9a831595f090db7acf88bfda3d86da88c80e6d16"
+    version: "1.0.1-20260724-EVIDENCE_BOUNDARY_CORRECTION"
+    sha256: "d32cc1ebd2f62d6bb8000f185ffbe864f88023ca8a4d4d1ebb85d3f146d03354"
   - role: deviation_log
     path: reproducibility/deviation-log.md
-    version: "review-20260723"
-    sha256: "50dd6153c25259f127e9616b0710d71c67bcef9c6166adb98e3c72f2baab1435"
+    version: "review-20260724"
+    sha256: "3e9d6e162c01ba606b4ba4315d3d875ea8933fa2d9fba092632f9b8cb277d5e0"

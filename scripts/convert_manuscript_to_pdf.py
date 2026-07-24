@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Convert the reviewed English manuscript and supplements to publication-quality PDF.
+Convert the reviewed bilingual manuscripts and supplements to publication-quality PDF.
 Professional typography with journal-style formatting.
 """
 import os
+import subprocess
 import sys
 
 if __package__:
@@ -288,7 +289,7 @@ figure figcaption { font-size: 9pt; }
 """
 
 
-def preprocess_markdown(md_path):
+def preprocess_markdown(md_path, resource_base_dir=None):
     """Read markdown and fix image paths to absolute."""
     with open(md_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -305,7 +306,9 @@ def preprocess_markdown(md_path):
     content = re.sub(r"\$K\s*=\s*([0-9]+)\$", r"K=\1", content)
     content = re.sub(r"\$\s*([^$]{1,24})\s*\$", r"\1", content)
 
-    base_dir = os.path.dirname(os.path.abspath(md_path))
+    base_dir = os.path.abspath(
+        resource_base_dir or os.path.dirname(os.path.abspath(md_path))
+    )
     relative_image = r"(!\[[^\]]*\]\()(?!(?:[a-z][a-z0-9+.-]*:|/|#))([^)]+)\)"
     content = re.sub(
         relative_image,
@@ -356,9 +359,49 @@ def build_html(body_html, css, lang="en"):
 </html>"""
 
 
-def convert(md_path, pdf_path, css, lang="en"):
+def resolve_citations(md_path, resolved_path, bibliography, csl):
+    """Resolve all citations to standalone HTML through Pandoc citeproc."""
+    os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+    command = [
+        "pandoc",
+        md_path,
+        "--from=markdown",
+        "--to=html5",
+        "--citeproc",
+        f"--bibliography={bibliography}",
+        f"--csl={csl}",
+        "--fail-if-warnings",
+        "--standalone",
+        f"--resource-path={os.path.dirname(md_path)}",
+        f"--output={resolved_path}",
+    ]
+    subprocess.run(command, check=True)
+    return resolved_path
+
+
+def convert_resolved_html(
+    resolved_path, pdf_path, css, resource_base_dir=None
+):
+    """Render a citeproc-resolved HTML intermediate without a second citation engine."""
+    with open(resolved_path, "r", encoding="utf-8") as resolved_file:
+        full_html = resolved_file.read()
+    if re.search(r"\[@[A-Za-z0-9_:-]+", full_html):
+        raise RuntimeError("Resolved HTML still contains unresolved Pandoc citation keys.")
+    full_html = full_html.replace("</head>", f"<style>{css}</style>\n</head>", 1)
+    pdf_dir = os.path.dirname(pdf_path)
+    if pdf_dir:
+        os.makedirs(pdf_dir, exist_ok=True)
+    HTML(
+        string=full_html,
+        base_url=os.path.abspath(resource_base_dir or os.path.dirname(resolved_path)),
+    ).write_pdf(pdf_path)
+    size_kb = os.path.getsize(pdf_path) / 1024
+    print(f"  ✓ {os.path.basename(pdf_path)}  ({size_kb:.0f} KB)")
+
+
+def convert(md_path, pdf_path, css, lang="en", resource_base_dir=None):
     """Full conversion pipeline: MD → HTML → PDF."""
-    md_content = preprocess_markdown(md_path)
+    md_content = preprocess_markdown(md_path, resource_base_dir=resource_base_dir)
     if re.search(r"\[@[A-Za-z0-9_:-]+", md_content):
         raise RuntimeError(
             "Submission PDF generation requires a citeproc-resolved Markdown "
@@ -378,20 +421,25 @@ def convert(md_path, pdf_path, css, lang="en"):
 
 # ═══════════════════════════════════════════════════════════════
 def main() -> None:
-    """Generate the reviewed English manuscript and supporting PDFs under dist/pdf/."""
+    """Generate the reviewed bilingual manuscripts and supporting PDFs under dist/pdf/."""
     accept_legacy_date_arg(sys.argv[1:], "convert_manuscript_to_pdf.py")
     base = "dist"
 
     print(f"Converting manuscripts to PDF in {base}...\n")
 
-    convert(
-        f"{base}/manuscript_non_traumatic_sah_phenotypes_cited.md",
-        f"{base}/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf",
-        CSS_EN,
-        lang="en",
-    )
-
-    optional_outputs = [
+    outputs = [
+        (
+            f"{base}/manuscript_non_traumatic_sah_phenotypes_cited.md",
+            f"{base}/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf",
+            CSS_EN,
+            "en",
+        ),
+        (
+            f"{base}/manuscript_non_traumatic_sah_phenotypes_cn_cited.md",
+            f"{base}/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf",
+            CSS_CN,
+            "zh-CN",
+        ),
         (
             f"{base}/electronic_supplementary_material.md",
             f"{base}/pdf/electronic_supplementary_material.pdf",
@@ -405,9 +453,20 @@ def main() -> None:
             "en",
         ),
     ]
-    for md_path, pdf_path, css, lang in optional_outputs:
+    bibliography = f"{base}/references.bib"
+    csl = f"{base}/journal.csl"
+    resolved_dir = f"{base}/pdf/resolved"
+    for md_path, pdf_path, css, lang in outputs:
         if os.path.exists(md_path):
-            convert(md_path, pdf_path, css, lang=lang)
+            resolved_name = os.path.splitext(os.path.basename(pdf_path))[0] + ".html"
+            resolved_path = os.path.join(resolved_dir, resolved_name)
+            resolve_citations(md_path, resolved_path, bibliography, csl)
+            convert_resolved_html(
+                resolved_path,
+                pdf_path,
+                css,
+                resource_base_dir=base,
+            )
 
     print(f"\nDone → {base}/pdf/")
 

@@ -20,7 +20,7 @@ This Electronic Supplementary Material (ESM) accompanies the Intensive Care Medi
 | 08 | Sensitivity cohort: ICU length of stay ≥48 h | 1,005 | 996 |
 | 09 | Sensitivity cohort: no recorded RBC transfusion in 0–48 h | 1,162 | 1,149 |
 
-### ESM Table 2. eICU fixed-transport cohort-flow counts
+### ESM Table 2. eICU frozen-transport cohort-flow counts
 
 | Step | Definition | Unit stays | Patients |
 | :--- | :--- | ---: | ---: |
@@ -62,7 +62,7 @@ The algorithm intentionally did not require aneurysm diagnosis or aneurysm-secur
 | Hematologic | `hb_min_48h_all` | Minimum hemoglobin | 0–48 h after ICU admission | Z-score standardization |
 | Hematologic | `platelet_min_48h` | Minimum platelet count | 0–48 h after ICU admission | Z-score standardization |
 
-Missing values were imputed using MIMIC-IV derivation-cohort medians. The exploratory eICU transport assessment used frozen MIMIC-IV medians, scaler parameters, PCA loadings, and K-means centroids.
+Missing values were imputed using MIMIC-IV derivation-cohort medians. Before eICU evaluation, MIMIC-IV medians, scaler parameters, PCA loadings, and K-means centroids were exported to a versioned `DERIVED_SENSITIVE` transform bundle. The fail-closed evaluation entry point loaded this bundle without fitting, tuning, or recalibration on eICU. The private bundle is not distributed publicly; its SHA-256 hash and execution provenance are recorded in the reproducibility metadata.
 
 ### ESM Table 5. Feature availability and data quality
 
@@ -77,7 +77,7 @@ Missing values were imputed using MIMIC-IV derivation-cohort medians. The explor
 | `spo2_min_48h` | 0 | 0.00% | 10 | 1.1% |
 | `gcs_motor_min_48h` | 0 | 0.00% | 5 | 0.6% |
 
-Among the 843 patients who passed eICU feature-completeness eligibility, 390 (46.3%) had missing INR and received frozen MIMIC median imputation. The INR-free transport sensitivity expanded eligibility to 868 patients.
+Among the 843 patients who passed eICU feature-completeness eligibility, 390 (46.3%) had missing INR and received the frozen MIMIC-derived median. The INR-free sensitivity expanded eligibility to 868 patients.
 
 ### ESM Table 6. Principal component loadings for the standardized feature space
 
@@ -167,11 +167,11 @@ The implemented model included phenotype, age, sex, admission type, NSAH evidenc
 
 Cox estimates are not reported because phenotype assignment uses measurements collected during 0-48 h while deaths can occur during that same interval. Starting follow-up at ICU admission would therefore use future-informed phenotype assignments, and treating live discharge as non-informative censoring would not address the competing-event structure. The submitted analysis is limited to descriptive associations with in-hospital mortality. A future survival analysis would require a fixed landmark after phenotype ascertainment and an explicitly defined competing-risk estimand.
 
-### ESM Table 10. eICU exploratory fixed-transport cohort characteristics and outcomes
+### ESM Table 10. Exploratory eICU frozen-transport cohort characteristics and outcomes
 
-| Characteristic | Overall (N=843) | P1 (n=540) | P2 (n=221) | P3 (n=82) |
+| Characteristic | Overall (N=843) | P1 (n=539) | P2 (n=222) | P3 (n=82) |
 | :--- | :---: | :---: | :---: | :---: |
-| Age, median, years | 60.0 | 59.0 | 61.0 | 63.0 |
+| Age, median, years | 58.0 | 57.0 | 59.5 | 60.5 |
 | Hemoglobin min, g/dL | 11.4 | 11.9 | 10.7 | 9.5 |
 | GCS motor min | 6.0 | 6.0 | 4.0 | 4.0 |
 | MAP min, mmHg | 58.0 | 62.0 | 51.0 | 51.5 |
@@ -180,20 +180,32 @@ Cox estimates are not reported because phenotype assignment uses measurements co
 | Creatinine max, mg/dL | 0.81 | 0.75 | 0.81 | 1.54 |
 | INR max | 1.1 | 1.1 | 1.1 | 1.5 |
 | Platelets min, ×10³/µL | 200.0 | 207.0 | 203.0 | 146.0 |
-| APACHE score, median | 43.0 | 36.0 | 57.5 | 79.0 |
+| APACHE score, median | 43.0 | 36.0 | 57.0 | 79.0 |
 | APS score, median | 33.0 | 27.0 | 49.0 | 67.0 |
 | Predicted hospital mortality, median | 0.112 | 0.069 | 0.243 | 0.426 |
-| Early anemia (0–48 h), n (%) | 183 (21.7%) | 60 (11.4%) | 76 (34.7%) | 47 (58.0%) |
+| Early anemia (0–48 h), n (%) | 183 (21.7%) | 60 (11.4%) | 76 (34.5%) | 47 (58.0%) |
 | RBC transfusion (0–48 h), n (%) | 24 (2.8%) | <10 | 13 (5.9%) | <10 |
-| Hospital mortality, n (%) | 121 (14.35%) | 29 (5.37%) | 57 (25.79%) | 35 (42.68%) |
-| ICU mortality, n (%) | 75 (8.90%) | 15 (2.78%) | 36 (16.29%) | 24 (29.27%) |
+| Hospital mortality, n (%) | 121 (14.35%) | 29 (5.38%) | 57 (25.68%) | 35 (42.68%) |
+| ICU mortality, n (%) | 75 (8.90%) | 15 (2.78%) | 36 (16.22%) | 24 (29.27%) |
+
+### ESM Table 10A. eICU hospital-level robustness
+
+| Metric | Estimate | Hospital-clustered 95% percentile interval |
+| :--- | ---: | :---: |
+| P1 hospital mortality | 5.38% | 3.68%-7.39% |
+| P2 hospital mortality | 25.68% | 20.75%-31.43% |
+| P3 hospital mortality | 42.68% | 32.84%-52.44% |
+| P2-P1 risk difference | 20.30 percentage points | 15.06-25.83 |
+| P3-P1 risk difference | 37.30 percentage points | 26.99-47.37 |
+
+Intervals used 2,000 bootstrap replicates with hospitals sampled with replacement and all stays in sampled hospitals retained (`random_seed=42`). In leave-one-hospital-out analysis, the P1<P2<P3 mortality order was retained after every hospital omission (66/66); P2-P1 ranged from 19.15 to 21.53 percentage points and P3-P1 from 35.13 to 39.42. Only aggregate results were retained.
 
 ### ESM Table 11. Sensitivity analysis summary
 
 | Analysis | N | P1 mortality | P2 mortality | P3/P4 mortality | Minimum subgroup N |
 | :--- | ---: | :---: | :---: | :---: | ---: |
 | MIMIC primary log-PCA | 1,186 | 6.34% | 32.55% | 61.11% (P3) | 108 |
-| eICU frozen transport | 843 | 5.37% | 25.79% | 42.68% (P3) | 82 |
+| eICU frozen transport | 843 | 5.38% | 25.68% | 42.68% (P3) | 82 |
 | MIMIC complete case | 1,120 | 6.53% | 38.58% | 65.07% (P3) | 63 |
 | MIMIC strict aneurysm | 763 | 5.73% | 30.82% | 50.00% (P3) | 48 |
 | MIMIC ICU LOS ≥48 h | 1,005 | 5.96% | 29.23% | 58.06% (P3) | 93 |
@@ -216,13 +228,15 @@ Cox estimates are not reported because phenotype assignment uses measurements co
 
 Both models included early anemia and adjusted for phenotype, age, sex, admission type, NSAH evidence level, and aneurysm diagnosis; phenotype assignment differed as shown in the first column. These post-outcome exploratory estimates used stay-level model covariance, and p-values were not adjusted for multiplicity. The differing estimates indicate sensitivity to phenotype specification and do not establish an independent prognostic or causal effect of anemia.
 
-### ESM Table 12. Bootstrap stability analysis
+### ESM Table 12. Bootstrap overall partition stability
 
 | Metric | Mean | Standard deviation | Minimum | Maximum |
 | :--- | ---: | ---: | ---: | ---: |
 | Adjusted Rand Index (ARI) | 0.8554 | 0.0695 | 0.6015 | 0.9692 |
 | Same ordered label rate | 94.93% | 2.54% | 85.67% | 98.74% |
 | Minimum cluster size, N | 110.7 | 16.3 | 51.0 | 147.0 |
+
+Cluster-specific Jaccard values, assignment-uncertainty distributions, and a multiple-seed summary were not preserved in the public frozen result and are therefore not assessed for this release. The reported ARI supports overall partition stability only.
 
 ## ESM 4. Supplementary Figures
 
@@ -242,7 +256,7 @@ Both models included early anemia and adjusted for phenotype, age, sex, admissio
 **ESM Fig. 5.** Loadings of the eight physiological variables on the first three principal components.
 
 ![Cohort flowchart and analysis design](figures/fig1_cohort_flowchart.png)
-**ESM Fig. 6.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and exploratory eICU fixed transport.
+**ESM Fig. 6.** Cohort selection and analysis design. Counts were derived from BigQuery intermediate cohort-flow tables. The lower panel summarizes MIMIC phenotype derivation and exploratory eICU frozen transport.
 
 ## ESM 5. Reproducibility Notes
 
@@ -263,7 +277,7 @@ Both models included early anemia and adjusted for phenotype, age, sex, admissio
 | Primary physiology window | 0–48 h after ICU admission |
 | Primary feature count | 8 variables |
 | Missing-data rule | ≤2 missing core features |
-| Imputation | MIMIC-IV derivation-cohort median; frozen for eICU |
+| Imputation | Frozen MIMIC-IV derivation-cohort medians loaded from the private transform bundle |
 | Skewed-feature transform | log1p for creatinine and INR |
 | Standardization | MIMIC-IV derivation-cohort mean and standard deviation |
 | PCA components retained | 3 |
@@ -272,8 +286,8 @@ Both models included early anemia and adjusted for phenotype, age, sex, admissio
 | K-means random state | 42 |
 | K-means n_init | 100 |
 | Bootstrap iterations | 200 |
-| External transport assessment | Frozen MIMIC medians, scaler, PCA loadings, and centroids applied to eICU; interpreted as exploratory |
+| External transport assessment | Pure frozen evaluation from a versioned, privately hashed `DERIVED_SENSITIVE` transform bundle; no eICU fitting, tuning, or recalibration |
 
 ### BigQuery provenance
 
-The project-level BigQuery dataset for the current non-traumatic SAH study is `mimic-study-498508.non_traumatic_sah_study`. MIMIC-IV source tables were drawn from PhysioNet MIMIC-IV 3.1 datasets. eICU validation used the eICU-CRD source tables available through PhysioNet. The exact final table names should be verified after the final BigQuery rerun and recorded in the repository release notes before journal submission.
+The project-level BigQuery dataset for the current non-traumatic SAH study is `mimic-study-498508.non_traumatic_sah_study`; eICU outputs were written to `mimic-study-498508.eicu_sah_validation`. MIMIC-IV source tables were drawn from PhysioNet MIMIC-IV 3.1 datasets, and eICU validation used PhysioNet eICU-CRD 2.0 source tables. The authorized frozen-transport rerun completed on 2026-07-24. Because the project operates under BigQuery sandbox expiration constraints, these working tables are temporary; the public aggregate result contract, bundle hash, and job identifiers provide the persistent audit record.

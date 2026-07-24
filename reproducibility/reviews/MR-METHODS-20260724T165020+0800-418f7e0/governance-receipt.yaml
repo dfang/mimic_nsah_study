@@ -1,0 +1,20 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: governance
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:1c2361c77295def66c20b5aba5f484e11137079939f4d0161e475424b198d763"
+input_hashes:
+  - role: governance-policy
+    path: DATA_GOVERNANCE.md
+    sha256: "91e96feaa11967711b7a0a9ddb64baf934268213a614ecbdcbf285a5c4193cf1"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Public manuscript, code, aggregate result contracts, and non-sensitive provenance only."
+  not_assessed:
+    - "Patient-level data, credentials, query caches, and private frozen-transform parameters."
+recommendation: proceed
+findings: []

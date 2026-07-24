@@ -23,13 +23,16 @@ This is the single handoff list for work that cannot be completed from the curre
 - [x] Reconciled the implemented exploratory regression formula with `sap.md` v1.0.1 and recorded the post-outcome documentation correction, unadjusted multiplicity, and stay-level covariance in the deviations log; no analysis result changed.
 - [x] Froze data provenance: query dates, source table versions, row counts, analysis environment, package lock, and immutable analysis artifact hashes.
 - [ ] Conduct a final disclosure-control review of all aggregate tables and figures before public release.
+- [ ] Provide dated author/institution approval for public aggregate disclosure; repository visibility is not an approval record.
+- [x] Exported and privately hashed a versioned `DERIVED_SENSITIVE` MIMIC transform bundle, reran eICU through the fail-closed pure-evaluation entry point, and reconciled the resulting 539/222/82 aggregates on 2026-07-24.
+- [x] Assessed eICU hospital dependence with 2,000 hospital-cluster bootstrap replicates and 66 leave-one-hospital-out analyses; only aggregate outputs without hospital identifiers were retained.
 
 ## C. Technical production before upload
 
-- [ ] Render the English manuscript and ESM with a verified Pandoc/citeproc toolchain; visually inspect numeric citation order, reference de-duplication, DOI links, and reference typography.
-- [ ] Produce the journal-preferred editable DOCX and a submission PDF. Current PDFs in `dist/pdf/` predate these revisions and must not be submitted.
+- [x] Render the English manuscript, Chinese reference manuscript, ESM, and STROBE checklist with Pandoc 3.10 citeproc and WeasyPrint 69.0; inspect every page for pagination, citations, tables, figures, and reference typography.
+- [ ] Produce the journal-preferred editable DOCX. Current PDFs must be regenerated from the post-rerun sources and remain non-submission artifacts while author metadata, disclosure approval, and independent rereview are open.
 - [x] Regenerate charts as vector artwork or at the journal-required effective resolution. Referenced figures now have 600 dpi PNG and vector PDF versions; final production should prefer the vector files.
-- [ ] Add the complete title page and corresponding-author details to the ESM PDF.
+- [ ] Add the complete title page and corresponding-author details to the ESM source/PDF after authors supply them.
 - [ ] Recheck final word count, abstract length, take-home message length, figure/table limits, accessibility text, and file naming after typesetting.
 
 ## D. Already completed in this revision
@@ -43,7 +46,8 @@ This is the single handoff list for work that cannot be completed from the curre
 - [x] Reframed mortality findings as descriptive same-hospital associations and documented the 0-48 h outcome-overlap limitation.
 - [x] Removed the admission-origin Cox/Kaplan-Meier results from the submission manuscript and documented the future-informed phenotype, within-window death, and competing-discharge boundary in the ESM.
 - [x] Corrected the analysis unit to 1,186 ICU stays from 1,173 patients and synchronized the subject-grouped bootstrap ARI (mean 0.8554).
-- [x] Corrected eICU fixed-transport counts to 540/221/82, de novo ARI to 0.0005, and candidate K range to K=2-5; interpretation is exploratory transport rather than confirmatory external validation.
+- [x] Completed pure frozen eICU re-execution with counts 539/222/82 and de novo ARI -0.0017; interpretation remains exploratory transport rather than confirmatory external validation.
+- [x] Added hospital-clustered precision and single-hospital influence analyses; the mortality order remained in all 66 leave-one-hospital-out analyses.
 - [x] Reclassified the hemoglobin-free anemia analysis as post hoc exploratory and reported the specification-sensitive odds ratios (0.99 versus 1.54).
 - [x] Completed a bilingual language, AI-pattern, and unsupported-claim audit without changing reported study estimates.
 - [x] Prepared STROBE and RECORD mappings and a submission-readiness review.

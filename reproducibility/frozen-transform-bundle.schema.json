@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Access-controlled MIMIC phenotype frozen transform bundle",
+  "type": "object",
+  "required": ["artifact_version", "artifact_class", "transforms"],
+  "properties": {
+    "artifact_version": {"type": "string"},
+    "artifact_class": {"const": "DERIVED_SENSITIVE"},
+    "source_commit": {"type": "string"},
+    "source_run_id": {"type": "string"},
+    "transforms": {
+      "type": "object",
+      "required": ["primary", "hb_free", "inr_free"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["features", "imputation_medians", "scaler_mean", "scaler_scale", "pca_mean", "pca_components", "centroids_pc", "centers_z"]
+      }
+    }
+  }
+}

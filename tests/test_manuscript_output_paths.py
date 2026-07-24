@@ -21,6 +21,23 @@ def test_pdf_converter_uses_stable_dist_directory() -> None:
     assert "datetime" not in script
 
 
+def test_pdf_converter_rebuilds_bilingual_manuscript_and_supporting_files() -> None:
+    script = read_text("scripts/convert_manuscript_to_pdf.py")
+
+    assert "resolve_citations" in script
+    assert "--citeproc" in script
+    assert "--fail-if-warnings" in script
+    assert "--to=html5" in script
+    assert "convert_resolved_html" in script
+    for expected in (
+        "manuscript_non_traumatic_sah_phenotypes_en.pdf",
+        "manuscript_non_traumatic_sah_phenotypes_cn.pdf",
+        "electronic_supplementary_material.pdf",
+        "strobe_checklist.pdf",
+    ):
+        assert expected in script
+
+
 def test_active_instructions_use_canonical_manuscript_paths() -> None:
     agents = read_text("AGENTS.md")
     prompt = read_text("scripts/prompt_for_regenerating_manuscript.md")
@@ -63,8 +80,8 @@ def test_reviewed_english_abstract_and_frozen_results_are_consistent() -> None:
         "1,186 ICU stays from 1,173",
         "K=2 to K=5",
         "0.8554",
-        "540, 221, and 82",
-        "0.0005",
+        "539, 222, and 82",
+        "-0.0017",
         "post hoc exploratory sensitivity analysis",
     ):
         assert expected in english
@@ -73,8 +90,8 @@ def test_reviewed_english_abstract_and_frozen_results_are_consistent() -> None:
         "1,186 patients",
         "K=2 to K=6",
         "0.920",
-        "539 patients",
-        "222 to P2",
+        "540 patients",
+        "221 to P2",
         "prespecified sensitivity",
         "In unadjusted Cox",
         "a priori",
@@ -100,7 +117,7 @@ def test_reviewed_english_abstract_and_frozen_results_are_consistent() -> None:
     assert "–" not in english
 
     assert "ESM Note 1. Time-to-event analysis boundary" in supplement
-    assert "ESM Table 10. eICU exploratory fixed-transport" in supplement
+    assert "ESM Table 10. Exploratory eICU frozen-transport" in supplement
     assert "ESM Table 10. Cox" not in supplement
     assert "fig4_external_severity_validation" not in english
     assert "fig_s7_eicu_external_validation" not in supplement
@@ -122,8 +139,8 @@ def test_chinese_cited_manuscript_is_aligned_with_reviewed_english_source() -> N
         "1,173 例患者、1,186 次 ICU 住院",
         "K=2 至 K=5",
         "0.8554",
-        "540、221 和 82",
-        "0.0005",
+        "539、222 和 82",
+        "-0.0017",
         "1.54（1.06-2.22）",
         "事后、探索性敏感性分析",
         "ESM 图 6",
@@ -133,8 +150,8 @@ def test_chinese_cited_manuscript_is_aligned_with_reviewed_english_source() -> N
 
     for stale in (
         "开发队列纳入 1,186 例患者",
-        "539 例",
-        "222 例",
+        "540 例",
+        "221 例",
         "0.920",
         "-0.003",
         "Cox",

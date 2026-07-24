@@ -47,6 +47,46 @@ def test_submission_figures_do_not_embed_conflicting_numbers(monkeypatch) -> Non
         "_load_cohort_flow_data",
         lambda: {"mimic": mimic_rows, "eicu": eicu_rows},
     )
+    severity_rows = [
+        {"validation_score": score, "phenotype": phenotype, "median": value}
+        for score in ("SOFA", "SAPS II", "OASIS", "LODS")
+        for phenotype, value in enumerate((1.0, 2.0, 3.0), start=1)
+    ]
+    center_columns = [
+        "hb_min_48h_all",
+        "gcs_motor_min_48h",
+        "map_min_48h",
+        "shock_index_max_48h",
+        "spo2_min_48h",
+        "creatinine_max_48h",
+        "inr_max_48h",
+        "platelet_min_48h",
+    ]
+    center_rows = [
+        {column: float(phenotype - 2) for column in center_columns}
+        for phenotype in (1, 2, 3)
+    ]
+    outcome_rows = [
+        {
+            "n": 100,
+            "hospital_mortality_rate": 0.10 * phenotype,
+            "icu_mortality_rate": 0.08 * phenotype,
+            "early_anemia_rate": 0.12 * phenotype,
+            "any_rbc_transfusion_48h_rate": 0.02 * phenotype,
+        }
+        for phenotype in (1, 2, 3)
+    ]
+
+    def query_fixture(sql: str) -> list[dict]:
+        if sql == figures.MIMIC_CENTERS_SQL:
+            return center_rows
+        if sql == figures.MIMIC_OUTCOME_SQL:
+            return outcome_rows
+        if sql == figures.MIMIC_SEVERITY_SQL:
+            return severity_rows
+        raise AssertionError("Unexpected query in figure unit test")
+
+    monkeypatch.setattr(figures, "_run_bq_json", query_fixture)
     monkeypatch.setattr(figures, "savefig", capture_and_close)
 
     figures.fig1_cohort_flowchart()

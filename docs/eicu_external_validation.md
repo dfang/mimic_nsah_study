@@ -1,5 +1,12 @@
 # eICU External Validation Plan and Results
 
+> **Execution status, 2026-07-24:** An authorized analyst exported a versioned,
+> access-controlled `DERIVED_SENSITIVE` MIMIC transform bundle and executed the
+> fail-closed eICU path without fitting, tuning, or recalibration on eICU. The current
+> 539/222/82 results supersede the historical 540/221/82 aggregate. The private bundle
+> is not published, but its SHA-256 hash, source commit/run ID, and BigQuery job
+> provenance are recorded in `reproducibility/eicu-validation-results.yaml`.
+
 ## Purpose
 
 This document records the eICU external validation for the MIMIC-IV non-traumatic SAH physiological phenotype study:
@@ -22,7 +29,7 @@ The BigQuery target dataset is:
 
 ## Why This Validation Strategy
 
-The primary external validation uses **Frozen Transport**, not eICU de novo clustering.
+The primary evaluation uses **frozen assignment transport**, not eICU de novo clustering. The 2026-07-24 execution loaded a privately hashed immutable transform artifact and satisfies that computational contract.
 
 In a transport validation, the MIMIC-IV phenotype model is treated as the development model. The preprocessing rules, imputation medians, transformations, scaling, PCA projection, and phenotype centroids are fixed from MIMIC-IV and then applied directly to eICU. This tests whether a new patient or a new external cohort can be assigned to the MIMIC-derived phenotypes without refitting the model on the validation data.
 
@@ -32,9 +39,9 @@ De novo clustering in eICU is still useful, but only as a **structural sensitivi
 
 ## Validation Design
 
-### Primary Analysis: Frozen Transport
+### Intended Primary Analysis: Frozen Transport Contract
 
-The MIMIC pipeline is frozen from `mimic-study-498508.non_traumatic_sah_study.phenotype_cluster_assignments`.
+The transform was exported from the authorized MIMIC derivation run into an access-controlled artifact conforming to `reproducibility/frozen-transform-bundle.schema.json`.
 
 Frozen components:
 
@@ -45,7 +52,7 @@ Frozen components:
 - MIMIC phenotype centroids in 3-PC space;
 - ordered phenotype labels P1, P2, and P3.
 
-eICU patients are transformed using these frozen MIMIC parameters and assigned to the nearest MIMIC phenotype centroid.
+The current evaluation entry point loads those prebuilt parameters and assigns eICU patients to the nearest MIMIC phenotype centroid; it no longer reads MIMIC rows or fits preprocessing during evaluation.
 
 ### Sensitivity Robustness
 
@@ -57,6 +64,7 @@ The improved validation adds prespecified sensitivity analyses that address the 
 - low-missing and complete-case sensitivity, to test dependence on imputation;
 - INR-free transport sensitivity, because INR is the most missing eICU core feature;
 - Hb-free anemia sensitivity, because Hb is part of the primary phenotype and anemia adjustment would otherwise be partly circular.
+- a 2,000-replicate hospital-cluster bootstrap and leave-one-hospital-out analysis, to assess multicenter dependence and single-hospital influence.
 
 ### External Criterion Validation With APACHE
 
@@ -114,11 +122,11 @@ All variables use the ICU admission to 48-hour window and clinical range filters
 
 ## Current External Validation Results
 
-These results were generated on July 7, 2026 by running:
+These results were regenerated on July 24, 2026 by running the cohort SQL and then supplying the private transform bundle to the fail-closed evaluator:
 
 ```bash
 bq query --use_legacy_sql=false --project_id=mimic-study-498508 --location=US < 14_create_eicu_external_validation_cohort.sql
-python scripts/15_run_eicu_external_validation.py
+python scripts/15_run_eicu_external_validation.py --frozen-transform-bundle <authorized-private-bundle>
 ```
 
 ### Cohort Flow
@@ -160,20 +168,20 @@ Shock index pairing audit:
 
 Interpretation: GCS motor and shock index are no longer limiting eICU features. INR remains the dominant measurement limitation.
 
-### Frozen Transport Outcome Gradient
+### Frozen-Transport Outcome Gradient
 
-The frozen MIMIC classifier assigned all 843 eICU validation patients to one of the three phenotypes.
+Pure frozen evaluation assigned all 843 eICU patients from 66 hospitals to one of the three phenotypes.
 
 | Transported phenotype | N | Hospital mortality | ICU mortality | Early anemia | RBC 0-48h |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| P1 | 540 | 5.4% | 2.8% | 11.4% | 0.4% |
-| P2 | 221 | 25.8% | 16.3% | 34.7% | 5.9% |
+| P1 | 539 | 5.4% | 2.8% | 11.4% | 0.4% |
+| P2 | 222 | 25.7% | 16.2% | 34.5% | 5.9% |
 | P3 | 82 | 42.7% | 29.3% | 58.0% | 11.0% |
 
 The mortality gradient is strong and monotonic:
 
 - P1 hospital mortality: 5.4%;
-- P2 hospital mortality: 25.8%;
+- P2 hospital mortality: 25.7%;
 - P3 hospital mortality: 42.7%.
 
 ### Transported Phenotype Physiology
@@ -192,10 +200,10 @@ Interpretation: P3 remains a high-risk multisystem phenotype with anemia, hypoxe
 | --- | ---: |
 | N | 843 |
 | Phenotype count | 3 |
-| Median nearest-centroid distance | 1.337 |
-| Median assignment margin | 1.050 |
-| Low margin <0.10 | 4.4% |
-| Low margin <0.25 | 12.0% |
+| Median nearest-centroid distance | 1.3369 |
+| Median assignment margin | 1.0516 |
+| Low margin <0.10 | 4.51% |
+| Low margin <0.25 | 12.10% |
 
 Interpretation: most eICU assignments are not borderline, although P3 remains the most shifted group.
 
@@ -205,7 +213,7 @@ All major transport sensitivities preserved a monotonic hospital mortality gradi
 
 | Analysis | N | P1 mortality | P2 mortality | P3 mortality | Minimum phenotype N |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Primary frozen transport | 843 | 5.4% | 25.8% | 42.7% | 82 |
+| Primary frozen transport | 843 | 5.4% | 25.7% | 42.7% | 82 |
 | ICU LOS >=48h | 626 | 6.9% | 24.2% | 33.9% | 62 |
 | No recorded RBC 0-48h | 819 | 5.4% | 25.8% | 39.7% | 73 |
 | Strict SAH evidence | 605 | 6.6% | 30.5% | 45.6% | 68 |
@@ -214,6 +222,20 @@ All major transport sensitivities preserved a monotonic hospital mortality gradi
 | INR-free transport | 868 | 4.6% | 24.4% | 38.7% | 124 |
 
 Interpretation: the external validation signal does not depend on one fragile cohort definition, RBC recording, INR availability, or heavy imputation.
+
+### Hospital-Level Robustness
+
+Hospital-clustered percentile intervals used 2,000 replicates in which the 66 hospitals were sampled with replacement and all stays within sampled hospitals were retained.
+
+| Metric | Estimate | Hospital-clustered 95% interval |
+| --- | ---: | ---: |
+| P1 hospital mortality | 5.38% | 3.68%-7.39% |
+| P2 hospital mortality | 25.68% | 20.75%-31.43% |
+| P3 hospital mortality | 42.68% | 32.84%-52.44% |
+| P2-P1 risk difference | 20.30 percentage points | 15.06-25.83 |
+| P3-P1 risk difference | 37.30 percentage points | 26.99-47.37 |
+
+The P1<P2<P3 mortality order was retained in all 66 leave-one-hospital-out analyses. The P2-P1 risk difference ranged from 19.15 to 21.53 percentage points and the P3-P1 difference from 35.13 to 39.42. These analyses address hospital dependence and single-hospital influence without claiming within-hospital replication of phenotype boundaries. Only aggregate robustness outputs were persisted.
 
 ### APACHE External Criterion Validation
 
@@ -243,18 +265,18 @@ The eICU de novo K=3 model also forms a mortality gradient:
 
 | De novo phenotype | N | Hospital mortality | Early anemia |
 | --- | ---: | ---: | ---: |
-| 1 | 456 | 5.7% | 9.9% |
-| 2 | 287 | 18.5% | 30.2% |
+| 1 | 447 | 5.8% | 9.9% |
+| 2 | 296 | 17.9% | 29.6% |
 | 3 | 100 | 42.0% | 53.5% |
 
 However, concordance with frozen transport labels is low:
 
 | Metric | Value |
 | --- | ---: |
-| Adjusted Rand Index | 0.0005 |
-| Normalized mutual information | 0.0011 |
-| Same ordered label rate | 45.2% |
-| Silhouette | 0.271 |
+| Adjusted Rand Index | -0.0017 |
+| Normalized mutual information | 0.0016 |
+| Same ordered label rate | 45.7% |
+| Silhouette | 0.269 |
 | Minimum de novo cluster size | 100 |
 
 Interpretation: eICU independently recovers a risk gradient, but its patient-level partition boundaries differ from the MIMIC-frozen classifier. This supports using de novo clustering only as a structural sensitivity analysis. It should not be presented as external validation of the exact cluster membership.
@@ -265,21 +287,22 @@ In the eICU Hb-free transport model, phenotype remains strongly associated with 
 
 | Term | OR | 95% CI | P value |
 | --- | ---: | ---: | ---: |
-| P2 vs P1 | 6.16 | 3.74-10.13 | 8.30e-13 |
-| P3 vs P1 | 10.27 | 5.68-18.57 | 1.22e-14 |
-| Early anemia | 1.47 | 0.92-2.36 | 0.105 |
+| P2 vs P1 | 6.02 | 3.66-9.91 | 1.52e-12 |
+| P3 vs P1 | 10.24 | 5.67-18.52 | 1.33e-14 |
+| Early anemia | 1.46 | 0.92-2.34 | 0.111 |
 | Age, per year | 1.02 | 1.01-1.04 | 0.001 |
 
 Interpretation: the eICU validation supports the MIMIC conclusion that anemia is enriched in high-risk physiology but is not a stable independent mortality factor after accounting for an Hb-free phenotype structure.
 
 ## What Succeeded
 
-The strongest successes are:
+The authorized frozen-transport rerun showed:
 
-- frozen MIMIC transport produced a clear and clinically large external mortality gradient;
+- MIMIC-anchored assignment produced a clinically large crude mortality gradient;
 - APACHE severity and predicted mortality increased monotonically across transported phenotypes;
 - shock index extraction was substantially improved by nearest HR/SBP pairing;
 - all prespecified sensitivity analyses preserved the P1-to-P3 mortality ordering;
+- hospital-clustered intervals excluded zero for both P2-P1 and P3-P1 differences, and all 66 leave-one-hospital-out analyses retained the mortality order;
 - Hb-free anemia sensitivity reproduced the non-independent anemia signal;
 - de novo eICU clustering recovered a risk gradient, supporting the presence of risk-stratifying physiological structure.
 
@@ -294,8 +317,10 @@ The main unsuccessful parts are:
 
 ## What Still Needs Improvement
 
-Recommended next improvements before manuscript submission:
+Required reporting and future-analysis steps:
 
+- retain the private bundle under access control and preserve its public hash and execution provenance;
+- prespecify hospital-level robustness analyses in a future confirmatory protocol rather than treating the current post-outcome analysis as confirmatory;
 - keep INR-free transport as a required sensitivity analysis, not an optional appendix;
 - describe de novo clustering as structural sensitivity only, not as successful exact subtype replication;
 - report shock index pairing logic explicitly, including the 15-minute HR/SBP window;
@@ -304,13 +329,17 @@ Recommended next improvements before manuscript submission:
 
 ## Manuscript Interpretation
 
-Recommended primary wording:
+Permitted current wording:
 
-> In the eICU external validation, the frozen MIMIC-derived phenotype classifier transported successfully and identified a monotonic hospital mortality gradient from P1 to P3. Transported phenotypes also showed monotonic increases in independent eICU APACHE severity scores and predicted mortality, supporting external criterion validity.
+> In an authorized pure frozen-transport execution, eICU data were assigned using a privately hashed MIMIC-derived transform bundle without eICU fitting, tuning, or recalibration. Assigned groups showed monotonic hospital mortality and APACHE severity ordering; this exploratory result does not establish replication of cluster boundaries.
 
 Recommended sensitivity wording:
 
 > The mortality gradient was preserved across LOS >=48h, no-recorded-RBC, strict-SAH, low-missing, complete-case, and INR-free transport analyses. De novo eICU clustering also produced a mortality gradient, but patient-level agreement with frozen transport labels was low; therefore, de novo clustering was retained as a structural sensitivity analysis rather than used to redefine the phenotypes.
+
+Recommended hospital-robustness wording:
+
+> Hospital-clustered intervals preserved separation between P1 and the higher-risk groups, and the mortality order remained in all 66 leave-one-hospital-out analyses. These analyses address hospital dependence and influence, not within-hospital replication of cluster boundaries.
 
 Recommended limitation:
 
@@ -318,14 +347,15 @@ Recommended limitation:
 
 ## Bottom Line
 
-The improved eICU results provide **supportive external validation** for the MIMIC-derived phenotype model:
+The eICU results provide a **reproducible exploratory frozen-transport signal, not confirmatory external validation**:
 
-- the frozen transport classifier assigns eICU patients into all three phenotypes;
+- the frozen MIMIC assignment rule assigned eICU patients into all three phenotypes;
 - hospital and ICU mortality increase strongly across transported phenotypes;
 - APACHE severity externally validates the phenotype ordering;
 - early anemia and RBC exposure increase across phenotype severity;
 - Hb-free sensitivity preserves strong phenotype mortality associations while early anemia remains non-significant;
 - multiple robustness analyses preserve the mortality gradient;
+- hospital-clustered and leave-one-hospital-out analyses preserve the mortality gradient;
 - de novo clustering recovers a risk gradient but does not reproduce exact frozen classifier boundaries.
 
-This is best described as evidence for **transportable risk-stratifying physiological phenotypes**, not proof of discrete biological subtype entities.
+This is best described as a hypothesis-generating cross-database ordering signal. It is not proof of transportable cluster boundaries, a validated classifier, or discrete biological subtype entities.

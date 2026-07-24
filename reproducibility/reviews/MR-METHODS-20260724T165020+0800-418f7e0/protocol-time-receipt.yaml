@@ -1,0 +1,60 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: protocol-time
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:b92c613c75a30b2516ecbcc517b864009f2beb6b9f888a2e5c47ce2bba41bff4"
+input_hashes:
+  - role: protocol
+    path: protocol.md
+    sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
+  - role: sap
+    path: sap.md
+    sha256: "d32cc1ebd2f62d6bb8000f185ffbe864f88023ca8a4d4d1ebb85d3f146d03354"
+  - role: deviation-log
+    path: reproducibility/deviation-log.md
+    sha256: "cc226f1c0bb066635cf05bd924d8f1315bc169cf090f300ae20b803ce8b7a839"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Post-outcome status, 0-48 h time contract, eligibility, feature and outcome windows, and declared deviations."
+  not_assessed:
+    - "Prospective preregistration, which does not exist for this exploratory freeze."
+recommendation: revise
+findings:
+  - id: "METH-002"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: manuscript_review
+    domain: design
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Structured abstract Methods, line 22"
+    evidence: "The abstract says mortality did not inform K selection, although K=3 was locked after outcomes had been accessed."
+    risk: "Readers may infer prospectively outcome-blind model selection."
+    recommended_action: "State only that mortality was not an algorithmic clustering input or label-ordering variable, and identify K=3 as post-outcome exploratory."
+    owner: authors
+    verification: "Abstract and Methods use the narrower claim consistently."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-005"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: manuscript_review
+    domain: design
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Variables, Outcomes, and Limitations"
+    evidence: "The phenotype window overlaps 66 deaths and 91 ICU discharges and eligibility requires ICU LOS of at least 24 hours."
+    risk: "The groups may be misread as baseline phenotypes rather than unequal-duration early-course summaries."
+    recommended_action: "Retain early-course terminology and report the early death/discharge counts."
+    owner: authors
+    verification: "Methods or ESM defines the truncated observation opportunity and Results reports its magnitude."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

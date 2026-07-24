@@ -1,0 +1,77 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: journal
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:aafa3ae6e1c7a63da968a05c566a5d7448897ddf394450deee6969fa14326b61"
+input_hashes:
+  - role: manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    sha256: "315674c1e06e80b60be0259add84ab7d08d6d410a059c61ebee910a7db59a32d"
+  - role: electronic-supplement
+    path: dist/electronic_supplementary_material.md
+    sha256: "cc8ea98cb1ec8feb24c2c4a326b2a83d6391b861cae5ad9db7bec98723731e9f"
+  - role: reporting-checklist
+    path: dist/strobe_checklist.md
+    sha256: "e1271ce341f4b61b62af5c496d0b63531296dd0470dd1e7dc9830bea65a69735"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Methods/abstract consistency, claim calibration, STROBE/RECORD support, and current ICM author instructions."
+  not_assessed:
+    - "Full independent citation audit, author metadata, and institutional ethics wording."
+recommendation: revise
+findings:
+  - id: "METH-001"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: manuscript_review
+    domain: reporting
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Abstract and Discussion versus body Methods"
+    evidence: "The body now distinguishes no-eICU-refitting frozen transport from the missing serialized artifact, but shorter abstract wording and the claim that the rule is reproducible can blur this boundary."
+    risk: "Readers may equate the method property with byte-identical reproducibility of the historical run."
+    recommended_action: "Retain frozen transport, qualify it as historical exploratory, and avoid claiming exact reproducibility without the artifact."
+    owner: authors
+    verification: "Abstract, main text, ESM, and code availability distinguish method transport from artifact replay."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-002"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: manuscript_review
+    domain: reporting
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Structured abstract Methods"
+    evidence: "The mortality-independent K-selection claim is stronger than the post-outcome design can establish."
+    risk: "An editor may regard this as retrospective prespecification."
+    recommended_action: "Separate algorithmic exclusion of mortality from post-outcome human specification selection."
+    owner: authors
+    verification: "Revised abstract preserves the exploratory evidence status."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-003"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: manuscript_review
+    domain: reporting
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Abstract Methods/Results and Robustness"
+    evidence: "Overall ARI is presented under a broader patient-grouped stability description without the cluster-specific evidence boundary."
+    risk: "The smallest phenotype may appear more reproducible than demonstrated."
+    recommended_action: "Use overall partition stability and name the unassessed quantities."
+    owner: authors
+    verification: "Claim wording matches the ESM and canonical result contract."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

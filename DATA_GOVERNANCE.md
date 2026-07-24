@@ -1,5 +1,16 @@
 # Data Governance Record
 
+## Current public-release status (2026-07-24)
+
+The repository is publicly visible, but no author/institution disclosure-approval
+record is present. Public aggregate release is therefore
+`BLOCKED_PENDING_AUTHOR_INSTITUTION_APPROVAL`. The machine-readable status is
+`reproducibility/governance-status.yaml`. The `PROCEED_LOCAL` record below governs
+the authorized restricted analysis runs, including the 2026-07-24 frozen-transport
+and hospital-level robustness rerun; it is not evidence of public release approval.
+Restricted rows remained in the authorized environment and only aggregate outputs
+without hospital identifiers were added to public artifacts.
+
 ## Current decision
 
 ```yaml

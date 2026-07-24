@@ -1,0 +1,33 @@
+plan_version: "1.2"
+status: "AUTHORIZED_RERUN_COMPLETED_2026-07-24"
+validation_type: "different-setting exploratory assignment transport"
+evaluation_mode: pure_evaluation
+development_source: "MIMIC-IV 3.1"
+evaluation_source: "eICU-CRD 2.0"
+required_private_input:
+  role: frozen_transform_bundle
+  schema: reproducibility/frozen-transform-bundle.schema.json
+  classification: DERIVED_SENSITIVE
+  public_repository_inclusion: prohibited
+  required_transforms: [primary, hb_free, inr_free]
+evaluation_rule:
+  - "Load prebuilt MIMIC medians, scaler parameters, PCA mean/components, and phenotype centroids."
+  - "Do not fit, tune, select, or recalibrate any primary assignment component using eICU."
+  - "Use eICU de novo clustering only as an explicitly labeled structural sensitivity."
+primary_outputs:
+  - cohort flow and assignment counts
+  - assignment distance and margin distributions
+  - hospital and ICU mortality by assigned phenotype
+  - external APACHE severity ordering
+  - hospital-cluster bootstrap intervals and leave-one-hospital-out influence analysis
+execution:
+  completed_at: "2026-07-24"
+  mode: "pure frozen evaluation"
+  private_bundle_sha256: "63042d68a74643da9c902e4d1f6cd9d774e77d55b5f6e1269851bceb3371dd41"
+  source_commit: "0c837e0bdededebae58241df28a930f50c373d9f"
+  source_run_id: "MIMIC-NSAH-PHENO-01-freeze-20260716"
+  cohort_job_id: "ae05186f-1c43-4598-8e05-c2ce5ad852f0"
+  hospital_cluster_bootstrap_iterations: 2000
+  hospital_cluster_bootstrap_seed: 42
+  leave_one_hospital_out_iterations: 66
+current_boundary: "The 2026-07-24 execution is reproducible for authorized users holding the exact private bundle; the public repository contains its hash and provenance, not the derived-sensitive parameters. The analysis remains exploratory and does not establish cluster-boundary replication."

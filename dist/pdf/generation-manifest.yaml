@@ -1,0 +1,66 @@
+manifest_version: "1.0"
+generated_on: "2026-07-24"
+status: "STALE_AFTER_AUTHORIZED_EICU_RERUN"
+stale_against_current_sources: true
+invalidated_on: "2026-07-24"
+invalidation_reason: "The authorized eICU frozen-transport rerun and subsequent hospital-level robustness analysis changed manuscript/ESM text after these PDFs were rendered."
+toolchain:
+  citation_engine: "pandoc 3.10 citeproc"
+  renderer: "WeasyPrint 69.0"
+  render_script: scripts/convert_manuscript_to_pdf.py
+  citation_warnings: none
+sources:
+  - path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    sha256: "c72399b4c13d9fa6ec527641de98f29dd77b3bf4df555870ac91c8379920ffd5"
+  - path: dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
+    sha256: "d803d4bc7cdf2518f0f35dc420ec086473b8f86883d57211e142bf8ded66d1f0"
+  - path: dist/electronic_supplementary_material.md
+    sha256: "cc8ea98cb1ec8feb24c2c4a326b2a83d6391b861cae5ad9db7bec98723731e9f"
+  - path: dist/strobe_checklist.md
+    sha256: "e1271ce341f4b61b62af5c496d0b63531296dd0470dd1e7dc9830bea65a69735"
+  - path: dist/references.bib
+    sha256: "207f4b04e345868d0595572f937f7829014a62278a8889b270182724312ac583"
+  - path: dist/journal.csl
+    sha256: "2f39b2c93cf7a90cb41c72a2945700c4d227ad233682d7fe843c77364a11ba82"
+resolved_intermediates:
+  - path: dist/pdf/resolved/manuscript_non_traumatic_sah_phenotypes_en.html
+    sha256: "739b9545762efcb5f6b9495da2ce116f52e101ffb6ff50ee5a99f92247af4633"
+  - path: dist/pdf/resolved/manuscript_non_traumatic_sah_phenotypes_cn.html
+    sha256: "a39dfe1b5e51a9609daee714f54079a32289c1365d81c1cbace6e741020ed231"
+  - path: dist/pdf/resolved/electronic_supplementary_material.html
+    sha256: "d440646e4daf868fe6813f1e66f01414a7438e3179bf5668fece7ecc0514b64b"
+  - path: dist/pdf/resolved/strobe_checklist.html
+    sha256: "78f002d92cc2ca857e562e3dc27e8083a9937ca954c4ac2de09b29b715c7cbcf"
+outputs:
+  - path: dist/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf
+    sha256: "42e472ce7a80e27c135d7f546cf1212e00ad1f55da89f251f21a57855a767ab3"
+    pages: 13
+  - path: dist/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf
+    sha256: "f7a946d0b7d411102abea2ac1e76c1d055edd382c93c4a8da6c67a3477061dc0"
+    pages: 11
+  - path: dist/pdf/electronic_supplementary_material.pdf
+    sha256: "327a28401ba2f8a8f80b34eeb4656f6cd93ac278db75f168931110af83978c09"
+    pages: 16
+  - path: dist/pdf/strobe_checklist.pdf
+    sha256: "04c929e58d78007de764daecce9abd3ba54f49fd6dc412451efc5e9104965efc"
+    pages: 3
+visual_qa:
+  method: "Native macOS PDFKit render of every page plus contact-sheet and representative-page inspection"
+  status: passed
+  inspected_pages:
+    manuscript_non_traumatic_sah_phenotypes_en.pdf: "all 13 pages"
+    manuscript_non_traumatic_sah_phenotypes_cn.pdf: "all 11 pages"
+    electronic_supplementary_material.pdf: "all 16 pages"
+    strobe_checklist.pdf: "all 3 pages"
+  findings: "No clipping, overlap, missing glyphs, unresolved citation tokens, stale terms, or unreadable tables/figures observed."
+  stale_terms_checked:
+    - "1,186 patients"
+    - "0.920"
+    - "539 patients"
+    - "222 to P2"
+    - "-0.003"
+submission_blockers:
+  - "Author/title-page and declaration fields remain incomplete."
+  - "Author/institution aggregate disclosure approval is not recorded."
+  - "PDFs and resolved HTML must be regenerated from the post-rerun Markdown sources."
+  - "Fresh independent manuscript_review verdict is required after remediation."
