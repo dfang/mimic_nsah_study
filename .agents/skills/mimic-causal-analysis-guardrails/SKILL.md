@@ -9,6 +9,13 @@ description: Apply causal-inference guardrails to MIMIC-IV observational studies
 
 读取患者级数据前先应用 `mimic-data-governance`。使用 `mimic-study-protocol-sap` 冻结因果 subtype、estimand、识别契约、主要分析和偏离记录。
 
+## 选择操作
+
+- `operation: build`：设计或实现因果分析。
+- `operation: audit`：只读审查冻结设计、实现、诊断和结果；不得重写 estimand、执行分析、调权重或为当前结果补造识别假设。
+
+audit 由 `mimic-review` 调用时，使用同一 `review_run_id` 与 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: causal`、`coverage_status`、`recommendation`、canonical findings 和 `gate_effect`；缺少识别证据或 subtype-specific diagnostics 时标记 `not-assessed`。每个 finding 必须说明可修复问题或 stop/redesign condition。time zero、未来治疗分组、无有效风险集或 estimand 与实现不一致通常使用 `gate_effect: requires_redesign`，而不是建议表面修稿。
+
 ## 先选择因果设计 subtype
 
 - `target_trial`：显式比较治疗策略，冻结目标试验、time zero、策略、estimand 和混杂控制。
@@ -60,6 +67,8 @@ description: Apply causal-inference guardrails to MIMIC-IV observational studies
 - **RD**：报告 cutoff、带宽选择、密度/操纵检验、协变量连续性、函数形式与 donut/placebo sensitivity。
 - **DiD**：报告处理时点与对照、事件研究、处理前趋势、anticipation、错位实施处理和适当聚类标准误。
 - **ITS**：报告中断点、基线趋势、水平/斜率变化、季节性、自相关、并发干预和伪中断点分析。
+
+对无法直接检验的关键假设，明确其临床/制度依据、可证伪含义和 quantitative bias analysis 或 negative-control 证据（适用时）；未检验不等于已满足。弱 IV 应采用与弱工具相容的区间或稳健推断。错位实施的 DiD 不得依赖已知对异质处理效应有偏的单一 two-way fixed-effects 汇总，需审查 cohort/time-specific estimand。TARGET 只在其正式范围内用于 target-trial emulation，不能给 IV、RD、DiD 或 ITS 套用。
 
 ## 禁止事项
 

@@ -9,6 +9,15 @@ Create a release that can reproduce reported results without disclosing restrict
 
 Apply `mimic-data-governance` before inventorying contents. Metadata-only inventory must precede content reads, and any uncertain artifact inherits the restricted classification until reviewed.
 
+## Choose the operation
+
+- `operation: build`: freeze, execute, compare, package, or publish a release.
+- `operation: audit`: 只读审查已有 repository、lock、run records、provenance 和 release manifest；不得执行流水线、清理工作树、删除 notebook 输出、改 lockfile、打包或发布。
+
+When `mimic-review` invokes audit, use the same `review_run_id` and `input_hashes`, copy `../mimic-review/assets/templates/review-pass-receipt.yaml`, and return `pass_id: reproducibility`, `coverage_status`, `recommendation`, canonical findings, and `gate_effect`. Unexecuted checks remain `not-assessed`; a dirty worktree, missing exact lock, hidden notebook state, stale output, untracked generating code, or restricted artifact in a public package cannot be silently waived.
+
+Record the highest demonstrated level: `documented` (instructions/provenance only), `computationally_reexecuted` (clean execution performed), `result_reproduced` (predeclared comparisons passed), or `independently_reproduced` (independent environment/team evidence). Never promote a level from filenames or intent.
+
 ## Define the release boundary
 
 1. Inventory SQL, Python, R, notebooks, configuration, codebooks, model objects, tables, figures, and manuscript outputs.
@@ -54,6 +63,8 @@ Read `references/release-checklist.md` before declaring a release complete.
 - Notebooks: run all cells from a clean kernel; remove patient-level outputs and hidden credentials before public release.
 - SQL: validate syntax or dry-run, record source versions, verify row grain and checkpoint counts, and confirm no restricted rows are exported.
 - Compare regenerated tables, figures, and primary estimates with the manuscript and explain every expected tolerance or difference.
+
+For every executed command, record command/entry point, working commit and dirty state, environment or container hash, start/end time, exit code, stdout/stderr evidence location, inputs, outputs, and output hashes. Define numeric/visual tolerances before comparison, including the reason and whether bitwise equality is expected; choosing tolerance after seeing differences is not acceptance evidence.
 
 ## Publish safely
 

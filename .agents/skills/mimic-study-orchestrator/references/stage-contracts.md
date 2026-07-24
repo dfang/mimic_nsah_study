@@ -15,9 +15,9 @@ For prediction and causal designs, route the gate with `design_subtype`: `diagno
 | features | cohort, feature definitions | feature table and dictionary | window audit, missingness/range QC, no forbidden leakage |
 | analysis | frozen SAP and inputs | results, diagnostics, figures | assumptions, uncertainty, sensitivity analyses, code hash |
 | validation | frozen analysis object/specification; branch-specific evidence below | prediction validation, phenotype replication/assignment transport, causal subtype-specific replication/transport, descriptive/association replication, or a documented `not_applicable` decision | branch-specific acceptance evidence below |
-| analysis_review | frozen protocol, cohort, code, QC, analysis, and any external validation | issue register and gate verdict | evidence locations, severity, confidence, resolution state; no open blocking findings before manuscript authoring |
+| analysis_review | frozen protocol, cohort, code, QC, analysis, and any external validation | review input snapshot, validated pass receipts, coverage matrix, issue register and gate verdict | registry-required governance, protocol-time, SQL/data, clinical and statistics passes plus the design-specific pass; one `review_run_id`; identical input hashes; reviewer identities and skill versions; `READY` verdict with no open `requires_redesign`, `blocks_ready`, blocking or major findings before manuscript authoring |
 | manuscript | frozen results and analysis-review verdict | manuscript, tables, figures, and supplement | number-to-artifact trace, reporting checklist, citation verification |
-| manuscript_review | complete manuscript package | independent issue register and gate verdict | clinical/statistical/journal passes, page-mapped checklist, claims reconciled to frozen results, no open blocking or major findings |
+| manuscript_review | complete manuscript package | review input snapshot, validated pass receipts, coverage matrix, independent issue register and gate verdict | registry-required governance, clinical, statistics, journal and reproducibility passes plus applicable design/evidence/validation passes; one `review_run_id`; identical input hashes; independent reviewer identities; page-mapped checklist, claims reconciled to frozen results, and a `READY` verdict with no open `requires_redesign`, `blocks_ready`, blocking or major findings |
 | release | code, reviewed manuscript, and non-sensitive artifacts | reproducibility bundle | clean-room check, environment lock, no restricted data |
 | submission | journal instructions, manuscript-review verdict, and release | submission package | live instruction check, disclosures, checklist page mapping |
 
@@ -40,24 +40,35 @@ artifacts:
     sha256: "<sha256>"
 ```
 
+## Review run contract
+
+Formal `analysis_review` and `manuscript_review` gates use `mimic-review` in `mode: gate`. Copy `skills/mimic-review/assets/templates/review-input.yaml` into the study repository and freeze it as a member of the review-stage bundle index.
+
+The review input records `operation: audit`, one `review_run_id`, the canonical gate, requested passes, design route, governance receipt, repository commit and dirty state, and every artifact path/version/SHA-256. Resolve passes from `skills/mimic-review/references/review-pass-registry.json`. Every specialist pass copies `skills/mimic-review/assets/templates/review-pass-receipt.yaml` and records the same input hashes plus its `reviewer_identity` and skill version. Hash disagreement or invalid receipt creates `not-assessed` coverage and blocks aggregation into a passing verdict.
+
+`manuscript_review` always requires governance, clinical, statistics, journal and reproducibility receipts. Missing clinical or statistics evidence is `not-assessed`, never `not_applicable`.
+
+Focused review may use the same `review-input.yaml` schema with `mode: focused`, but its output is not acceptance evidence for freezing a lifecycle review gate.
+
 ## Issue register schema
 
 Record each finding with:
 
 ```yaml
 id: REV-001
+severity: blocking | major | minor | note
+gate_effect: blocks_ready | requires_redesign | none
+confidence: high | medium | low
 stage: cohort
 domain: data
-severity: blocking | major | minor | note
-confidence: high | medium | low
-status: open | resolved | accepted-risk | not-assessed
 artifact: path/to/file
 location: line, table, figure, or query block
 evidence: concise observation
-impact: consequence for validity or reporting
-action: smallest verifiable correction
+risk: consequence for validity or reporting
+recommended_action: smallest verifiable correction
 owner: role or person
 verification: evidence required to close
+status: open | resolved | accepted-risk | not-assessed
 closure_evidence: null # actual evidence or accepted-risk authority record once closed
 closed_by: null
 closed_at: null # ISO 8601 timestamp

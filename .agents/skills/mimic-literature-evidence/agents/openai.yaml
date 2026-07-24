@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Literature Evidence"
-  short_description: "Verify evidence and keyed references for MIMIC studies."
-  default_prompt: "Use $mimic-literature-evidence to build verified evidence, stable citation keys, and references.bib for this MIMIC-IV study."
+  short_description: "Build or audit evidence and references for MIMIC studies"
+  default_prompt: "Use $mimic-literature-evidence with the requested build or audit operation for this MIMIC-IV evidence base."

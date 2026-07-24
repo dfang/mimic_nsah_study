@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Prediction Modeling"
-  short_description: "Develop and validate leakage-safe MIMIC-IV prediction models."
-  default_prompt: "Use $mimic-prediction-modeling to develop and validate this MIMIC-IV prediction model."
+  short_description: "Build or audit leakage-safe MIMIC prediction models"
+  default_prompt: "Use $mimic-prediction-modeling with the requested build or audit operation for this MIMIC-IV prediction model."

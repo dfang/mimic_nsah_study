@@ -9,6 +9,15 @@ description: Design and review MIMIC-IV unsupervised phenotyping pipelines. Use 
 
 读取患者级特征前先应用 `mimic-data-governance`。将预处理、随机种子和表型分配规则交给 `mimic-reproducibility-release` 冻结和审计。
 
+## 选择操作
+
+- `operation: build`：设计、拟合、稳定性评估并冻结表型 solution。
+- `operation: audit`：只读审查输入、K/solution 选择、稳定性、assignment rule、结局使用和复现证据；不得重新聚类、改变 K、重新命名或冻结 solution。
+
+audit 由 `mimic-review` 调用时，使用同一 `review_run_id` 与 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: phenotyping`、`coverage_status`、`recommendation`、canonical findings 和 `gate_effect`；缺少 frozen assignment、重复样本结构或稳定性证据时标记 `not-assessed`。
+
+审查 membership uncertainty：概率模型报告 posterior/entropy，其他方法报告重采样 assignment stability 或到 centroid 的不确定性代理。比较不同 seed、bootstrap 或数据集的 cluster 时必须做 label alignment，不能把任意标签编号当作相同表型。K、预处理、特征集、命名规则和 assignment rule 必须在查看 downstream outcomes 前冻结；若 outcome 参与选择，`gate_effect: requires_redesign`，除非研究明确改写为 supervised/nested design。
+
 ## 输入表要求
 
 - 一行代表一个分析单元，通常是 `stay_id` 或 `hadm_id`。
@@ -42,7 +51,7 @@ description: Design and review MIMIC-IV unsupervised phenotyping pipelines. Use 
 - bootstrap stability / Jaccard similarity。
 - cluster size 是否合理。
 - 临床解释是否清晰。
-- outcome gradient 是否存在但不是唯一依据。
+- downstream outcome、治疗反应和未来测量不得参与 nominally unsupervised 的 K 值或最终 solution 选择；只可在 solution 冻结后用于表征、预后关联或独立验证。
 
 ## 稳定性分析
 
@@ -58,12 +67,14 @@ description: Design and review MIMIC-IV unsupervised phenotyping pipelines. Use 
 - 比较 baseline characteristics 时避免把聚类输入变量再次当成独立发现夸大。
 - outcome association 可用 logistic/linear/Cox 回归，但表述为 association。
 - 如果声称治疗效应异质性，需要另行使用因果分析护栏。
+- 外部数据应用冻结的 transform/assignment rule 才能评价 assignment transport；在外部库重新聚类是重新发现或 replication，不是原冻结表型的 external validation。
 
 ## 完成前检查
 
 - outcome 没有泄漏进 clustering。
 - preprocessing 和 random seed 可复现。
 - cluster 数选择有多重证据。
+- cluster 数和最终 solution 的选择未使用 downstream outcome；如 outcome 参与选择，已改写为相应的 supervised 或 nested design，而不是继续声称纯无监督发现。
 - cluster 稳定性已检查。
 - 重复 stay/admission 的 resampling 与分区按 subject 或更高依赖单位分组。
 - 表型命名克制，避免过度临床化。

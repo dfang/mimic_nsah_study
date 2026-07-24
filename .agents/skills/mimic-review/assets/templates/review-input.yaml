@@ -1,0 +1,44 @@
+review_input_version: "1.2"
+review_run_id: "<stable review run id>"
+created_at: "<ISO 8601>"
+operation: audit
+mode: "<focused|gate>"
+gate: "<canonical lifecycle stage or null>"
+requested_passes:
+  - "<governance|protocol-time|sql-data|clinical|statistics|prediction|causal|phenotyping|external-validation|evidence-novelty|journal|reproducibility|design-specific|all>"
+review:
+  scope:
+    - "<protocol|sap|time-claims|formal-review-gate|sql|query-derived-data|clinical-constructs|clinical-interpretation|manuscript|quantitative-design|analysis|results|external-validation|transportability|novelty|evidence-synthesis|guideline|citation|abstract|presentation|submission-readiness|executable-results|release|manuscript-figures>"
+  claims:
+    - "<external-validation|transportability|novelty|guideline|literature|query-derived>"
+study:
+  manifest_path: "<path or null>"
+  manifest_sha256: "<sha256 or null>"
+  design_family: "<descriptive|association|prediction|causal|phenotyping|undetermined>"
+  design_subtype: "<canonical subtype|undetermined>"
+protocol:
+  required_scopes:
+    - "<external-validation|transportability>"
+acceptance_evidence:
+  roles:
+    - "<executable-results>"
+upstream:
+  protocol_time_receipt_status: "<missing|stale|unverified|valid|not_applicable>"
+  sql_data_receipt_status: "<missing|stale|unverified|valid|not_applicable>"
+repository:
+  identity: "<repository identity>"
+  commit: "<git commit>"
+  dirty_state: false
+governance:
+  mode: "<approved-local|approved-cloud|metadata-only|public-only|blocked>"
+  receipt_path: "<governance receipt path>"
+  receipt_sha256: "<sha256>"
+  policy_source: "<institutional or repository policy source>"
+  policy_version: "<version or date>"
+  policy_verified_at: "<ISO 8601>"
+artifacts:
+  - role: "<artifact role>"
+    path: "<artifact path>"
+    version: "<artifact version>"
+    sha256: "<sha256>"
+    sensitivity: "<public|aggregate-safe|restricted|unknown>"

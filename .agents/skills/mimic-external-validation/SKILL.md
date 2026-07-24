@@ -1,6 +1,6 @@
 ---
 name: mimic-external-validation
-description: Plan and implement external validation of MIMIC-derived cohorts, phenotypes, and models in eICU or other ICU datasets. Use for variable harmonization, cohort-definition transport, feature availability matrices, unit conversion, model freezing, calibration, discrimination, phenotype assignment, and transportability limitations.
+description: Plan, implement, and audit external validation of MIMIC-derived cohorts, phenotypes, and models in eICU or other ICU datasets. Use for variable harmonization, cohort-definition transport, feature availability matrices, unit conversion, model freezing, calibration, discrimination, phenotype assignment, and transportability limitations.
 ---
 
 # MIMIC External Validation
@@ -8,6 +8,13 @@ description: Plan and implement external validation of MIMIC-derived cohorts, ph
 用这个 skill 将 MIMIC-IV 中开发的 cohort、phenotype 或 model 迁移到 eICU、HiRID、AmsterdamUMCdb 或其他 ICU 数据集做外部验证。核心是先做 definition transport 和 variable harmonization，再评估性能。
 
 先应用 `mimic-data-governance` 及各外部数据源的数据治理协议；MIMIC 的 DUA 不自动授权使用或共享外部数据库。输出必须包含可执行的 mapping artifact 和冻结规则，不能只给建议清单。
+
+## 选择操作
+
+- `operation: build`：规划或实施验证与 transport。
+- `operation: audit`：只读审查现有 frozen object、mapping、plan、results 和 claims；不得重新训练、重新聚类、映射变量、校准或更新模型。
+
+audit 由 `mimic-review` 调用时，使用同一 `review_run_id` 和 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: external-validation`、`coverage_status`、`recommendation`、canonical findings 和 `gate_effect`；缺少 frozen rule、独立数据关系、样本/事件数、精度或 mapping 证据时标记 `not-assessed`。
 
 ## 先确认验证对象
 
@@ -18,6 +25,8 @@ description: Plan and implement external validation of MIMIC-derived cohorts, ph
 - 目标总体和 transport estimand 是什么？是否需要 selection/transport weighting？
 
 不同对象需要不同证据，不要混用。
+
+先给验证类型定名：temporal、geographic、different-setting、internal-external、replication、transport 或 update。再区分 `pure evaluation`、预设 recalibration-in-the-large、其他 recalibration 与 model updating；任何更新后的对象都不能继续冒充原模型的纯外部验证。表型在外部库 outcome-informed re-clustering 属于重新发现，不是冻结 assignment rule 的 external validation。
 
 ## 变量映射
 
@@ -48,6 +57,8 @@ description: Plan and implement external validation of MIMIC-derived cohorts, ph
 - ICU 类型、数据采集频率、单位、治疗实践和 missingness 都可能变化。
 - 外部验证失败不一定表示原模型无效，也可能是变量映射或 population shift。
 - 报告 external cohort 与 MIMIC derivation cohort 的差异。
+- 报告目标样本数、事件数/cluster support、关键指标或估计的区间精度；不能只凭一个点估计宣布成功或失败。
+- 因果 effect transport/replication 必须依赖 `causal` pass 的 estimand、识别与可运输性假设审查；本 skill 不单独证明因果识别。
 
 ## 完成前检查
 

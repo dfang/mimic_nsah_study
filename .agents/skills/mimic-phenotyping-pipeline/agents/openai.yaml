@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Phenotyping"
-  short_description: "Build stable, reproducible MIMIC clinical phenotypes"
-  default_prompt: "Use $mimic-phenotyping-pipeline to design or audit this MIMIC phenotyping analysis."
+  short_description: "Build or audit reproducible MIMIC phenotypes"
+  default_prompt: "Use $mimic-phenotyping-pipeline with the requested build or audit operation for this MIMIC phenotyping analysis."

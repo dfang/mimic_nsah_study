@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Reproducibility Release"
-  short_description: "Package auditable, reproducible MIMIC research releases."
-  default_prompt: "Use $mimic-reproducibility-release to prepare an auditable reproducibility release for this MIMIC study."
+  short_description: "Build or audit reproducible MIMIC research releases"
+  default_prompt: "Use $mimic-reproducibility-release with the requested build or audit operation for this MIMIC study release."

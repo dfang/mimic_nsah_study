@@ -1,0 +1,270 @@
+{
+  "schema_version": "1.0",
+  "operation": "audit",
+  "receipt_template": "../assets/templates/review-pass-receipt.yaml",
+  "predicate_dsl": {
+    "operators": {
+      "always": "boolean",
+      "any": "non-empty list of predicates",
+      "all": "non-empty list of predicates",
+      "field_in": {
+        "field": "dotted input field",
+        "values": "non-empty list of strings"
+      }
+    },
+    "routing_context": {
+      "fields": {
+        "review.scope": "string_array",
+        "review.claims": "string_array",
+        "study.design_family": "string",
+        "protocol.required_scopes": "string_array",
+        "artifacts.role": "projected_string_array",
+        "acceptance_evidence.roles": "string_array",
+        "upstream.protocol_time_receipt_status": "string",
+        "upstream.sql_data_receipt_status": "string"
+      },
+      "array_projection": "artifacts.role projects the role field from every object in the artifacts array",
+      "missing_field": "does_not_match"
+    },
+    "field_in_semantics": "string equality or string-array overlap after declared projection"
+  },
+  "selectors": {
+    "canonical_pass_ids": [
+      "governance",
+      "protocol-time",
+      "sql-data",
+      "clinical",
+      "statistics",
+      "prediction",
+      "causal",
+      "phenotyping",
+      "external-validation",
+      "evidence-novelty",
+      "journal",
+      "reproducibility"
+    ],
+    "aliases": {
+      "design-specific": {
+        "resolution": "exactly_one",
+        "by_field": "study.design_family",
+        "mapping": {
+          "prediction": ["prediction"],
+          "causal": ["causal"],
+          "phenotyping": ["phenotyping"]
+        },
+        "unresolved": "fail_closed"
+      },
+      "all": {
+        "resolution": "all_applicable"
+      }
+    }
+  },
+  "passes": [
+    {
+      "pass_id": "governance",
+      "skill": "mimic-data-governance",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": [],
+      "input_roles": ["review-input", "governance-policy", "artifact-inventory"],
+      "applicability": {"always": true}
+    },
+    {
+      "pass_id": "protocol-time",
+      "skill": "mimic-study-protocol-sap",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "protocol", "sap", "time-contract", "deviation-log"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["protocol", "sap", "time-claims", "formal-review-gate"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["protocol", "sap", "time-contract", "deviation-log"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "sql-data",
+      "skill": "mimic-bigquery-qc",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "protocol", "sql", "schema", "query-qc"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["sql", "query-derived-data"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["sql", "schema", "query-qc"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "clinical",
+      "skill": "clinical-reviewer",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "protocol", "codebook", "analysis", "manuscript"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["clinical-constructs", "clinical-interpretation", "manuscript"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["protocol", "codebook", "analysis", "manuscript"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "statistics",
+      "skill": "statistics-reviewer",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "protocol", "sap", "analysis", "results"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["quantitative-design", "analysis", "results", "manuscript"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["sap", "analysis", "results", "manuscript"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "prediction",
+      "skill": "mimic-prediction-modeling",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance", "statistics"],
+      "input_roles": ["study-manifest", "protocol", "model-specification", "validation-results"],
+      "applicability": {"field_in": {"field": "study.design_family", "values": ["prediction"]}}
+    },
+    {
+      "pass_id": "causal",
+      "skill": "mimic-causal-analysis-guardrails",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance", "statistics"],
+      "input_roles": ["study-manifest", "protocol", "causal-design", "analysis", "diagnostics"],
+      "applicability": {"field_in": {"field": "study.design_family", "values": ["causal"]}}
+    },
+    {
+      "pass_id": "phenotyping",
+      "skill": "mimic-phenotyping-pipeline",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance", "statistics"],
+      "input_roles": ["study-manifest", "protocol", "phenotype-specification", "stability-results"],
+      "applicability": {"field_in": {"field": "study.design_family", "values": ["phenotyping"]}}
+    },
+    {
+      "pass_id": "external-validation",
+      "skill": "mimic-external-validation",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "frozen-transform", "cohort-mapping", "validation-plan", "validation-results"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["external-validation", "transportability"]}},
+          {"field_in": {"field": "review.claims", "values": ["external-validation", "transportability"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["validation-plan", "validation-results", "cohort-mapping"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "evidence-novelty",
+      "skill": "mimic-literature-evidence",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["review-scope", "search-log", "screening-log", "evidence-table", "citation-verification"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["novelty", "evidence-synthesis", "guideline", "citation"]}},
+          {"field_in": {"field": "review.claims", "values": ["novelty", "guideline", "literature"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["search-log", "evidence-table", "citation-verification"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "journal",
+      "skill": "journal-reviewer",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["study-manifest", "protocol", "results", "manuscript", "tables", "figures", "reporting-checklist"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["manuscript", "abstract", "presentation", "submission-readiness"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["manuscript", "abstract", "tables", "figures", "reporting-checklist"]}}
+        ]
+      }
+    },
+    {
+      "pass_id": "reproducibility",
+      "skill": "mimic-reproducibility-release",
+      "operation": "audit",
+      "read_only": true,
+      "dependencies": ["governance"],
+      "input_roles": ["repository", "environment-lock", "run-manifest", "artifact-provenance", "release-manifest"],
+      "applicability": {
+        "any": [
+          {"field_in": {"field": "review.scope", "values": ["executable-results", "release", "manuscript-figures", "submission-readiness"]}},
+          {"field_in": {"field": "artifacts.role", "values": ["repository", "environment-lock", "run-manifest", "artifact-provenance", "release-manifest"]}}
+        ]
+      }
+    }
+  ],
+  "gates": {
+    "analysis_review": {
+      "required_passes": ["governance", "protocol-time", "sql-data", "clinical", "statistics"],
+      "design_required_by_family": {
+        "prediction": ["prediction"],
+        "causal": ["causal"],
+        "phenotyping": ["phenotyping"]
+      },
+      "conditional_passes": [
+        {
+          "pass_id": "external-validation",
+          "when": {
+            "any": [
+              {"field_in": {"field": "protocol.required_scopes", "values": ["external-validation", "transportability"]}},
+              {"field_in": {"field": "review.claims", "values": ["external-validation", "transportability"]}}
+            ]
+          }
+        },
+        {
+          "pass_id": "reproducibility",
+          "when": {"field_in": {"field": "acceptance_evidence.roles", "values": ["executable-results"]}}
+        }
+      ]
+    },
+    "manuscript_review": {
+      "required_passes": ["governance", "clinical", "statistics", "journal", "reproducibility"],
+      "design_required_by_family": {
+        "prediction": ["prediction"],
+        "causal": ["causal"],
+        "phenotyping": ["phenotyping"]
+      },
+      "conditional_passes": [
+        {
+          "pass_id": "protocol-time",
+          "when": {"field_in": {"field": "upstream.protocol_time_receipt_status", "values": ["missing", "stale", "unverified"]}}
+        },
+        {
+          "pass_id": "sql-data",
+          "when": {
+            "all": [
+              {"field_in": {"field": "review.claims", "values": ["query-derived"]}},
+              {"field_in": {"field": "upstream.sql_data_receipt_status", "values": ["missing", "stale", "unverified"]}}
+            ]
+          }
+        },
+        {
+          "pass_id": "external-validation",
+          "when": {"field_in": {"field": "review.claims", "values": ["external-validation", "transportability"]}}
+        },
+        {
+          "pass_id": "evidence-novelty",
+          "when": {"field_in": {"field": "review.claims", "values": ["novelty", "guideline", "literature"]}}
+        }
+      ]
+    }
+  }
+}

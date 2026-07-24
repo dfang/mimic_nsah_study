@@ -1,6 +1,6 @@
 ---
 name: mimic-prediction-modeling
-description: Develop, internally validate, evaluate, freeze, and document clinical prediction models using MIMIC-IV. Use for diagnostic or prognostic models that require a subject-level split, explicit prediction landmark and horizon, leakage-safe preprocessing, bootstrap or nested cross-validation, calibration, discrimination, clinical utility, subgroup fairness evaluation, model freezing, or a model card. Do not use to estimate treatment effects or to name unsupervised phenotypes.
+description: Develop, audit, internally validate, evaluate, freeze, and document clinical prediction models using MIMIC-IV. Use for diagnostic or prognostic models that require a subject-level split, explicit prediction landmark and horizon, leakage-safe preprocessing, bootstrap or nested cross-validation, calibration, discrimination, clinical utility, subgroup fairness evaluation, model freezing, or a model card. Do not use to estimate treatment effects or to name unsupervised phenotypes.
 ---
 
 # MIMIC Prediction Modeling
@@ -8,6 +8,21 @@ description: Develop, internally validate, evaluate, freeze, and document clinic
 Build prediction models whose performance corresponds to a real decision point and can be reproduced on new patients. Prefer a well-validated simple baseline over unsupported algorithm complexity.
 
 Apply `mimic-data-governance` before reading features or training models. Treat split membership, embeddings, serialized models, and model weights derived from MIMIC as sensitive unless release review establishes otherwise.
+
+## 选择操作
+
+- `operation: build`：开发、验证、冻结并记录模型。
+- `operation: audit`：只读审查现有 specification、pipeline、split、results 和 model card；不得训练、调参、重校准、生成新结果表或更新模型。
+
+audit 由 `mimic-review` 调用时，使用同一 `review_run_id` 与 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: prediction`、`coverage_status`、`recommendation`、canonical findings 和 `gate_effect`；缺少可核验材料时标记 `not-assessed`。
+
+audit 分开报告三个轴，不能用一个总分掩盖问题：
+
+1. **development quality**：样本、landmark、患者级拆分、fold 内预处理、模型选择、过拟合和冻结证据；
+2. **evaluation risk of bias**：独立性、调参污染、reference standard/outcome、缺失、指标、校准、不确定性与完整 pipeline 的 internal validation；
+3. **intended-use applicability**：目标人群、setting、时点、预测 horizon、可用 predictors、行动与临床效用。
+
+使用 PROBAST+AI 的适用 domain 评价偏倚风险与适用性；TRIPOD+AI 只评价报告完整性，不能替代方法学有效性判断。
 
 ## Required prediction contract
 

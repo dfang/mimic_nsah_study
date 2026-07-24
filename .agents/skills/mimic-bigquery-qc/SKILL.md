@@ -11,6 +11,18 @@ Review correctness, cost, and reproducibility. Do not treat formatting as valida
 
 Apply `mimic-data-governance` before inspecting restricted query outputs. Keep patient-level results in an approved local or controlled environment; review SQL text and non-sensitive schemas without exporting underlying rows.
 
+## 审查操作与证据等级
+
+由 `mimic-review` 调用或输入声明 `operation: audit` 时，本 skill 是只读 `sql-data` pass：不得改 SQL、执行写入查询、创建表或把未运行的检查写成已验证。使用同一 `review_run_id` 和 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: sql-data`、`coverage_status`、`recommendation`、canonical findings 和 `gate_effect`；缺少执行权限或结果时标记 `not-assessed`。
+
+每项结论注明最高证据等级：
+
+- `text-only`：仅审查 SQL/schema 文本；不能声称语法、成本、行数或唯一性已执行验证。
+- `dry-run`：记录 query hash、project/location、job ID、bytes processed 和 dry-run 状态；只证明 dry-run 实际覆盖的检查。
+- `executed-qc`：另记录验证查询、job ID、执行时间、行数/唯一性/缺失/范围结果和适用输入版本。
+
+不要伪造不可用的 job metadata。SQL 结构审查与临床 code/source semantics 是不同证据；概念含义、单位和真实记录流程不清时，要求 clinical/codebook 审查而不是仅凭 SQL 通过。
+
 ## Verify data assets
 
 - Record the core MIMIC-IV version and the exact hosp/icu schemas visible to the user.
@@ -67,9 +79,10 @@ Do not approve:
 
 Return an issue register with severity, query location, evidence, impact, correction, and verification query. Include:
 
+- the highest evidence level actually reached: `text-only`, `dry-run`, or `executed-qc`;
 - verified schemas and derived `_metadata` or equivalent version evidence;
 - dry-run/syntax result;
 - row-count and uniqueness checkpoints;
 - temporal leakage findings;
 - cost findings;
-- limitations that remain `not assessed` because execution access is unavailable.
+- limitations that remain `not-assessed` because execution access is unavailable.

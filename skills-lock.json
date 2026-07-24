@@ -5,25 +5,25 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/clinical-reviewer/SKILL.md",
-      "computedHash": "1b818a3aa79589d1476993628fbbbd9843f7d67c2d30eac6e1963acd90959edf"
+      "computedHash": "7d94a8b11c401cfa6f47171593f2eea095086e09cbdec3f9057c64f8b75548a4"
     },
     "journal-reviewer": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/journal-reviewer/SKILL.md",
-      "computedHash": "ce4172c9ee5ad2dce87c770a2e5fc140bb544e9bc5359e51cb7145786dc55a94"
+      "computedHash": "6f34769a457fb166d3d5d4cd2254d1d15281e8df69c6ca3c6983783e48554f54"
     },
     "mimic-bigquery-qc": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-bigquery-qc/SKILL.md",
-      "computedHash": "7d1537d49cbde6fbfa2785b594bb7fa30efac00a6bfbe2b124876b931374bc8e"
+      "computedHash": "d7edea02d326601a53ed0df8d53abea211894b86511e19eb0b9f15d2a0f5d966"
     },
     "mimic-causal-analysis-guardrails": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-causal-analysis-guardrails/SKILL.md",
-      "computedHash": "c1af41517822915d3f5834fab7c67f5a85f7f1ff474b019974a5cd17dc9a5382"
+      "computedHash": "a93716dadac056ba1d44b9bb7b583b2516efbeb9fb4cd82ec0d94033abe780c8"
     },
     "mimic-clinical-codebook": {
       "source": "dfang/mimic-skills",
@@ -35,7 +35,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-clinical-manuscript/SKILL.md",
-      "computedHash": "0231ea86a60187fcb00748b021ce7f83b1554ec2aa3f8310b4965005649f4053"
+      "computedHash": "0816efaa1351935107810aa020a12675076945cc8b9a4b8585d3543b6d4bf8ee"
     },
     "mimic-cohort-builder": {
       "source": "dfang/mimic-skills",
@@ -47,7 +47,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-data-governance/SKILL.md",
-      "computedHash": "452773acbd7e1c7e79b5a23a2b41f6fee36ac6a32b7135eb179db405d02830f0"
+      "computedHash": "86c436563116986a668f116de53d92137d0b233a74c38b82b5602fc46b493a50"
     },
     "mimic-derived-feature-extractor": {
       "source": "dfang/mimic-skills",
@@ -65,7 +65,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-external-validation/SKILL.md",
-      "computedHash": "e5e2568e9b84a38c9dc58ada6591bae56a3d456fad2cb931e5436ff1f48e29f5"
+      "computedHash": "ca62cc8d2b152a4b3378b2b3909f198387518d050706dd7f8f31af2a844461c6"
     },
     "mimic-iv-expert": {
       "source": "dfang/mimic-skills",
@@ -77,7 +77,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-literature-evidence/SKILL.md",
-      "computedHash": "905ba1b1301531f1a870c1d1f21458bfd462dc70af2b87ea6d1d8534057b6f2d"
+      "computedHash": "ad95a653bc28519e8cff426c7c741c23efb98cb9d450e44dcfcfe28b81d7b23e"
     },
     "mimic-manuscript-compiler": {
       "source": "dfang/mimic-skills",
@@ -89,19 +89,19 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-phenotyping-pipeline/SKILL.md",
-      "computedHash": "01fbcf9253aecadc7d752100b4bc6b5a4ad38c4b709e694590c4bca08705dc14"
+      "computedHash": "5ee834a3eccf2d388e6871c95ea15d877a76dcaaac25247e8794d2e82b0fc67e"
     },
     "mimic-prediction-modeling": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-prediction-modeling/SKILL.md",
-      "computedHash": "77f6accb9e3633aae7d6067ddace845b1909ee4d29430c1874288341df6c7e38"
+      "computedHash": "64d9ca39b706e72c14e1c7353d7705e75371c548549718728b3d84a8ae665a74"
     },
     "mimic-reproducibility-release": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-reproducibility-release/SKILL.md",
-      "computedHash": "75666be6d9eeff10e28ea690d4609821758cbaa65b63e9bab6405a12da1e42aa"
+      "computedHash": "2ff2e1a0dc1fafb50cd982faa15fa6d6b207284c2462792def7de92ef96be0c2"
     },
     "mimic-research-topic-scout": {
       "source": "dfang/mimic-skills",
@@ -113,7 +113,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-review/SKILL.md",
-      "computedHash": "8017e7b53c770829c55591905caafb2caa9c2f3950e62350c7a716e079ed31cc"
+      "computedHash": "a929be753a048c6ec87953c755d055f3df0b1797b9c24f685cbfe733c654d15b"
     },
     "mimic-statistical-analysis": {
       "source": "dfang/mimic-skills",
@@ -125,19 +125,19 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-study-orchestrator/SKILL.md",
-      "computedHash": "e32c6482b22837a18f63d81fa19a818bc457e9ac5147ab1e3796316878571281"
+      "computedHash": "b3d7913e3f2499fb3263457b4cf23ffe7fd09c72498b6beeda3adafa10fee3b3"
     },
     "mimic-study-protocol-sap": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-study-protocol-sap/SKILL.md",
-      "computedHash": "3d6461fd1bfe54a100bed958073a83f7c7cc64683596459fc1f025072a7e800e"
+      "computedHash": "dca7dacd78187eb41468f01cb5c2cecb28f17354125002f43c975ee07b34cfa8"
     },
     "mimic-submission-packager": {
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/mimic-submission-packager/SKILL.md",
-      "computedHash": "3cf6dbc3834e8818f5b4ac584601bb5df759c77df313776055dd54433322f0de"
+      "computedHash": "a801a9ab074f75c8beb52dc423ddc1b8217f8dba093ba8c485603a5c07dfd6dc"
     },
     "mimic-transfusion-blood-products": {
       "source": "dfang/mimic-skills",
@@ -149,7 +149,7 @@
       "source": "dfang/mimic-skills",
       "sourceType": "github",
       "skillPath": "skills/statistics-reviewer/SKILL.md",
-      "computedHash": "9aa05c03e50dc13905e6d55588c05b188033431d6360882017aa0cb9a9fa9db3"
+      "computedHash": "3c56e16c0201cb2ae0502496d70460abbbdddc4dfee30b9704c6b5a0dea256a9"
     }
   }
 }

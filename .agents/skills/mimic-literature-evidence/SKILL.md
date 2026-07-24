@@ -7,6 +7,13 @@ description: Build and audit a traceable literature evidence base for MIMIC clin
 
 Build an evidence trail that another researcher can rerun and audit. Separate what the literature establishes from what the proposed MIMIC analysis will test.
 
+## Choose the operation
+
+- `operation: build`: search, screen, verify, synthesize, or update bibliography artifacts.
+- `operation: audit`: 只读审查现有 scope、search log、screening、evidence table、claim-citation mapping 和 citation verification；不得补搜、补筛、改 `references.bib` 或猜测修复 DOI/PMID。
+
+When `mimic-review` invokes audit, use the same `review_run_id` and `input_hashes`, then copy `../mimic-review/assets/templates/review-pass-receipt.yaml` and return `pass_id: evidence-novelty`, `coverage_status`, `recommendation`, canonical findings, and `gate_effect`. Missing search dates, exact strategies, screening trail, full-text access, evidence table, or identifier resolution remain `not-assessed`.
+
 ## Set the review scope
 
 1. State the clinical question, population, exposure or intervention, comparator, outcomes, study designs, date range, language limits, and MIMIC-specific novelty question.
@@ -14,6 +21,17 @@ Build an evidence trail that another researcher can rerun and audit. Separate wh
 3. Record the search date and the last date covered by every database.
 
 Copy `assets/templates/search-log.md` for the search record. Read `references/evidence-fields.md` before building the evidence or verification tables.
+
+Match the audit standard to the declared review type:
+
+- targeted citation update checks identity and claim support but cannot establish novelty;
+- rapid evidence review records abbreviated methods and the resulting coverage limits;
+- scoping review uses an applicable PRISMA-ScR workflow;
+- systematic review/search uses applicable PRISMA and PRISMA-S elements, duplicate independent screening or a justified alternative, search peer review when required, protocol/deviation handling, and design-appropriate risk-of-bias assessment.
+
+Do not infer a broad evidence gap from a narrow PubMed query. If coverage is insufficient, keep novelty `not-assessed`.
+
+In audit, assign the evidence already produced a type rather than repeating the author's label. A single narrow query without a prespecified abbreviated review method, reproducible log, and screening trail is `targeted evidence`, not a rapid review and never a systematic search. Record that label in the receipt together with the resulting novelty limit.
 
 ## Search reproducibly
 
@@ -58,6 +76,7 @@ Successful BibTeX serialization proves only that a record can be encoded; it doe
 ## Synthesize without overclaiming
 
 - Link each material claim to verified sources and distinguish direct evidence, inference, and the reviewer's interpretation.
+- Maintain a claim-citation matrix for manuscript-facing audit: exact claim/location, supporting record, eligible evidence span, direction, population/design match, and unresolved conflict.
 - Weight evidence by design quality, relevance, precision, consistency, and risk of bias rather than article count alone.
 - Identify duplicated cohorts and overlapping MIMIC samples so they are not treated as independent replications.
 - Describe the remaining gap in terms of a clinical decision or estimand, not merely the absence of a particular algorithm.

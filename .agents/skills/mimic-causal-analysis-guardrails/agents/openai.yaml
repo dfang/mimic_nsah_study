@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Causal Guardrails"
-  short_description: "Guard MIMIC target-trial and causal-effect analyses"
-  default_prompt: "Use $mimic-causal-analysis-guardrails to design or audit this MIMIC causal analysis."
+  short_description: "Build or audit MIMIC causal analyses safely"
+  default_prompt: "Use $mimic-causal-analysis-guardrails with the requested build or audit operation for this MIMIC causal analysis."

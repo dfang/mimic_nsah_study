@@ -1,0 +1,29 @@
+bundle_version: "1.0"
+stage: manuscript
+study_id: "<study-id>"
+created_at_utc: "<YYYY-MM-DDTHH:MM:SSZ>"
+source_commit: "<git-sha>"
+upstream:
+  analysis_review_artifact: "<path>"
+  analysis_review_sha256: "<sha256>"
+  issue_register: "<path>"
+members:
+  - role: primary_manuscript
+    path: manuscript.md
+    version: "<artifact-version>"
+    sha256: "<sha256>"
+    sensitivity: public_or_restricted
+    status: generated_or_verified
+  # Repeat the six-field member record for packaged artifacts such as:
+  # supplement -> supplement.md; table -> tables/<table-file>;
+  # figure -> figures/<figure-file>; bibliography -> references.bib;
+  # citation_style -> journal.csl.
+verification:
+  quantitative_claim_trace: "<path-to-claim-provenance>"
+  citation_verification: "<path-to-citation-verification>"
+  reporting_guideline_map: "<path-to-reporting-map>"
+  unresolved_items: "<path-to-unresolved-register>"
+  manuscript_review_status: pending_independent_review
+
+# Keep only metadata and artifact paths in this index; never embed manuscript
+# text, patient-level data, or other restricted content.

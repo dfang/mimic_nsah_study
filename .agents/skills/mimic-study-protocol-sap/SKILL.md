@@ -7,6 +7,15 @@ description: Draft, audit, version, and freeze a reproducible MIMIC study protoc
 
 在查看主要结局分布或调整确认性分析之前，生成可冻结、可审计的 protocol/SAP。不要把未决定事项伪装成已定方案；保留 `TBD` 并维持 `DRAFT`，直到门禁全部通过。
 
+## 选择操作
+
+- `operation: build`：起草、版本化或冻结 protocol/SAP，按本 skill 的冻结门禁产生新产物。
+- `operation: audit`：只读比较现有 protocol、SAP、时间契约、lock 和 deviation log；不得补写 `TBD`、改文件、改变冻结状态或替作者批准。
+
+audit 由 `mimic-review` 调用时，使用同一 `review_run_id` 和 `input_hashes`，复制 `../mimic-review/assets/templates/review-pass-receipt.yaml`，返回 `pass_id: protocol-time`。`coverage_status` 只用 `assessed | not-assessed`，`recommendation` 只用 `proceed | revise | redesign | not-assessable`，finding 使用模板中的 canonical severity、status、stage、domain 和 `gate_effect`。任何未提供或不可核验字段均为 `not-assessed`，不能在审查中推断补齐。
+
+audit 应逐字段给出 freeze coverage：研究问题、estimand/target、design route、时间契约、队列与 analysis unit、结局/变量、样本量依据、模型、缺失、多重性、验证、敏感性、版本/hash/批准及 deviation log。每项标记 `assessed`、`not-assessed` 或已定位偏离，并将冻结版本与当前实现、结果和稿件之间的实质偏离单列。
+
 ## 先运行前置门禁
 
 1. 对任何真实 MIMIC 文件先调用 `mimic-data-governance`。没有允许决定时，只使用公开 schema、文献和合成数据。

@@ -9,7 +9,7 @@ Build a journal-ready submission package whose files, declarations, checklists, 
 
 Apply `mimic-data-governance` before opening study outputs. Submission packages must contain cleared aggregate material only; never attach restricted patient-level examples, notes, images, embeddings, model weights, or credentials.
 
-Require an independent final-manuscript review from `mimic-review` that includes `journal-reviewer`, covers the manuscript, tables, figures, supplement, and reporting checklist, and has no open blocking or major findings. If that evidence is absent, the package may be inventoried but the submission verdict must remain not ready.
+Require an independent final-manuscript review from `mimic-review` that includes `journal-reviewer`, covers the manuscript, tables, figures, supplement, and reporting checklist, returns `READY`, and has no open `requires_redesign`, `blocks_ready`, blocking, or major findings. If that evidence is absent, the package may be inventoried but the submission verdict must remain not ready.
 
 Also require a completed `mimic-reproducibility-release` verdict and hashed release manifest showing the public/restricted artifact split, environment and provenance evidence, and no open release blockers. If the release gate is absent or incomplete, inventory work may proceed but the submission verdict must remain not ready.
 

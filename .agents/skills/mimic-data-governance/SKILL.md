@@ -7,6 +7,16 @@ description: Enforce MIMIC and PhysioNet data-governance gates before reading fi
 
 把治理检查放在任何内容读取、工作区扫描、模型调用或公开发布之前。默认本地处理；只在证据充分且机构要求允许时使用外部服务。无法确认数据类别、访问资格或服务行为时，停止处理受限内容，不要用猜测补齐合规结论。
 
+## 审查操作与统一回执
+
+由 `mimic-review` 调用或输入声明 `operation: audit` 时，本 skill 是只读 `governance` pass：
+
+- 只审查明确列出的路径、metadata、政策证据和处理目的；不扩大扫描、不改变权限、不上传内容，也不修复研究文件。
+- 使用同一 `review_run_id` 与 `input_hashes`，按 `../mimic-review/assets/templates/review-pass-receipt.yaml` 返回 `pass_id: governance`。
+- `coverage_status` 仅用 `assessed | not-assessed`；`recommendation` 仅用 `proceed | revise | redesign | not-assessable`。
+- finding 使用模板中的 canonical severity、status、stage、domain 与 `gate_effect`；缺少政策或范围证据必须记为 `not-assessed`，不能把治理决定写成含混的“pass”。
+- 治理决定和 review receipt 同时返回；决定控制允许读取的范围，receipt 记录本次审查证据，二者不可互相替代。
+
 ## 执行门禁
 
 1. **限定范围**：记录任务目的、拟读取的路径、拟调用的工具、数据来源和预期输出。只处理完成任务所需的最小范围。
@@ -17,6 +27,8 @@ description: Enforce MIMIC and PhysioNet data-governance gates before reading fi
 6. **作出决定**：仅输出 `PROCEED_LOCAL`、`PROCEED_APPROVED_SERVICE`、`PROCEED_PUBLIC_ONLY` 或 `BLOCKED`。不得以“已去标识”替代 DUA 检查。
 7. **最小化执行**：获得允许后只读取必要文件，避免打印患者级内容，并让中间产物继承输入中的最高敏感级别。
 8. **发布前复核**：分别审查论文汇总结果、代码、模型和衍生数据；公开代码义务不等于允许公开数据或模型。
+
+对每条具有约束力的政策或服务证据，记录来源、版本或发布日期、内容 hash、核验时间、复核或到期时间及适用账户/区域。只记录一个链接或产品名称不构成当前证据。汇总结果的披露阈值必须服从当前 DUA、机构政策和披露审查；本 skill 不规定一个可跨机构通用的小单元格阈值。
 
 ## 工作区扫描规则
 
@@ -53,11 +65,15 @@ source_projects_and_versions: []
 authorized_user_confirmed: false
 processing_destinations: []
 service_evidence:
+  source: null
+  version_or_date: null
+  sha256: null
   zero_retention: unknown
   no_training: unknown
   no_human_review: unknown
   subprocessors_and_region: unknown
   verified_on: null
+  expires_or_review_on: null
 controls: []
 excluded_paths: []
 release_plan: "代码、汇总结果、数据和模型分别说明"

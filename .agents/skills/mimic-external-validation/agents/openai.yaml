@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC External Validation"
-  short_description: "Validate frozen MIMIC models and definitions externally"
-  default_prompt: "Use $mimic-external-validation to design and document this external validation."
+  short_description: "Build or audit external validation of frozen MIMIC work"
+  default_prompt: "Use $mimic-external-validation with the requested build or audit operation for this external validation."

@@ -1,4 +1,4 @@
 interface:
-  display_name: "MIMIC Comprehensive Review"
-  short_description: "Run evidence-traceable multidisciplinary MIMIC review"
-  default_prompt: "Use $mimic-review to run an independent comprehensive audit of this MIMIC study."
+  display_name: "MIMIC Review"
+  short_description: "Run evidence-traceable, multi-perspective MIMIC review gates"
+  default_prompt: "Use $mimic-review to perform a read-only, evidence-traceable, comprehensive review of this MIMIC study."

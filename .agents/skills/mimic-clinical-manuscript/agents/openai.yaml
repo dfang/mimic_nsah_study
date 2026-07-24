@@ -1,4 +1,4 @@
 interface:
   display_name: "MIMIC Clinical Manuscript"
-  short_description: "Write traceable MIMIC manuscripts with verified citation keys"
-  default_prompt: "Use $mimic-clinical-manuscript to draft citation-aware Markdown from frozen MIMIC artifacts and a verified references.bib."
+  short_description: "Write design-routed, traceable MIMIC manuscripts"
+  default_prompt: "Use $mimic-clinical-manuscript to route from the frozen design family and subtype, draft citation-aware Markdown from reviewed artifacts, and return a hashed manuscript bundle index."

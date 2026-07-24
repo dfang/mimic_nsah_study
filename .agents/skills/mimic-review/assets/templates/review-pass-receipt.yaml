@@ -1,0 +1,37 @@
+review_receipt_version: "1.0"
+review_run_id: "<same stable id as review-input.yaml>"
+pass_id: "<registry pass_id>"
+operation: audit
+reviewer_identity:
+  agent_or_person: "<independent reviewer identity>"
+  role: "<reviewer role>"
+skill_version: "<skill commit, release, or content hash>"
+input_hashes:
+  - role: "<artifact role>"
+    path: "<artifact path>"
+    sha256: "<same sha256 as review-input.yaml>"
+coverage_status: "<assessed|not-assessed>"
+coverage_notes:
+  assessed:
+    - "<material actually reviewed>"
+  not_assessed:
+    - "<missing, inaccessible, or out-of-scope material>"
+recommendation: "<proceed|revise|redesign|not-assessable>"
+findings:
+  - id: "<REV-001>"
+    severity: "<blocking|major|minor|note>"
+    gate_effect: "<blocks_ready|requires_redesign|none>"
+    confidence: "<high|medium|low>"
+    stage: "<question|protocol|concepts|cohort|features|analysis|validation|analysis_review|manuscript|manuscript_review|release|submission>"
+    domain: "<governance|design|data|clinical|statistics|reporting|reproducibility>"
+    artifact: "<path>"
+    location: "<line, query block, table, figure, or section>"
+    evidence: "<observed fact>"
+    risk: "<validity, safety, reproducibility, or publication consequence>"
+    recommended_action: "<smallest verifiable correction>"
+    owner: "<responsible role>"
+    verification: "<evidence required to close>"
+    status: "<open|resolved|accepted-risk|not-assessed>"
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
