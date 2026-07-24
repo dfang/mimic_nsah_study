@@ -1,0 +1,20 @@
+bundle_version: "1.0"
+stage: analysis_review
+review_status: "remediation_complete_pending_independent_rereview"
+artifacts:
+  - role: original_freeze_validation
+    path: reproducibility/freeze-validation.md
+    version: "analysis-freeze-v1.0.0"
+    sha256: "8eddf4ea2b05909d72a5c46797ed68ef170116eddcddce776b9b0ac3ee18e373"
+  - role: canonical_frozen_results
+    path: reproducibility/canonical-results.yaml
+    version: "2026-07-24"
+    sha256: "5065f2bdf8d5f0064b487d4211b5f2dcb8d30bdd09606d23c85b2843a4f4bf0f"
+  - role: superseded_execution_transcript
+    path: dist/analysis_result.md
+    version: "2026-07-16-noncanonical"
+    sha256: "636852d48edb08b286873fbd9f5dafc6301b49a6c5f2f85c0cd5a7f15d28f945"
+  - role: current_issue_register
+    path: reproducibility/issue-register.yaml
+    version: "2026-07-24"
+    sha256: "498f250e7961aa0e05bfaff5f7f5528f6db9ba9255878b92e03fcc4fc80880d3"

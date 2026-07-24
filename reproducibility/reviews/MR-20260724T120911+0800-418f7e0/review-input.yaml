@@ -1,0 +1,61 @@
+review_input_version: "1.2"
+review_run_id: "MR-20260724T120911+0800-418f7e0"
+created_at: "2026-07-24T12:09:11+08:00"
+operation: audit
+mode: gate
+gate: manuscript_review
+requested_passes: [all]
+review:
+  scope:
+    - formal-review-gate
+    - manuscript
+    - manuscript-figures
+    - analysis
+    - results
+    - external-validation
+    - submission-readiness
+    - executable-results
+    - release
+  claims: [external-validation, transportability, query-derived]
+study:
+  manifest_path: study-manifest.yaml
+  manifest_sha256: "c94f17f47df9b5bb1d4db4f1d22c8e006ddf3cebe33718baf166e3e828f4be4c"
+  design_family: phenotyping
+  design_subtype: not_applicable
+repository:
+  identity: "dfang/mimic_nsah_study"
+  commit: "418f7e052a2031e6b88cc38e8e4ea1ea439efd76"
+  dirty_state: false
+governance:
+  mode: public-only
+  receipt_path: DATA_GOVERNANCE.md
+  policy_source: repository
+  policy_version: "2026-07-16"
+  policy_verified_at: "2026-07-24T12:09:11+08:00"
+artifacts:
+  - role: english_manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    version: pre-remediation
+    sha256: "b5e13ad60e81ffcb3bd68d5017d70a21cb44e9235896d22f15b1c85e71433d5e"
+    sensitivity: aggregate-safe
+  - role: chinese_manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
+    version: pre-remediation
+    sha256: "6a60683ea055f00547e6a9b0302b67b598c295a3d8edb1f2f7a27dd26d7777a9"
+    sensitivity: aggregate-safe
+  - role: electronic_supplement
+    path: dist/electronic_supplementary_material.md
+    version: pre-remediation
+    sha256: "143202510b96006a627327aab9de153f330e32c24e3a4494b3091d526ea6ccfc"
+    sensitivity: aggregate-safe
+  - role: frozen_evidence
+    path: reproducibility/freeze-validation.md
+    version: analysis-freeze-v1.0.0
+    sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"
+    sensitivity: aggregate-safe
+review_result:
+  verdict: REVISE
+  blocking_findings: 1
+  major_findings: 5
+  receipts_persisted: false
+  note: "The audit findings are preserved in reproducibility/issue-register.yaml. Specialist receipt files were not generated during the interactive audit, so the remediated manuscript requires a fresh independent gate."

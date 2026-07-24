@@ -1,0 +1,57 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: clinical
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:ffdd7daf52e66b383d3842e464ea5c954f48fcb05e543b1b7e4e87250a7188dd"
+input_hashes:
+  - role: manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    sha256: "315674c1e06e80b60be0259add84ab7d08d6d410a059c61ebee910a7db59a32d"
+  - role: protocol
+    path: protocol.md
+    sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "NSAH definition, clinical feature interpretation, treatment-affected measurements, anemia/RBC framing, outcomes, and eICU mapping."
+  not_assessed:
+    - "Manual chart validation and imaging-grade constructs unavailable in the source artifacts."
+recommendation: revise
+findings:
+  - id: "METH-004"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: validation
+    domain: clinical
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Phenotype derivation and transport assessment, lines 56-60"
+    evidence: "The manuscript does not describe clinically material eICU proxy and measurement differences, including the APACHE motor fallback and substantial informative INR missingness."
+    risk: "Observed differences may reflect documentation and measurement practice rather than the same physiological construct."
+    recommended_action: "Expose database-specific operational definitions and retain crude descriptive transport language."
+    owner: clinical investigator and authors
+    verification: "Main Methods or ESM provides a clinically reviewed cross-database mapping."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-005"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: manuscript_review
+    domain: clinical
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Variables and preprocessing, line 54"
+    evidence: "Extrema over 0-48 hours can incorporate treatment response and unequal measurement opportunity."
+    risk: "The term phenotype may be interpreted as an admission-state subtype."
+    recommended_action: "Use early-course physiological group terminology consistently."
+    owner: authors
+    verification: "Title, abstract, Methods, and conclusion do not imply admission-baseline phenotyping."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

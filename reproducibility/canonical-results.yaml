@@ -1,0 +1,77 @@
+artifact_version: "1.0"
+artifact_status: "FROZEN_EXPLORATORY"
+canonical_for:
+  - dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+  - dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
+  - dist/electronic_supplementary_material.md
+source_evidence:
+  freeze_validation: reproducibility/freeze-validation.md
+  execution_transcript: dist/analysis_result.md
+  execution_transcript_status: "superseded_noncanonical_console_transcript"
+analysis_unit:
+  icu_stays: 1186
+  unique_subjects: 1173
+  repeated_subject_stay_rows: 13
+phenotype_solution:
+  k: 3
+  labels:
+    P1: {n: 694, hospital_mortality_percent: 6.34, icu_mortality_percent: 3.60}
+    P2: {n: 384, hospital_mortality_percent: 32.55, icu_mortality_percent: 26.56}
+    P3: {n: 108, hospital_mortality_percent: 61.11, icu_mortality_percent: 50.93}
+  pca_variance_explained_percent: 56.41
+stability:
+  resampling_unit: subject_id
+  full_pipeline_bootstrap_iterations: 200
+  adjusted_rand_index: {mean: 0.8554, median: 0.8656, mean_oob: 0.8578}
+  minimum_cluster_size_across_iterations: 51
+  evidence_boundary:
+    overall_partition_stability: assessed
+    cluster_specific_jaccard_values: not_assessed
+    assignment_uncertainty_distribution: not_assessed
+    multiple_seed_summary: not_assessed
+association_results:
+  model_status: "exploratory_stay_level_logistic_regression_unadjusted_multiplicity"
+  phenotype_P2_vs_P1: {odds_ratio: 7.59, ci95: [5.07, 11.36]}
+  phenotype_P3_vs_P1: {odds_ratio: 21.21, ci95: [12.08, 37.26]}
+  early_anemia_with_hb_containing_phenotypes:
+    {odds_ratio: 0.99, ci95: [0.68, 1.44], p_unadjusted: 0.955}
+  early_anemia_after_hb_free_rederivation:
+    {odds_ratio: 1.54, ci95: [1.06, 2.22], p_unadjusted: 0.022, status: post_hoc_exploratory}
+eicu_transport:
+  source_release: "eICU-CRD 2.0"
+  execution_date: "2026-07-24"
+  execution_mode: "pure frozen evaluation from private versioned transform bundle"
+  n: 843
+  hospital_count: 66
+  assigned_counts: {P1: 539, P2: 222, P3: 82}
+  hospital_mortality_percent: {P1: 5.38, P2: 25.68, P3: 42.68}
+  hospital_mortality_wilson_ci95_percent:
+    P1: [3.77, 7.62]
+    P2: [20.38, 31.80]
+    P3: [32.54, 53.48]
+  hospital_cluster_bootstrap:
+    iterations: 2000
+    random_seed: 42
+    mortality_percentile_ci95_percent:
+      P1: [3.68, 7.39]
+      P2: [20.75, 31.43]
+      P3: [32.84, 52.44]
+    risk_difference_percentage_points:
+      P2_minus_P1: {estimate: 20.30, ci95: [15.06, 25.83]}
+      P3_minus_P1: {estimate: 37.30, ci95: [26.99, 47.37]}
+  leave_one_hospital_out:
+    iterations: 66
+    monotonic_order_retained_n: 66
+    P2_minus_P1_range_percentage_points: [19.15, 21.53]
+    P3_minus_P1_range_percentage_points: [35.13, 39.42]
+  de_novo_vs_assigned_ari: -0.001674
+  private_transform_bundle_sha256: "63042d68a74643da9c902e4d1f6cd9d774e77d55b5f6e1269851bceb3371dd41"
+  source_commit: "0c837e0bdededebae58241df28a930f50c373d9f"
+  source_run_id: "MIMIC-NSAH-PHENO-01-freeze-20260716"
+  interpretation: "exploratory pure frozen transport; crude mortality and APACHE severity ordering reproduced without eICU fitting, but cluster-boundary replication was not demonstrated"
+claim_boundaries:
+  - "No 48-hour landmark prediction estimand."
+  - "No treatment-effect or causal estimate."
+  - "No evidence that eICU reproduced MIMIC cluster boundaries."
+  - "Outcome access preceded the final exploratory freeze."
+  - "The exact frozen transform is DERIVED_SENSITIVE and is not present in the public repository; its SHA-256 hash and execution provenance are public."

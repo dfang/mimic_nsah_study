@@ -2,7 +2,7 @@
 
 Study: Early physiological phenotypes and outcomes in critically ill adults with non-traumatic subarachnoid hemorrhage
 
-Design: Retrospective cohort study using routinely collected MIMIC-IV 3.1 data with an exploratory fixed-transport assessment in eICU-CRD 2.0.
+Design: Retrospective cohort study using routinely collected MIMIC-IV 3.1 data with exploratory frozen transport of the MIMIC-anchored assignment rule to eICU-CRD 2.0; authorized immutable-transform rerun completed.
 
 Source: Benchimol EI, et al. The RECORD Statement. PLoS Med. 2015;12:e1001885. DOI: 10.1371/journal.pmed.1001885. Checklist wording was verified against the open-access article on 2026-07-16.
 

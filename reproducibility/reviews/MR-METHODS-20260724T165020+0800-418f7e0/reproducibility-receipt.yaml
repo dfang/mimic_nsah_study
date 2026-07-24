@@ -1,0 +1,60 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: reproducibility
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:0390d956f635cd5efd28e6bdb91ac132265f3b4470df544a3a2ed2d2dac146f2"
+input_hashes:
+  - role: environment-lock
+    path: reproducibility/requirements-bigquery.lock
+    sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"
+  - role: artifact-provenance
+    path: reproducibility/artifact-provenance.csv
+    sha256: "a4fe2cf5111300acc7c009db28ad2432d6a70d5a2d28970c67de771588e6ec89"
+  - role: manuscript-bundle
+    path: reproducibility/bundles/manuscript.yaml
+    sha256: "36328cced1cf0af6a967d7bb3e43bcf0e36173993c105c324022d0044beedb0a"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Frozen input hashes, public code, environment lock, run provenance, validation contract, and manuscript-bundle membership."
+  not_assessed:
+    - "Private transform artifact, live BigQuery replay, and current PDF visual inspection after the latest source edits."
+recommendation: revise
+findings:
+  - id: "METH-001"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: validation
+    domain: reproducibility
+    artifact: reproducibility/eicu-validation-plan.yaml
+    location: "status and current_boundary"
+    evidence: "The historical eICU aggregates predate the fail-closed immutable transform contract."
+    risk: "The external evaluation cannot be exactly replayed from the retained evidence, although the no-eICU-refitting method property remains supportable."
+    recommended_action: "Keep the historical artifact limitation explicit; provide a privately hashed transform and rerun receipt only if exact execution reproducibility is claimed."
+    owner: authorized analyst and release manager
+    verification: "Aligned wording distinguishes transport method from exact replay, or exact artifact-based execution evidence is supplied."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-008"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: release
+    domain: reproducibility
+    artifact: reproducibility/bundles/manuscript.yaml
+    location: "English and Chinese manuscript member hashes"
+    evidence: "The bundle records English hash c72399b4... but the reviewed current file is 315674c1...; the Chinese source also differs from its recorded hash."
+    risk: "The current source, PDFs, and review records are no longer bound to one immutable submission state."
+    recommended_action: "After scientific wording is final, regenerate PDFs and rebuild manuscript/provenance hashes."
+    owner: release manager
+    verification: "All bundle members and generation-manifest source hashes match the final files."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

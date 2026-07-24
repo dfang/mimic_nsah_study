@@ -1,0 +1,43 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: sql-data
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:afa684d749ded6da559e3ba98463fd93a54573f6e4022461e39893cfa48aeef9"
+input_hashes:
+  - role: sql
+    path: 10_create_non_traumatic_sah_cohort.sql
+    sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
+  - role: cohort-mapping
+    path: 14_create_eicu_external_validation_cohort.sql
+    sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
+  - role: run-manifest
+    path: reproducibility/run-manifest.yaml
+    sha256: "8251b56df17964dae22a5f48e5f76c52408f8db22236ce2a24f7d9616428ffe5"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Static SQL semantics, cohort grain, half-open windows, join keys, range filters, and recorded aggregate execution provenance."
+  not_assessed:
+    - "Live BigQuery dry run, current table state, patient-level values, and independent replay of historical job IDs."
+recommendation: revise
+findings:
+  - id: "METH-004"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: validation
+    domain: data
+    artifact: 14_create_eicu_external_validation_cohort.sql
+    location: "eICU feature extraction and MIMIC-to-eICU mapping"
+    evidence: "The eICU GCS motor fallback has no 0-48 h timestamp, fallback use is not quantified, and several cross-database pairing windows and range filters differ."
+    risk: "The external assignments may not apply measurement-equivalent inputs."
+    recommended_action: "Report a source/window/range/fallback crosswalk and quantify fallback use; treat mismatches as transport limitations."
+    owner: data analyst and authors
+    verification: "The ESM crosswalk matches both SQL implementations and reports mapping deviations."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

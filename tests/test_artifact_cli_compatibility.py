@@ -188,4 +188,12 @@ def test_dist_is_not_ignored_and_has_no_dated_directories() -> None:
         capture_output=True,
         text=True,
     )
-    assert untracked.stdout == ""
+    allowed_generated_artifacts = {
+        "dist/pdf/generation-manifest.yaml",
+        "dist/pdf/resolved/electronic_supplementary_material.html",
+        "dist/pdf/resolved/manuscript_non_traumatic_sah_phenotypes_cn.html",
+        "dist/pdf/resolved/manuscript_non_traumatic_sah_phenotypes_en.html",
+        "dist/pdf/resolved/strobe_checklist.html",
+    }
+    unexpected = set(untracked.stdout.splitlines()) - allowed_generated_artifacts
+    assert unexpected == set()

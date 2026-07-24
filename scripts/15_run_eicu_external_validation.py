@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
+import json
+from pathlib import Path
 from typing import Iterable
 
 import numpy as np
@@ -26,6 +29,7 @@ MIMIC_DATASET = "non_traumatic_sah_study"
 EICU_DATASET = "eicu_sah_validation"
 RANDOM_SEED = 42
 PRIMARY_K = 3
+HOSPITAL_BOOTSTRAP_ITERATIONS = 2000
 
 FEATURES = [
     "hb_min_48h_all",
@@ -55,9 +59,11 @@ SEVERITY_DIRECTIONS = {
 @dataclass
 class FrozenPipeline:
     features: list[str]
-    imputer: SimpleImputer
-    scaler: StandardScaler
-    pca: PCA
+    imputation_medians: np.ndarray
+    scaler_mean: np.ndarray
+    scaler_scale: np.ndarray
+    pca_mean: np.ndarray
+    pca_components: np.ndarray
     centroids_pc: pd.DataFrame
     centers_z: pd.DataFrame
 
@@ -68,6 +74,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mimic-dataset", default=MIMIC_DATASET)
     parser.add_argument("--eicu-dataset", default=EICU_DATASET)
     parser.add_argument("--location", default="US")
+    parser.add_argument(
+        "--frozen-transform-bundle",
+        type=Path,
+        required=True,
+        help=(
+            "Path to an authorized local JSON bundle containing the prebuilt "
+            "primary, Hb-free, and INR-free MIMIC transforms. This derived-sensitive "
+            "artifact must not be committed to the public repository."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -96,6 +112,7 @@ def transform_feature_frame(df: pd.DataFrame, features: list[str]) -> pd.DataFra
 
 
 def fit_frozen_mimic_pipeline(mimic: pd.DataFrame, features: list[str]) -> FrozenPipeline:
+    """Fit a transform for authorized export; never call this from evaluation main()."""
     x = transform_feature_frame(mimic, features)
     imputer = SimpleImputer(strategy="median")
     x_imputed = imputer.fit_transform(x)
@@ -120,20 +137,100 @@ def fit_frozen_mimic_pipeline(mimic: pd.DataFrame, features: list[str]) -> Froze
 
     return FrozenPipeline(
         features=features,
-        imputer=imputer,
-        scaler=scaler,
-        pca=pca,
+        imputation_medians=np.asarray(imputer.statistics_, dtype=float),
+        scaler_mean=np.asarray(scaler.mean_, dtype=float),
+        scaler_scale=np.asarray(scaler.scale_, dtype=float),
+        pca_mean=np.asarray(pca.mean_, dtype=float),
+        pca_components=np.asarray(pca.components_, dtype=float),
         centroids_pc=centroids_pc,
         centers_z=centers_z,
     )
 
 
+def frozen_pipeline_to_dict(pipeline: FrozenPipeline) -> dict:
+    """Serialize a fitted transform for storage in an access-controlled location."""
+    return {
+        "features": pipeline.features,
+        "imputation_medians": pipeline.imputation_medians.tolist(),
+        "scaler_mean": pipeline.scaler_mean.tolist(),
+        "scaler_scale": pipeline.scaler_scale.tolist(),
+        "pca_mean": pipeline.pca_mean.tolist(),
+        "pca_components": pipeline.pca_components.tolist(),
+        "centroids_pc": pipeline.centroids_pc.to_dict(orient="records"),
+        "centers_z": pipeline.centers_z.to_dict(orient="records"),
+    }
+
+
+def frozen_pipeline_from_dict(payload: dict) -> FrozenPipeline:
+    features = [str(feature) for feature in payload["features"]]
+    n_features = len(features)
+    arrays = {
+        "imputation_medians": np.asarray(payload["imputation_medians"], dtype=float),
+        "scaler_mean": np.asarray(payload["scaler_mean"], dtype=float),
+        "scaler_scale": np.asarray(payload["scaler_scale"], dtype=float),
+        "pca_mean": np.asarray(payload["pca_mean"], dtype=float),
+    }
+    for name, values in arrays.items():
+        if values.shape != (n_features,):
+            raise ValueError(
+                f"Frozen transform {name} has shape {values.shape}; expected {(n_features,)}"
+            )
+    pca_components = np.asarray(payload["pca_components"], dtype=float)
+    if pca_components.ndim != 2 or pca_components.shape[1] != n_features:
+        raise ValueError(
+            "Frozen transform pca_components must be a 2D array with one column per feature"
+        )
+    if np.any(arrays["scaler_scale"] == 0):
+        raise ValueError("Frozen transform scaler_scale contains zero")
+
+    centroids_pc = pd.DataFrame(payload["centroids_pc"])
+    expected_pc_columns = [f"pc{i}" for i in range(1, pca_components.shape[0] + 1)]
+    required_centroid_columns = {"phenotype", *expected_pc_columns}
+    if not required_centroid_columns.issubset(centroids_pc.columns):
+        raise ValueError(
+            "Frozen transform centroids_pc is missing phenotype or PCA-coordinate columns"
+        )
+
+    centers_z = pd.DataFrame(payload["centers_z"])
+    if "phenotype" not in centers_z.columns:
+        raise ValueError("Frozen transform centers_z is missing phenotype")
+
+    return FrozenPipeline(
+        features=features,
+        imputation_medians=arrays["imputation_medians"],
+        scaler_mean=arrays["scaler_mean"],
+        scaler_scale=arrays["scaler_scale"],
+        pca_mean=arrays["pca_mean"],
+        pca_components=pca_components,
+        centroids_pc=centroids_pc,
+        centers_z=centers_z,
+    )
+
+
+def load_frozen_transform_bundle(path: Path) -> dict[str, FrozenPipeline]:
+    """Load and validate prebuilt MIMIC transforms without fitting on validation runtime."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("artifact_class") != "DERIVED_SENSITIVE":
+        raise ValueError("Frozen transform bundle must declare artifact_class DERIVED_SENSITIVE")
+    transforms = payload.get("transforms", {})
+    required = {"primary", "hb_free", "inr_free"}
+    missing = required.difference(transforms)
+    if missing:
+        raise ValueError(f"Frozen transform bundle missing transforms: {sorted(missing)}")
+    return {
+        name: frozen_pipeline_from_dict(transforms[name])
+        for name in sorted(required)
+    }
+
+
 def apply_frozen_transport(eicu: pd.DataFrame, pipeline: FrozenPipeline) -> tuple[pd.DataFrame, np.ndarray]:
     x = transform_feature_frame(eicu, pipeline.features)
-    x_imputed = pipeline.imputer.transform(x)
-    x_scaled = pipeline.scaler.transform(x_imputed)
-    pc_scores = pipeline.pca.transform(x_scaled)
-    centroids = pipeline.centroids_pc[[f"pc{i}" for i in range(1, 4)]].to_numpy()
+    x_values = x.to_numpy(dtype=float)
+    x_imputed = np.where(np.isnan(x_values), pipeline.imputation_medians, x_values)
+    x_scaled = (x_imputed - pipeline.scaler_mean) / pipeline.scaler_scale
+    pc_scores = (x_scaled - pipeline.pca_mean) @ pipeline.pca_components.T
+    pc_columns = [f"pc{i}" for i in range(1, pc_scores.shape[1] + 1)]
+    centroids = pipeline.centroids_pc[pc_columns].to_numpy(dtype=float)
     centroid_phenotypes = pipeline.centroids_pc["phenotype"].astype(int).to_numpy()
     distances = np.linalg.norm(pc_scores[:, None, :] - centroids[None, :, :], axis=2)
     nearest_idx = distances.argmin(axis=1)
@@ -178,6 +275,139 @@ def build_summary(assignments: pd.DataFrame) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows).sort_values("phenotype")
+
+
+def _hospital_phenotype_totals(
+    assignments: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return hospital-by-phenotype counts and deaths for aggregate resampling."""
+    required = {"hospitalid", "phenotype", "hospital_mortality"}
+    missing = required.difference(assignments.columns)
+    if missing:
+        raise ValueError(f"Hospital robustness analysis is missing columns: {sorted(missing)}")
+    if assignments["hospitalid"].isna().any():
+        raise ValueError("Hospital robustness analysis requires nonmissing hospitalid")
+
+    analysis = assignments[list(required)].copy()
+    analysis["phenotype"] = pd.to_numeric(analysis["phenotype"], errors="raise").astype(int)
+    analysis["hospital_mortality"] = pd.to_numeric(
+        analysis["hospital_mortality"],
+        errors="raise",
+    ).astype(float)
+    phenotypes = [1, 2, 3]
+    observed = set(analysis["phenotype"].unique())
+    if not set(phenotypes).issubset(observed):
+        raise ValueError("Hospital robustness analysis requires phenotypes 1, 2, and 3")
+
+    counts = (
+        analysis.groupby(["hospitalid", "phenotype"], sort=True)
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=phenotypes, fill_value=0)
+    )
+    deaths = (
+        analysis.groupby(["hospitalid", "phenotype"], sort=True)["hospital_mortality"]
+        .sum()
+        .unstack(fill_value=0.0)
+        .reindex(index=counts.index, columns=phenotypes, fill_value=0.0)
+    )
+    return counts, deaths
+
+
+def build_hospital_cluster_bootstrap(
+    assignments: pd.DataFrame,
+    iterations: int = HOSPITAL_BOOTSTRAP_ITERATIONS,
+    random_seed: int = RANDOM_SEED,
+) -> pd.DataFrame:
+    """Resample hospitals with replacement and return aggregate percentile intervals."""
+    if iterations < 1:
+        raise ValueError("Hospital cluster bootstrap iterations must be positive")
+
+    counts, deaths = _hospital_phenotype_totals(assignments)
+    n_hospitals = len(counts)
+    rng = np.random.default_rng(random_seed)
+    sampled_hospitals = rng.integers(0, n_hospitals, size=(iterations, n_hospitals))
+    sampled_counts = counts.to_numpy(dtype=float)[sampled_hospitals].sum(axis=1)
+    sampled_deaths = deaths.to_numpy(dtype=float)[sampled_hospitals].sum(axis=1)
+    sampled_rates = np.divide(
+        sampled_deaths,
+        sampled_counts,
+        out=np.full_like(sampled_deaths, np.nan),
+        where=sampled_counts > 0,
+    )
+
+    total_counts = counts.sum(axis=0).to_numpy(dtype=float)
+    total_deaths = deaths.sum(axis=0).to_numpy(dtype=float)
+    estimates = total_deaths / total_counts
+    metric_values = {
+        "p1_hospital_mortality": (estimates[0], sampled_rates[:, 0]),
+        "p2_hospital_mortality": (estimates[1], sampled_rates[:, 1]),
+        "p3_hospital_mortality": (estimates[2], sampled_rates[:, 2]),
+        "p2_minus_p1_risk_difference": (
+            estimates[1] - estimates[0],
+            sampled_rates[:, 1] - sampled_rates[:, 0],
+        ),
+        "p3_minus_p1_risk_difference": (
+            estimates[2] - estimates[0],
+            sampled_rates[:, 2] - sampled_rates[:, 0],
+        ),
+    }
+
+    rows = []
+    for metric, (estimate, bootstrap_values) in metric_values.items():
+        ci_low, ci_high = np.nanquantile(bootstrap_values, [0.025, 0.975])
+        rows.append(
+            {
+                "analysis": "hospital_cluster_bootstrap",
+                "metric": metric,
+                "estimate": float(estimate),
+                "ci_low": float(ci_low),
+                "ci_high": float(ci_high),
+                "n_hospitals": int(n_hospitals),
+                "bootstrap_iterations": int(iterations),
+                "random_seed": int(random_seed),
+                "note": "Percentile interval from resampling hospitals with replacement; all stays within sampled hospitals were retained.",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def build_leave_one_hospital_out(assignments: pd.DataFrame) -> pd.DataFrame:
+    """Summarize mortality-gradient influence after omitting each hospital once."""
+    counts, deaths = _hospital_phenotype_totals(assignments)
+    remaining_counts = counts.sum(axis=0).to_numpy(dtype=float) - counts.to_numpy(dtype=float)
+    remaining_deaths = deaths.sum(axis=0).to_numpy(dtype=float) - deaths.to_numpy(dtype=float)
+    remaining_rates = np.divide(
+        remaining_deaths,
+        remaining_counts,
+        out=np.full_like(remaining_deaths, np.nan),
+        where=remaining_counts > 0,
+    )
+    p2_minus_p1 = remaining_rates[:, 1] - remaining_rates[:, 0]
+    p3_minus_p1 = remaining_rates[:, 2] - remaining_rates[:, 0]
+    monotonic = (
+        np.isfinite(remaining_rates).all(axis=1)
+        & (remaining_rates[:, 0] < remaining_rates[:, 1])
+        & (remaining_rates[:, 1] < remaining_rates[:, 2])
+    )
+    n_hospitals = len(counts)
+
+    return pd.DataFrame(
+        [
+            {
+                "analysis": "leave_one_hospital_out",
+                "n_hospitals": int(n_hospitals),
+                "iterations": int(n_hospitals),
+                "monotonic_order_retained_n": int(monotonic.sum()),
+                "monotonic_order_retained_rate": float(monotonic.mean()),
+                "p2_minus_p1_min": float(np.nanmin(p2_minus_p1)),
+                "p2_minus_p1_max": float(np.nanmax(p2_minus_p1)),
+                "p3_minus_p1_min": float(np.nanmin(p3_minus_p1)),
+                "p3_minus_p1_max": float(np.nanmax(p3_minus_p1)),
+                "note": "Aggregate influence range after omitting each hospital once; hospital identifiers are not retained.",
+            }
+        ]
+    )
 
 
 def build_feature_summary(assignments: pd.DataFrame, features: Iterable[str]) -> pd.DataFrame:
@@ -226,13 +456,13 @@ def build_lightweight_tests(assignments: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_sensitivity_summary(
-    mimic: pd.DataFrame,
     eicu_all: pd.DataFrame,
-    analyses: list[tuple[str, pd.Series, list[str], str]],
+    analyses: list[tuple[str, pd.Series, FrozenPipeline, str]],
 ) -> pd.DataFrame:
     """Run frozen transport over prespecified eICU subsets/features."""
     rows = []
-    for analysis_name, mask, features, note in analyses:
+    for analysis_name, mask, pipeline, note in analyses:
+        features = pipeline.features
         subset = eicu_all[mask.fillna(False)].copy()
         if subset.empty:
             rows.append(
@@ -255,7 +485,6 @@ def build_sensitivity_summary(
             )
             continue
 
-        pipeline = fit_frozen_mimic_pipeline(mimic, features)
         assignments, _ = apply_frozen_transport(subset, pipeline)
         phenotype_counts = assignments["phenotype"].value_counts()
         phenotype_count = int(phenotype_counts.size)
@@ -456,25 +685,30 @@ def main() -> None:
     from google.cloud import bigquery
 
     client = bigquery.Client(project=args.project, location=args.location)
-    mimic_table = f"{args.project}.{args.mimic_dataset}.phenotype_cluster_assignments"
     eicu_table = f"{args.project}.{args.eicu_dataset}.eicu_analysis_features_48h"
 
-    mimic = read_table(client, mimic_table)
-    mimic = mimic[mimic["phenotype_solution"].fillna("").eq("primary_log_pca_kmeans_k3")].copy()
-    if mimic.empty:
-        mimic = read_table(client, mimic_table).copy()
-    mimic = mimic.dropna(subset=["phenotype"])
-
+    bundle_path = args.frozen_transform_bundle.expanduser().resolve()
+    bundle_bytes = bundle_path.read_bytes()
+    bundle_payload = json.loads(bundle_bytes)
+    bundle_sha256 = hashlib.sha256(bundle_bytes).hexdigest()
+    pipelines = load_frozen_transform_bundle(bundle_path)
     eicu_all = read_table(client, eicu_table)
     eicu = eicu_all[eicu_all["eligible_external_validation"].astype(int).eq(1)].copy()
-    print(f"MIMIC training rows: {len(mimic):,}")
     print(f"eICU validation rows: {len(eicu):,}")
 
-    pipeline = fit_frozen_mimic_pipeline(mimic, FEATURES)
+    pipeline = pipelines["primary"]
+    if pipeline.features != FEATURES:
+        raise ValueError("Primary frozen transform feature order does not match FEATURES")
+    if pipelines["hb_free"].features != HB_FREE_FEATURES:
+        raise ValueError("Hb-free frozen transform feature order does not match HB_FREE_FEATURES")
+    if pipelines["inr_free"].features != INR_FREE_FEATURES:
+        raise ValueError("INR-free frozen transform feature order does not match INR_FREE_FEATURES")
     assignments, _pc_scores = apply_frozen_transport(eicu, pipeline)
     assignments = assignments.sort_values("patientunitstayid").reset_index(drop=True)
 
     outcome_summary = build_summary(assignments)
+    hospital_cluster_bootstrap = build_hospital_cluster_bootstrap(assignments)
+    leave_one_hospital_out = build_leave_one_hospital_out(assignments)
     feature_summary = build_feature_summary(assignments, FEATURES)
     assignment_quality = build_assignment_quality(assignments)
     lightweight_tests = build_lightweight_tests(assignments)
@@ -486,49 +720,49 @@ def main() -> None:
         (
             "primary_frozen_transport",
             eicu_all["eligible_external_validation"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "Primary eICU transport: 8 features with <=2 missing.",
         ),
         (
             "los48_frozen_transport",
             eicu_all["eligible_external_los48_sensitivity"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "Patients observed for at least 48 ICU hours; addresses early death/treatment-window sensitivity.",
         ),
         (
             "no_recorded_rbc_frozen_transport",
             eicu_all["eligible_external_no_rbc_sensitivity"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "Excludes any recorded RBC exposure during 0-48h; eICU RBC units are not harmonized.",
         ),
         (
             "strict_sah_frozen_transport",
             eicu_all["eligible_external_strict_sah_sensitivity"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "Requires SAH evidence from diagnosis ICD/text, excluding admissionDx-only cases.",
         ),
         (
             "low_missing_frozen_transport",
             eicu_all["eligible_external_low_missing_sensitivity"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "8-feature model restricted to <=1 missing core feature.",
         ),
         (
             "complete_case_frozen_transport",
             eicu_all["eligible_external_complete_case_sensitivity"].astype(int).eq(1),
-            FEATURES,
+            pipelines["primary"],
             "8-feature model restricted to complete cases.",
         ),
         (
             "inr_free_frozen_transport",
             inr_free_missing_count.le(2),
-            INR_FREE_FEATURES,
+            pipelines["inr_free"],
             "Transport sensitivity excluding INR from both frozen MIMIC training and eICU projection.",
         ),
     ]
-    sensitivity_summary = build_sensitivity_summary(mimic, eicu_all, sensitivity_analyses)
+    sensitivity_summary = build_sensitivity_summary(eicu_all, sensitivity_analyses)
 
-    hb_free_pipeline = fit_frozen_mimic_pipeline(mimic, HB_FREE_FEATURES)
+    hb_free_pipeline = pipelines["hb_free"]
     hb_free_assignments, _ = apply_frozen_transport(eicu, hb_free_pipeline)
     hb_free_regression = run_hb_free_anemia_regression(hb_free_assignments)
 
@@ -537,16 +771,34 @@ def main() -> None:
         {"key": "features", "value": ",".join(FEATURES)},
         {"key": "hb_free_features", "value": ",".join(HB_FREE_FEATURES)},
         {"key": "inr_free_features", "value": ",".join(INR_FREE_FEATURES)},
-        {"key": "mimic_training_n", "value": str(len(mimic))},
+        {"key": "frozen_transform_bundle_sha256", "value": bundle_sha256},
+        {
+            "key": "frozen_transform_bundle_artifact_version",
+            "value": str(bundle_payload.get("artifact_version", "unknown")),
+        },
+        {
+            "key": "frozen_transform_source_commit",
+            "value": str(bundle_payload.get("source_commit", "unknown")),
+        },
+        {
+            "key": "frozen_transform_source_run_id",
+            "value": str(bundle_payload.get("source_run_id", "unknown")),
+        },
         {"key": "eicu_validation_n", "value": str(len(eicu))},
         {"key": "primary_k", "value": str(PRIMARY_K)},
         {"key": "random_seed", "value": str(RANDOM_SEED)},
+        {
+            "key": "hospital_cluster_bootstrap_iterations",
+            "value": str(HOSPITAL_BOOTSTRAP_ITERATIONS),
+        },
+        {"key": "hospital_cluster_bootstrap_seed", "value": str(RANDOM_SEED)},
+        {"key": "leave_one_hospital_out_iterations", "value": str(assignments["hospitalid"].nunique())},
         {"key": "frozen_imputation", "value": "MIMIC median"},
         {"key": "frozen_scaling", "value": "MIMIC StandardScaler mean/std"},
         {"key": "frozen_pca", "value": "MIMIC PCA eigenvectors"},
         {"key": "frozen_centroids", "value": "MIMIC phenotype centroids in PCA space"},
     ]
-    for feature, median in zip(FEATURES, pipeline.imputer.statistics_, strict=False):
+    for feature, median in zip(FEATURES, pipeline.imputation_medians, strict=False):
         metadata_rows.append({"key": f"mimic_imputation_median_{feature}", "value": str(float(median))})
     metadata = pd.DataFrame(metadata_rows)
 
@@ -560,6 +812,16 @@ def main() -> None:
     write_table(client, centers, f"{output_prefix}.mimic_fixed_k3_centers_zscore")
     write_table(client, assignments, f"{output_prefix}.eicu_external_phenotype_assignments")
     write_table(client, outcome_summary, f"{output_prefix}.eicu_external_outcome_summary_by_phenotype")
+    write_table(
+        client,
+        hospital_cluster_bootstrap,
+        f"{output_prefix}.eicu_hospital_cluster_bootstrap_summary",
+    )
+    write_table(
+        client,
+        leave_one_hospital_out,
+        f"{output_prefix}.eicu_leave_one_hospital_out_summary",
+    )
     write_table(client, feature_summary, f"{output_prefix}.eicu_external_feature_summary_by_phenotype")
     write_table(client, assignment_quality, f"{output_prefix}.eicu_external_assignment_quality")
     write_table(client, lightweight_tests, f"{output_prefix}.eicu_external_lightweight_tests")

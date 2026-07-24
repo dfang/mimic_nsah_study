@@ -1,0 +1,75 @@
+results_version: "1.2"
+status: "PURE_FROZEN_TRANSPORT_REEXECUTED_2026-07-24"
+source: reproducibility/canonical-results.yaml
+evaluation_n: 843
+hospital_count: 66
+assignment_counts: {P1: 539, P2: 222, P3: 82}
+hospital_mortality_percent: {P1: 5.38, P2: 25.68, P3: 42.68}
+hospital_mortality_wilson_ci95_percent:
+  P1: [3.77, 7.62]
+  P2: [20.38, 31.80]
+  P3: [32.54, 53.48]
+assignment_quality:
+  median_nearest_centroid_distance: 1.3369
+  median_assignment_margin: 1.0516
+  low_margin_lt_0_10_percent: 4.51
+  low_margin_lt_0_25_percent: 12.10
+hospital_level_robustness:
+  method: "hospital cluster bootstrap with hospitals sampled with replacement and all stays retained"
+  bootstrap_iterations: 2000
+  random_seed: 42
+  mortality_percentile_ci95_percent:
+    P1: [3.68, 7.39]
+    P2: [20.75, 31.43]
+    P3: [32.84, 52.44]
+  risk_difference_percentage_points:
+    P2_minus_P1: {estimate: 20.30, ci95: [15.06, 25.83]}
+    P3_minus_P1: {estimate: 37.30, ci95: [26.99, 47.37]}
+  leave_one_hospital_out:
+    iterations: 66
+    monotonic_order_retained_n: 66
+    monotonic_order_retained_percent: 100.0
+    P2_minus_P1_range_percentage_points: [19.15, 21.53]
+    P3_minus_P1_range_percentage_points: [35.13, 39.42]
+  disclosure: "Only aggregate outputs without hospital identifiers are persisted in the public result contract."
+de_novo_sensitivity:
+  adjusted_rand_index: -0.001674
+  normalized_mutual_information: 0.001615
+  same_ordered_label_rate: 0.456702
+  silhouette: 0.268743
+  minimum_cluster_n: 100
+private_transform_bundle:
+  classification: DERIVED_SENSITIVE
+  public_repository_inclusion: prohibited
+  sha256: "63042d68a74643da9c902e4d1f6cd9d774e77d55b5f6e1269851bceb3371dd41"
+  source_commit: "0c837e0bdededebae58241df28a930f50c373d9f"
+  source_run_id: "MIMIC-NSAH-PHENO-01-freeze-20260716"
+bigquery_jobs:
+  cohort: "ae05186f-1c43-4598-8e05-c2ce5ad852f0"
+  eicu_read: "57f3f6f0-fe67-403c-bbfd-9571b0d031b1"
+  metadata_write: "bc428bf2-f825-4d09-9e62-a66ab4ec88a5"
+  centers_write: "acb4b1cd-b22c-49d1-af58-38000eccdb80"
+  assignments_write: "f3392b68-29c1-497e-b072-b8ab2bfe2544"
+  outcome_write: "40e4e97c-4be2-487b-a9b2-f851e7101a13"
+  hospital_cluster_bootstrap_write: "d3f025a0-10dd-4a74-bdc2-6a76dc2b0daa"
+  leave_one_hospital_out_write: "f8c46278-83ac-4f1c-8981-e2f49ba51eaf"
+  feature_summary_write: "ec884f04-e907-4ece-a86a-941b0961f0ba"
+  assignment_quality_write: "1c910224-5088-4545-a193-6fe05d3f5bd7"
+  lightweight_tests_write: "feb62414-192d-412a-8cd7-efb98e3a3621"
+  sensitivity_write: "640ceaca-fbc9-43d1-804e-f0dc54f95754"
+  severity_write: "d1bdd75f-b32a-4f8a-b118-a2a882b07bc0"
+  de_novo_summary_write: "3f093e98-d254-49d6-b709-d754e56b5f21"
+  de_novo_metrics_write: "3a8f1d06-fbb8-4880-9bad-7b3b65613329"
+  hb_free_regression_write: "79cc8ca7-cd41-4523-9b2b-d16d8106a0de"
+  hospital_bootstrap_verification_read: "2578f05d-0cc8-4f1b-8d4d-51ed9cbee67d"
+  leave_one_hospital_out_verification_read: "91ac02df-5a55-48c1-81f2-209ba7a4bcf4"
+  metadata_verification_read: "16328b34-753e-448b-80cf-587d08eb7c95"
+bigquery_retention:
+  dataset: "mimic-study-498508.eicu_sah_validation"
+  sandbox_default_table_expiration_days: 59
+  rerun_output_expiration_date: "2026-08-23"
+  cohort_intermediate_expiration_date: "2026-09-21"
+  note: "The project has no billing account, so BigQuery required temporary table expiration. Persistent audit evidence is the aggregate contract, private bundle hash, and job provenance."
+not_assessed:
+  - "Confirmation that the superseded historical runtime used byte-identical preprocessing parameters."
+interpretation: "Exploratory pure frozen transport preserved crude mortality and APACHE severity ordering; negligible de novo agreement does not confirm cluster-boundary replication."

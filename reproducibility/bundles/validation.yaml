@@ -1,11 +1,32 @@
-bundle_version: "1.0"
+bundle_version: "1.3"
 stage: validation
+validation_status: "PURE_FROZEN_TRANSPORT_REEXECUTED_2026-07-24"
 artifacts:
   - role: eicu_cohort_sql
     path: 14_create_eicu_external_validation_cohort.sql
     version: "analysis-freeze-v1.0.0"
     sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
-  - role: frozen_transport_analysis
+  - role: fail_closed_transport_evaluation
     path: scripts/15_run_eicu_external_validation.py
-    version: "analysis-freeze-v1.0.0"
-    sha256: "91e81442d4681c02797be2bcc099d9467ef77ed9a86fc65df05119d4cf3f5949"
+    version: "2026-07-24"
+    sha256: "3c264c273aed365089d50f96128f3f4564b0e43cf83886bdca2286f2618aa29b"
+  - role: authorized_private_transform_exporter
+    path: scripts/export_mimic_frozen_transform_bundle.py
+    version: "2026-07-24"
+    sha256: "3f8ef7d9671968bff6318d81e644a9c04cc63ac2f9eea89d466d23540faffcbb"
+  - role: frozen_transform_contract
+    path: reproducibility/frozen-transform-bundle.schema.json
+    version: "1.2"
+    sha256: "28b1ab9a6530eb3a0d75184d6d89597a116f7be8de4f79ab669042b9f7c291b9"
+  - role: validation_plan
+    path: reproducibility/eicu-validation-plan.yaml
+    version: "1.0"
+    sha256: "2ad2d6a2faa5c51829ac4d4ea7c14e2e17b75a6a9f309eb58dbf41ff6a1b9b64"
+  - role: authorized_frozen_transport_results
+    path: reproducibility/eicu-validation-results.yaml
+    version: "1.2"
+    sha256: "63e4d006fbb391fe3b7fc819a6ad589419b6def2a915866dbca52379472b205a"
+  - role: validation_interpretation
+    path: docs/eicu_external_validation.md
+    version: "2026-07-24"
+    sha256: "b4a99e80b8b018f71f1cfbe7fb999055256ca8553e5211bc38416f6e288b1672"

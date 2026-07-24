@@ -183,9 +183,9 @@ K=4 仅作为高分辨率探索性敏感性，不得替换 K=3，除非另行修
 - 200 次按 `subject_id` 的 bootstrap/subsampling；
 - 每次重拟合完整 preprocessing + PCA + K-means；
 - 通过最佳标签匹配计算 ARI、same-label rate；
-- 每个 cluster 的 Jaccard membership stability；
-- assignment margin 或到最近/次近 centroid 的距离差；
-- 多随机种子重复拟合。
+- 每个 cluster 的 Jaccard membership stability（本次公共冻结结果未保留数值，标记为 not assessed）；
+- assignment margin 或到最近/次近 centroid 的距离差（本次公共冻结结果未保留分布，标记为 not assessed）；
+- 多随机种子重复拟合（本次冻结未执行/未保留汇总，标记为 not assessed）。
 
 ### 7.2 解释阈值
 
@@ -196,7 +196,7 @@ K=4 仅作为高分辨率探索性敏感性，不得替换 K=3，除非另行修
 - cluster Jaccard median <0.75：该 cluster 不赋予明确临床名称；
 - 多 seed 解明显不一致：报告范围并将结果降级为结构探索。
 
-冻结代码按 `subject_id` 重采样，在每轮重拟合 imputer、scaler、PCA 和 K-means，并输出总体/OOB ARI 与 cluster-wise Jaccard。授权重跑的 200 次 bootstrap 平均 ARI 为 0.8554，中位数 0.8656，平均 OOB ARI 为 0.8578；详细证据见 `reproducibility/freeze-validation.md`。
+冻结代码按 `subject_id` 重采样，并在每轮重拟合 imputer、scaler、PCA 和 K-means。授权重跑的 200 次 bootstrap 平均 ARI 为 0.8554，中位数 0.8656，平均 OOB ARI 为 0.8578；这些数值仅支持总体分区稳定性。虽然当前代码可计算 cluster-wise Jaccard，但本次公共冻结结果没有保留其数值，也没有保留 assignment-margin 分布或多随机种子汇总，故三者均标记为 not assessed；详细证据边界见 `reproducibility/canonical-results.yaml`。
 
 ## 8. 描述与外部判据
 
@@ -363,7 +363,7 @@ eICU 不得重新拟合这些参数后仍称为 frozen transport。De novo eICU 
 |---|---|---|
 | 按患者处理重复结构 | 已按 subject_id 分组 bootstrap 和交叉验证 | 已授权重跑并登记重复患者数量 |
 | 完整 pipeline bootstrap | 已在每轮重拟合 imputer/scaler/PCA/K-means | 已执行并登记总体/OOB稳定性 |
-| Cluster-wise stability | 已输出 ARI、same-label、cluster Jaccard、assignment distance/margin | 保留多 seed 为后续扩展，不影响本探索性冻结 |
+| Cluster-wise stability | 已保留总体/OOB ARI；cluster Jaccard 数值、assignment distance/margin 分布和多 seed 汇总未保留 | 本冻结仅报告总体分区稳定性；其余标记为 not assessed，授权重跑后再评估 |
 | 明确 outcome follow-up start | 已冻结为全住院描述性关联，follow-up start 不适用 | 保持手稿非预测、非因果措辞 |
 | 48h 输入观察机会 | 主队列仅要求 LOS≥24h | 报告截短窗口；将 LOS≥48h/landmark 作为关键分析 |
 | 主要回归避免构造性重复 | 冻结实现同时含 phenotype、anemia 和 `has_aneurysm_dx`；`has_aneurysm_procedure` 因与 evidence level 重复而跳过 | 已在 v1.0.1 固定实际报告公式；保持探索性定位，并将 Hb-free 分析作为贫血解释的必要敏感性分析 |

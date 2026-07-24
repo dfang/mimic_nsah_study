@@ -1,5 +1,10 @@
 # Non-traumatic SAH BigQuery Analysis Result
 
+> **Noncanonical execution transcript.** This file preserves console output from the
+> exploratory run and contains superseded intermediate sections. Do not use it as the
+> current result source. `reproducibility/canonical-results.yaml`, reconciled against
+> `reproducibility/freeze-validation.md`, is authoritative for manuscript claims.
+
 Generated at: 2026-07-16 13:50:54 CST
 
 Command: `./scripts/run_non_traumatic_sah_bigquery_pipeline.sh --analysis-only`

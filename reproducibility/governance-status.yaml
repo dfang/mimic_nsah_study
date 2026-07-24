@@ -1,0 +1,18 @@
+record_version: "1.1"
+recorded_on: "2026-07-24"
+repository_visibility_observed: public
+public_aggregate_release_status: "BLOCKED_PENDING_AUTHOR_INSTITUTION_APPROVAL"
+approval_recorded: false
+governance_decision_for_current_remediation: PROCEED_LOCAL
+scope: [authorized local BigQuery processing, public code, public documentation, aggregate manuscripts and figures]
+excluded: [credentials, patient-level rows, query caches and logs, model weights and embeddings, frozen transform parameters]
+derived_sensitive_transform_status: "AUTHORIZED_PRIVATE_BUNDLE_HASHED_AND_USED_FOR_RERUN_NOT_PUBLICLY_PACKAGED"
+release_blockers:
+  - "Author/institution disclosure approval is not recorded."
+next_action:
+  - "Responsible authors/institution provide a dated disclosure approval record."
+  - "Run a fresh independent manuscript/reproducibility review after remediation."
+execution_record:
+  completed_on: "2026-07-24"
+  controls: "Restricted rows remained in the authorized environment; only aggregate hospital-robustness results without hospital identifiers were added to public artifacts."
+  evidence: "reproducibility/eicu-validation-results.yaml"

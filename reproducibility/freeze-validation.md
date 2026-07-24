@@ -16,8 +16,9 @@
 - Main cohort job: `d7eab218-46dd-48c2-9388-df9a7a993a1c`.
 - Freeze QC job: `79176287-6e85-4b9c-a54c-8b6da3309d81`.
 - Final MIMIC result-read job: `9446e34c-7986-4dc4-8346-7a0aa7e1e36d`.
-- eICU cohort job: `b8ddf1a3-1e1e-49f0-a8ee-6155d536ea82`.
-- Final eICU result-read jobs: `eb4587a6-8536-487f-aa5b-4463a93f0aac`, `5d29dcb5-4f4c-46d3-bd38-ad926d94bf94`.
+- Authorized eICU frozen-transport rerun cohort job: `ae05186f-1c43-4598-8e05-c2ce5ad852f0`.
+- Frozen transform bundle SHA-256: `63042d68a74643da9c902e4d1f6cd9d774e77d55b5f6e1269851bceb3371dd41` (private `DERIVED_SENSITIVE` artifact; parameters not committed).
+- eICU feature-read job: `57f3f6f0-fe67-403c-bbfd-9571b0d031b1`; detailed write-job provenance is in `reproducibility/eicu-validation-results.yaml`.
 
 ## Cohort and grain QC
 
@@ -47,15 +48,16 @@ The retained repeat structure is intentional. Bootstrap and cross-validation use
 - LOS >=48 h sensitivity: sizes 587/325/93; subset ARI 0.8604.
 - No-RBC sensitivity: sizes 675/374/113; subset ARI 0.9268.
 - Include-massive-transfusion sensitivity: no additionally eligible cases; assignments identical (ARI 1.0000).
-- eICU frozen transport: sizes 540/221/82; hospital mortality 5.37%/25.79%/42.68%.
-- eICU de novo K=3 showed low assignment concordance with transport (ARI 0.0005), retained as a limitation rather than evidence of replication.
+- Authorized eICU frozen-transport rerun on 2026-07-24: sizes 539/222/82; hospital mortality 5.38%/25.68%/42.68%.
+- eICU hospital-level robustness: 2,000 hospital-cluster bootstrap replicates; P2-P1 risk difference 20.30 percentage points (95% percentile interval 15.06-25.83), P3-P1 37.30 (26.99-47.37); mortality ordering retained in 66/66 leave-one-hospital-out analyses.
+- eICU de novo K=3 showed negligible assignment concordance with transport (ARI -0.0017), retained as a limitation rather than evidence of replication.
 
 ## Disclosure review
 
 - No patient-level rows, identifiers, timestamps, model assignments, or restricted query caches are committed.
 - Primary and sensitivity phenotype cells reviewed: 36 cells, none below 10; minimum reviewed phenotype cell was 58.
 - Non-zero public table/figure cells below 10 are rendered as `<10`; adjacent cohort-flow transitions below 10 are suppressed in the public JSON/ESM.
-- Exact aggregate values remain only in the authorized BigQuery environment.
+- Patient-level assignments and exact transform parameters remain only in the authorized environment; approved aggregate results and hashes are recorded in the public reproducibility contract.
 - This local conservative review supports analysis freezing. Author/institutional disclosure approval remains required before public journal submission.
 
 ## Interpretation boundary

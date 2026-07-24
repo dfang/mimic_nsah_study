@@ -1,0 +1,197 @@
+review_input_version: "1.2"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+created_at: "2026-07-24T16:50:20+08:00"
+operation: audit
+mode: focused
+gate: null
+requested_passes:
+  - protocol-time
+  - sql-data
+  - clinical
+  - statistics
+  - phenotyping
+  - external-validation
+  - journal
+  - reproducibility
+review:
+  scope:
+    - protocol
+    - sap
+    - time-claims
+    - sql
+    - query-derived-data
+    - clinical-constructs
+    - clinical-interpretation
+    - manuscript
+    - quantitative-design
+    - analysis
+    - results
+    - external-validation
+    - transportability
+    - executable-results
+  claims:
+    - external-validation
+    - transportability
+    - query-derived
+study:
+  manifest_path: study-manifest.yaml
+  manifest_sha256: "d6b4b777577d3aebe180d5db26e92788955c210504ca7b94e6824f8c15feccc1"
+  design_family: phenotyping
+  design_subtype: not_applicable
+protocol:
+  required_scopes:
+    - external-validation
+    - transportability
+acceptance_evidence:
+  roles:
+    - executable-results
+upstream:
+  protocol_time_receipt_status: unverified
+  sql_data_receipt_status: unverified
+repository:
+  identity: "dfang/mimic_nsah_study"
+  commit: "418f7e052a2031e6b88cc38e8e4ea1ea439efd76"
+  dirty_state: true
+governance:
+  mode: public-only
+  receipt_path: DATA_GOVERNANCE.md
+  receipt_sha256: "91e96feaa11967711b7a0a9ddb64baf934268213a614ecbdcbf285a5c4193cf1"
+  policy_source: repository
+  policy_version: "2026-07-24"
+  policy_verified_at: "2026-07-24T16:50:20+08:00"
+artifacts:
+  - role: governance-policy
+    path: DATA_GOVERNANCE.md
+    version: "2026-07-24"
+    sha256: "91e96feaa11967711b7a0a9ddb64baf934268213a614ecbdcbf285a5c4193cf1"
+    sensitivity: public
+  - role: study-manifest
+    path: study-manifest.yaml
+    version: "working-tree-2026-07-24"
+    sha256: "d6b4b777577d3aebe180d5db26e92788955c210504ca7b94e6824f8c15feccc1"
+    sensitivity: public
+  - role: protocol
+    path: protocol.md
+    version: "1.0.0"
+    sha256: "2d3223b69f45d2ac15eb0d5a358a69fdfa90e907f84152061fcaaf9cdfea7308"
+    sensitivity: public
+  - role: sap
+    path: sap.md
+    version: "1.0.1-working-tree"
+    sha256: "d32cc1ebd2f62d6bb8000f185ffbe864f88023ca8a4d4d1ebb85d3f146d03354"
+    sensitivity: public
+  - role: deviation-log
+    path: reproducibility/deviation-log.md
+    version: "working-tree-2026-07-24"
+    sha256: "cc226f1c0bb066635cf05bd924d8f1315bc169cf090f300ae20b803ce8b7a839"
+    sensitivity: public
+  - role: sql
+    path: 10_create_non_traumatic_sah_cohort.sql
+    version: "analysis-freeze-v1.0.0"
+    sha256: "2cc597c15e48ca5578ac345a0daa31499678278c9238ae2ffdb949d845554eb5"
+    sensitivity: public
+  - role: analysis
+    path: 11_bigquery_notebook_non_traumatic_sah_analysis.py
+    version: "analysis-freeze-v1.0.0"
+    sha256: "59ecd08006e7863cb2aab75deb4837a761fdc4c885e185ecb873d92e4ab72d6f"
+    sensitivity: public
+  - role: phenotype-specification
+    path: scripts/phenotype_stability.py
+    version: "analysis-freeze-v1.0.0"
+    sha256: "6aabbd6b8eda2601d32f2acea329438ba4e3a979fd56661af761eb9b8687ace6"
+    sensitivity: public
+  - role: sql
+    path: 14_create_eicu_external_validation_cohort.sql
+    version: "analysis-freeze-v1.0.0"
+    sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
+    sensitivity: public
+  - role: analysis
+    path: scripts/15_run_eicu_external_validation.py
+    version: "working-tree-2026-07-24"
+    sha256: "2594a609cbc498eca863b8837acd83b6405a0e72dc83809031e2515180127293"
+    sensitivity: public
+  - role: results
+    path: dist/analysis_result.md
+    version: "analysis-freeze-v1.0.0"
+    sha256: "636852d48edb08b286873fbd9f5dafc6301b49a6c5f2f85c0cd5a7f15d28f945"
+    sensitivity: aggregate-safe
+  - role: stability-results
+    path: reproducibility/freeze-validation.md
+    version: "analysis-freeze-v1.0.0"
+    sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"
+    sensitivity: aggregate-safe
+  - role: results
+    path: reproducibility/canonical-results.yaml
+    version: "working-tree-2026-07-24"
+    sha256: "6dfbc604c84db73c9ea6aa9fb005dad221c58e1fe003a8ae2bc8d3b79cdb146a"
+    sensitivity: aggregate-safe
+  - role: cohort-mapping
+    path: 14_create_eicu_external_validation_cohort.sql
+    version: "analysis-freeze-v1.0.0"
+    sha256: "f929a38e9b2a54975592aa660ae5e8297264cc46b6cd62679112e09713a9515d"
+    sensitivity: public
+  - role: validation-plan
+    path: reproducibility/eicu-validation-plan.yaml
+    version: "1.0"
+    sha256: "56dd095913bf2993d7055fbb5cafa54627757bdbaed1467e10d230a5cd0cd43a"
+    sensitivity: public
+  - role: validation-results
+    path: reproducibility/eicu-validation-results.yaml
+    version: "1.0"
+    sha256: "e4ef13fbc5efbd4dbf09316fd1546666082f5d0825a5e37313df6255d7ddcbb7"
+    sensitivity: aggregate-safe
+  - role: validation-results
+    path: docs/eicu_external_validation.md
+    version: "working-tree-2026-07-24"
+    sha256: "3a81ec74eb3eb642ccdadd7bb2a0f5fc61e00c3e5904cf07e65c6f70a6283391"
+    sensitivity: aggregate-safe
+  - role: manuscript
+    path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    version: "working-tree-2026-07-24"
+    sha256: "315674c1e06e80b60be0259add84ab7d08d6d410a059c61ebee910a7db59a32d"
+    sensitivity: aggregate-safe
+  - role: electronic-supplement
+    path: dist/electronic_supplementary_material.md
+    version: "working-tree-2026-07-24"
+    sha256: "cc8ea98cb1ec8feb24c2c4a326b2a83d6391b861cae5ad9db7bec98723731e9f"
+    sensitivity: aggregate-safe
+  - role: reporting-checklist
+    path: dist/strobe_checklist.md
+    version: "working-tree-2026-07-24"
+    sha256: "e1271ce341f4b61b62af5c496d0b63531296dd0470dd1e7dc9830bea65a69735"
+    sensitivity: public
+  - role: reporting-checklist
+    path: dist/record_checklist.md
+    version: "working-tree-2026-07-24"
+    sha256: "a43af746acfd485cb978f10a20f63cf2d56171c9bbe8b801a24f8c796e3d0274"
+    sensitivity: public
+  - role: run-manifest
+    path: reproducibility/run-manifest.yaml
+    version: "analysis-freeze-v1.0.0"
+    sha256: "8251b56df17964dae22a5f48e5f76c52408f8db22236ce2a24f7d9616428ffe5"
+    sensitivity: public
+  - role: environment-lock
+    path: reproducibility/requirements-bigquery.lock
+    version: "analysis-freeze-v1.0.0"
+    sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"
+    sensitivity: public
+  - role: artifact-provenance
+    path: reproducibility/artifact-provenance.csv
+    version: "working-tree-2026-07-24"
+    sha256: "a4fe2cf5111300acc7c009db28ad2432d6a70d5a2d28970c67de771588e6ec89"
+    sensitivity: public
+  - role: release-manifest
+    path: reproducibility/issue-register.yaml
+    version: "working-tree-2026-07-24"
+    sha256: "e49990f7f3c7526bd0e60534a35b130e859a3cd0ae3eacf003ef6329568750a5"
+    sensitivity: public
+  - role: validation-bundle
+    path: reproducibility/bundles/validation.yaml
+    version: "1.1"
+    sha256: "6c88081787e79a413b597a8b1dea9647e3fce346ad1dfc72c9c057ac1ea6cf50"
+    sensitivity: public
+  - role: manuscript-bundle
+    path: reproducibility/bundles/manuscript.yaml
+    version: "1.4"
+    sha256: "36328cced1cf0af6a967d7bb3e43bcf0e36173993c105c324022d0044beedb0a"
+    sensitivity: public

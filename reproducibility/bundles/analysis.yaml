@@ -1,5 +1,6 @@
-bundle_version: "1.0"
+bundle_version: "1.1"
 stage: analysis
+result_status: "FROZEN_EXPLORATORY"
 artifacts:
   - role: phenotyping_and_association_analysis
     path: 11_bigquery_notebook_non_traumatic_sah_analysis.py
@@ -21,3 +22,11 @@ artifacts:
     path: reproducibility/requirements-bigquery.lock
     version: "python-3.12-20260716"
     sha256: "d93489a3e881d072bde61f698dbd5f73aa1181daa770b040eaa7f1ca63f6c0a2"
+  - role: canonical_frozen_results
+    path: reproducibility/canonical-results.yaml
+    version: "2026-07-24"
+    sha256: "5065f2bdf8d5f0064b487d4211b5f2dcb8d30bdd09606d23c85b2843a4f4bf0f"
+  - role: superseded_execution_transcript
+    path: dist/analysis_result.md
+    version: "2026-07-16-noncanonical"
+    sha256: "636852d48edb08b286873fbd9f5dafc6301b49a6c5f2f85c0cd5a7f15d28f945"

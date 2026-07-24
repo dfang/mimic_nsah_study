@@ -1,27 +1,52 @@
-bundle_version: "1.3"
+bundle_version: "1.4"
 stage: manuscript
+artifact_status: "NON_SUBMISSION_PENDING_UPSTREAM_GATES"
 artifacts:
   - role: reviewed_english_submission_manuscript
     path: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
-    version: "2026-07-23"
-    sha256: "73aafe9a10f9f21c248fe6a204012024f1aaded1400f0c9b05b25348591b3088"
+    version: "2026-07-24"
+    sha256: "a4febac02b5ddb06ef83d6cffdad2736e9c0b6cf2dc17f4f99741de5659fe000"
   - role: aligned_chinese_reference_manuscript
     path: dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
-    version: "2026-07-23"
-    sha256: "77d1ac9b36fca0358036d93757508545a5a751eb40bfc87bfeb0329027e67c9d"
+    version: "2026-07-24"
+    sha256: "d417cd39c0420acf1d8c0ededb6d38084cc29c23ba612d89ea6ac5459f0f639c"
   - role: electronic_supplementary_material
     path: dist/electronic_supplementary_material.md
-    version: "2026-07-23"
-    sha256: "143202510b96006a627327aab9de153f330e32c24e3a4494b3091d526ea6ccfc"
+    version: "2026-07-24"
+    sha256: "c4050dd762e883d97d8a8960cee0c5dde938951d2efa3c9e867b62a4cef5927a"
   - role: bibliography
     path: dist/references.bib
     version: "2026-07-16"
     sha256: "207f4b04e345868d0595572f937f7829014a62278a8889b270182724312ac583"
+  - role: citation_style
+    path: dist/journal.csl
+    version: "2026-07-16"
+    sha256: "2f39b2c93cf7a90cb41c72a2945700c4d227ad233682d7fe843c77364a11ba82"
   - role: strobe_mapping
     path: dist/strobe_checklist.md
-    version: "2026-07-23"
-    sha256: "23c420160eda601d90922eec3afdba38c221140cd96022b3b9ed3477cf6cc9b5"
+    version: "2026-07-24"
+    sha256: "3cffe0ee2971e10d29c0b64272b878cee54d09f20835245c20cf4538cae67df7"
   - role: record_mapping
     path: dist/record_checklist.md
-    version: "2026-07-23"
-    sha256: "63b3cb0cadddf954315c9e1cefe7ce295b69c4f394597a97a23d0ce910df71a2"
+    version: "2026-07-24"
+    sha256: "a9795b06b9164be50be88a29e696de0207b3770082a0927087254e01e2359692"
+  - role: pdf_generation_manifest
+    path: dist/pdf/generation-manifest.yaml
+    version: "2026-07-24"
+    sha256: "7192d0e4f87016eeb4042a8ffb3a78ff7cf8f6de377b8768aa4d441bc5f0e734"
+  - role: english_non_submission_pdf
+    path: dist/pdf/manuscript_non_traumatic_sah_phenotypes_en.pdf
+    version: "2026-07-24"
+    sha256: "42e472ce7a80e27c135d7f546cf1212e00ad1f55da89f251f21a57855a767ab3"
+  - role: chinese_reference_pdf
+    path: dist/pdf/manuscript_non_traumatic_sah_phenotypes_cn.pdf
+    version: "2026-07-24"
+    sha256: "f7a946d0b7d411102abea2ac1e76c1d055edd382c93c4a8da6c67a3477061dc0"
+  - role: esm_non_submission_pdf
+    path: dist/pdf/electronic_supplementary_material.pdf
+    version: "2026-07-24"
+    sha256: "327a28401ba2f8a8f80b34eeb4656f6cd93ac278db75f168931110af83978c09"
+  - role: strobe_pdf
+    path: dist/pdf/strobe_checklist.pdf
+    version: "2026-07-24"
+    sha256: "04c929e58d78007de764daecce9abd3ba54f49fd6dc412451efc5e9104965efc"

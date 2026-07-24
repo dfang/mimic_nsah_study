@@ -1,5 +1,19 @@
 # Manuscript Review Report
 
+> **Superseded gate status, 2026-07-24:** The prior READY recommendation below is
+> retained as historical review evidence only. Audit
+> `MR-20260724T120911+0800-418f7e0` found one blocking and five major issues.
+> Remediation changed the manuscripts, validation entry point, result contract,
+> bundles, and rendered outputs. The current gate is
+> **PENDING INDEPENDENT REREVIEW**, not READY. See
+> `reproducibility/issue-register.yaml` and
+> `reproducibility/bundles/manuscript-review.yaml`.
+>
+> **Post-review update:** An authorized pure frozen-transport rerun and hospital-level
+> robustness analysis were subsequently completed on 2026-07-24. Statements below
+> describing those analyses as not assessed are retained only as the historical scope
+> of this superseded review; a fresh independent review remains required.
+
 **Scientific-content verdict:** READY
 
 **Journal-upload package:** NOT READY
@@ -35,7 +49,7 @@ Not assessed in this review were patient-level chart validation, a new authorize
 | Time contract | Manuscripts, protocol/SAP, ESM Note 1 | The 0-48 h feature window, overlapping deaths/discharges, treatment influence, and absence of a 48 h landmark are explicit. Cox/prediction claims are not presented. |
 | Phenotyping | Analysis code, stability script, ESM, freeze validation | Eight features, transformations, PCA, K=2-5 comparison, K=3 post-outcome exploratory status, seed, outcome-blind label ordering, and subject-grouped full-pipeline bootstrap are reported. |
 | Regression and anemia | Implemented code, SAP v1.0.1, frozen log, manuscripts, ESM Tables 9 and 11A | Main formula now matches code. Estimates are exploratory, P values unadjusted, covariance stay-level, and Hb/anemia circularity is handled through a clearly post hoc Hb-free sensitivity analysis. The rank-deficient process model is not interpreted. |
-| External transport | eICU code/results, ESM, manuscripts | Fixed MIMIC preprocessing and centroids are distinguished from de novo eICU clustering. Mortality ordering is reported as crude; ARI 0.0005 prevents a cluster-replication claim. INR denominator and imputation burden are explicit. |
+| External transport | eICU code/results, ESM, manuscripts | The authorized pure frozen evaluation loads a privately hashed MIMIC transform bundle and is distinguished from de novo eICU clustering. Mortality ordering is reported as crude; ARI -0.0017 prevents a cluster-replication claim. INR denominator and imputation burden are explicit. |
 | Conclusions | English and Chinese abstract/main conclusions | Conclusions are restricted to eligible stays, observed mortality ordering, specification-sensitive anemia estimates, and need for time-anchored prospective work. No clinical-use or causal claim remains. |
 | Bilingual and writing quality | English/Chinese manuscripts | Citation keys, figures, quantitative claims, uncertainty boundaries, and section intent align. Formulaic AI-style transitions and inflated claims were not detected in the final pass. |
 | Reproducibility and governance | Manifests, bundles, deviation and issue logs, release checklist | Public/restricted boundary remains intact. This revision changes reporting artifacts and SAP documentation only; it does not claim a new analysis rerun or bitwise regeneration. |
@@ -45,7 +59,7 @@ Not assessed in this review were patient-level chart validation, a new authorize
 - The ICD/text NSAH algorithms were not validated against manual chart review. External code evidence and aggregate dictionary/QC checks support candidate identification but do not establish study-specific sensitivity or positive predictive value.
 - Thirteen rows came from patients with repeated admissions. Resampling was grouped by patient, but regression confidence intervals used stay-level covariance and may be slightly narrow.
 - eICU INR missingness was informative and substantial; the INR-free sensitivity supports the crude ordering but does not remove all missingness bias.
-- eICU uncertainty did not account for hospital-level clustering, and de novo clusters did not reproduce the fixed patient-level boundaries.
+- The post-review hospital-cluster bootstrap and leave-one-hospital-out analyses addressed multicenter dependence and single-hospital influence, but de novo clusters still did not reproduce the fixed patient-level boundaries.
 - K=3, the feature set, and regression models were frozen after outcome access. All results therefore remain exploratory rather than confirmatory.
 
 ## Validation evidence

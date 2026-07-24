@@ -1,0 +1,60 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: phenotyping
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:7a17833f6ff8ed650d11f666f71c92815b16d7d0d9c8310a7ef72ef84b153754"
+input_hashes:
+  - role: phenotype-specification
+    path: scripts/phenotype_stability.py
+    sha256: "6aabbd6b8eda2601d32f2acea329438ba4e3a979fd56661af761eb9b8687ace6"
+  - role: stability-results
+    path: reproducibility/freeze-validation.md
+    sha256: "03ebcd9fb3b87ed66c56ac83d719c23014ea18a215e7ab260a5d695bfb38f1c9"
+  - role: results
+    path: reproducibility/canonical-results.yaml
+    sha256: "6dfbc604c84db73c9ea6aa9fb005dad221c58e1fe003a8ae2bc8d3b79cdb146a"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "Input space, preprocessing, PCA, K-means configuration, label ordering, K comparison, grouped full-pipeline bootstrap, and reported stability boundary."
+  not_assessed:
+    - "Cluster-specific Jaccard, individual assignment margins, and multi-seed summary because they were not retained."
+recommendation: revise
+findings:
+  - id: "METH-003"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: analysis_review
+    domain: statistics
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Structured abstract and Robustness"
+    evidence: "The manuscript's broad stability wording exceeds the retained overall-ARI evidence."
+    risk: "Cluster-level reproducibility, particularly P3, may be overstated."
+    recommended_action: "Use overall partition stability and state which stability quantities were not assessed."
+    owner: authors
+    verification: "All stability claims match the canonical result boundary."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-007"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: analysis_review
+    domain: design
+    artifact: sap.md
+    location: "Preprocessing and dimensionality reduction, lines 144-166"
+    evidence: "Three PCA components were fixed and explain 56.41% of variance, but no component-retention rule is specified."
+    risk: "PCA dimensionality remains an unexplained post-outcome analytic choice."
+    recommended_action: "State the exploratory rationale or report the retained-dimension sensitivity."
+    owner: statistician and authors
+    verification: "Methods documents a reproducible component-retention rationale or limitation."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

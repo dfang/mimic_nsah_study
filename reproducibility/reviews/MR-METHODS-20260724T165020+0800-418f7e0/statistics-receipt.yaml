@@ -1,0 +1,77 @@
+review_receipt_version: "1.0"
+review_run_id: "MR-METHODS-20260724T165020+0800-418f7e0"
+pass_id: statistics
+operation: audit
+reviewer_identity:
+  agent_or_person: "Codex /root"
+  role: "focused methods reviewer; not independent formal gate reviewer"
+skill_version: "sha256:c09de476575c611e37dddb9bff507575d68c7450c6c0816b759a93c5d7521ffc"
+input_hashes:
+  - role: sap
+    path: sap.md
+    sha256: "d32cc1ebd2f62d6bb8000f185ffbe864f88023ca8a4d4d1ebb85d3f146d03354"
+  - role: analysis
+    path: 11_bigquery_notebook_non_traumatic_sah_analysis.py
+    sha256: "59ecd08006e7863cb2aab75deb4837a761fdc4c885e185ecb873d92e4ab72d6f"
+  - role: results
+    path: reproducibility/canonical-results.yaml
+    sha256: "6dfbc604c84db73c9ea6aa9fb005dad221c58e1fe003a8ae2bc8d3b79cdb146a"
+coverage_status: assessed
+coverage_notes:
+  assessed:
+    - "K selection, bootstrap unit and refitting, logistic model formula, multiplicity, repeated observations, and sensitivity analyses."
+  not_assessed:
+    - "Patient-level residual diagnostics and live model refitting."
+recommendation: revise
+findings:
+  - id: "METH-002"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: analysis_review
+    domain: statistics
+    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
+    location: "Structured abstract Methods, line 22"
+    evidence: "K=3 was selected after outcome access and internal criteria did not uniquely identify K=3."
+    risk: "The current wording overstates outcome-blind analytic selection."
+    recommended_action: "Report K=3 as a post-outcome exploratory compromise among internal metrics, minimum size, and interpretability."
+    owner: statistician and authors
+    verification: "No text claims mortality-independent human K selection."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-003"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: analysis_review
+    domain: statistics
+    artifact: reproducibility/canonical-results.yaml
+    location: "stability, lines 22-31"
+    evidence: "Only overall and OOB ARI were retained; cluster-specific Jaccard, assignment uncertainty, and multiple-seed summaries were not assessed."
+    risk: "Global ARI may conceal instability of the smallest phenotype or individual assignments."
+    recommended_action: "Restrict claims to overall partition stability unless the missing analyses are rerun."
+    owner: statistician and authors
+    verification: "Abstract, main text, ESM, and conclusion use the same stability boundary."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null
+  - id: "METH-006"
+    severity: minor
+    gate_effect: none
+    confidence: high
+    stage: analysis_review
+    domain: statistics
+    artifact: 11_bigquery_notebook_non_traumatic_sah_analysis.py
+    location: "fit_logit_quiet and build_adjusted_regression_formulas"
+    evidence: "Logistic confidence intervals use model-based stay-level covariance; age is linear and no functional-form diagnostics are reported."
+    risk: "Uncertainty may be slightly optimistic and adjustment may be misspecified."
+    recommended_action: "Add subject-aware covariance/first-admission and nonlinear-age checks if rerun; otherwise preserve the explicit exploratory limitation."
+    owner: statistician
+    verification: "Sensitivity output or a retained limitation closes the issue."
+    status: open
+    closure_evidence: null
+    closed_by: null
+    closed_at: null

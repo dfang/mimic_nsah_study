@@ -1,193 +1,105 @@
+review_run_id: "MR-20260724T120911+0800-418f7e0"
+register_status: "post_rerun_reconciliation_complete_render_pending_and_independent_rereview"
 issues:
-  - id: REV-001
-    stage: protocol
-    domain: design
+  - id: "REV-20260724-001"
     severity: blocking
+    gate_effect: blocks_ready
     confidence: high
-    status: closed
-    artifact: protocol.md
-    location: Timeline contract and protocol status
-    evidence: "Protocol/SAP were reconstructed after outcome access."
-    impact: "The analysis cannot be presented as prospectively prespecified or confirmatory."
-    action: "Freeze as retrospective exploratory analysis."
-    owner: authors
-    verification: "Protocol/SAP v1.0.0 and deviation log"
-    closure_evidence: "User confirmed authorized freeze; protocol/SAP now FROZEN_EXPLORATORY with explicit post-outcome-access status."
-    closed_by: authorized_user
-    closed_at: "2026-07-16"
-  - id: REV-002
-    stage: analysis
-    domain: statistics
-    severity: major
-    confidence: high
-    status: closed
-    artifact: 11_bigquery_notebook_non_traumatic_sah_analysis.py
-    location: bootstrap and cross-validation functions
-    evidence: "Subject-grouped full-pipeline resampling completed."
-    impact: "Original row-based stability estimates were superseded."
-    action: "Use only regenerated grouped results."
-    owner: authorized analyst
-    verification: "200 grouped bootstrap iterations; mean ARI 0.8554; mean OOB ARI 0.8578"
-    closure_evidence: "reproducibility/freeze-validation.md"
-    closed_by: freeze_run
-    closed_at: "2026-07-16"
-  - id: REV-003
-    stage: cohort
-    domain: design
-    severity: major
-    confidence: high
-    status: closed
-    artifact: 10_create_non_traumatic_sah_cohort.sql
-    location: massive transfusion exclusion
-    evidence: "Include-massive-transfusion sensitivity executed."
-    impact: "No otherwise eligible massive-transfusion cases were added in this release."
-    action: "Retain restriction and report sensitivity."
-    owner: authorized analyst and authors
-    verification: "N=1,186; ARI 1.0000 vs primary"
-    closure_evidence: "reproducibility/freeze-validation.md"
-    closed_by: freeze_run
-    closed_at: "2026-07-16"
-  - id: REV-004
-    stage: analysis
-    domain: design
-    severity: major
-    confidence: high
-    status: closed
-    artifact: protocol.md
-    location: 0-48 h feature and mortality time contract
-    evidence: "Descriptive same-hospital target retained; LOS >=48 h sensitivity executed."
-    impact: "Result remains non-predictive and non-causal."
-    action: "Preserve interpretation boundary."
-    owner: authors
-    verification: "LOS >=48 h N=1,005; subset ARI 0.8604"
-    closure_evidence: "Protocol/SAP v1.0.0 and freeze validation"
-    closed_by: authorized_user
-    closed_at: "2026-07-16"
-  - id: REV-005
-    stage: concepts
-    domain: clinical
-    severity: major
-    confidence: high
-    status: closed
-    artifact: 16_freeze_release_qc.sql
-    location: NSAH ICD/text identification
-    evidence: "Dictionary/code and aggregate overlap audit executed; no manual chart gold standard exists."
-    impact: "Study-specific diagnostic misclassification remains possible."
-    action: "Retain limitation and do not claim diagnostic validation."
-    owner: clinical reviewer and authorized analyst
-    verification: "QC job 79176287-6e85-4b9c-a54c-8b6da3309d81"
-    closure_evidence: "reproducibility/nsah-identification-validation.md and freeze-validation.md"
-    closed_by: freeze_run
-    closed_at: "2026-07-16"
-  - id: REV-006
-    stage: release
+    stage: manuscript_review
     domain: reproducibility
-    severity: blocking
-    confidence: high
-    status: closed
-    artifact: reproducibility/run-manifest.yaml
-    location: environment and verification
-    evidence: "Exact lock, clean authorized rerun, job provenance, aggregate reconciliation and disclosure suppression completed."
-    impact: "Computational/statistical freeze evidence is now available."
-    action: "Use analysis-freeze-v1.0.0 as the immutable entry point."
+    artifact: reproducibility/bundles/manuscript-review.yaml
+    location: bundle membership, hashes, and lifecycle status
+    evidence: "The prior manuscript and review bundles contained stale hashes and no persisted review input or canonical current issue register."
+    risk: "A stale READY label could be mistaken for a current independent acceptance decision."
+    recommended_action: "Rebuild hashes, persist the review input and current issue register, and require a fresh independent review after remediation."
     owner: release manager
-    verification: "Release checklist and freeze validation"
-    closure_evidence: "Freeze commit/tag created at release completion."
-    closed_by: release_manager
-    closed_at: "2026-07-16"
-  - id: REV-007
-    stage: submission
-    domain: reporting
-    severity: blocking
+    verification: "All bundle hashes match current files and manuscript_review remains pending until an independent receipt closes all blocking and major findings."
+    status: resolved
+    closure_evidence: "Bundles rebuilt with exact current hashes, persisted review input/current register, and pending_independent_rereview gate; no READY claim retained."
+    closed_by: remediation
+    closed_at: "2026-07-24"
+  - id: "REV-20260724-002"
+    severity: major
+    gate_effect: blocks_ready
     confidence: high
+    stage: analysis_review
+    domain: reproducibility
+    artifact: reproducibility/canonical-results.yaml
+    location: frozen result contract
+    evidence: "The analysis bundle previously indexed code and an environment lock but no canonical result artifact; dist/analysis_result.md mixed current and superseded console output."
+    risk: "Manuscript estimates could not be mechanically separated from obsolete exploratory output."
+    recommended_action: "Add a machine-readable canonical result contract and label the console transcript as noncanonical."
+    owner: release manager
+    verification: "The analysis bundle hashes both artifacts and the canonical result contract maps all manuscript-critical estimates."
+    status: resolved
+    closure_evidence: "reproducibility/canonical-results.yaml is authoritative and dist/analysis_result.md is explicitly marked noncanonical."
+    closed_by: remediation
+    closed_at: "2026-07-24"
+  - id: "REV-20260724-003"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: validation
+    domain: design
+    artifact: scripts/15_run_eicu_external_validation.py
+    location: external evaluation entry point
+    evidence: "The prior evaluation runtime refit imputation, scaling, PCA, and centroids from MIMIC instead of loading an immutable transform artifact."
+    risk: "The reported evaluation could not be reproduced as a pure frozen assignment operation."
+    recommended_action: "Make evaluation load a validated access-controlled transform bundle and fail closed when it is absent."
+    owner: authorized analyst
+    verification: "Regression test proves main() loads a prebuilt bundle and contains no MIMIC fitting path; the authorized rerun records the private bundle hash, source commit/run ID, and BigQuery job provenance."
+    status: resolved
+    closure_evidence: "Code path repaired and authorized pure frozen evaluation completed on 2026-07-24; current results are 539/222/82 with private bundle SHA-256 63042d68a74643da9c902e4d1f6cd9d774e77d55b5f6e1269851bceb3371dd41."
+    closed_by: authorized analyst
+    closed_at: "2026-07-24"
+  - id: "REV-20260724-004"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: manuscript_review
+    domain: statistics
+    artifact: sap.md
+    location: stability evidence contract
+    evidence: "The SAP requested cluster-specific Jaccard, assignment uncertainty, and multiple-seed evidence that were not preserved in the public frozen result."
+    risk: "Calling the phenotypes stable would overstate the available overall ARI evidence."
+    recommended_action: "Report only overall partition stability and record cluster-specific and multi-seed quantities as not assessed for this freeze."
+    owner: statistician and authors
+    verification: "SAP, ESM, canonical result artifact, and both manuscripts use the narrowed evidence boundary."
+    status: resolved
+    closure_evidence: "SAP, ESM, canonical results, and bilingual manuscripts now limit the claim to overall partition stability and mark missing quantities not assessed."
+    closed_by: remediation
+    closed_at: "2026-07-24"
+  - id: "REV-20260724-005"
+    severity: major
+    gate_effect: blocks_ready
+    confidence: high
+    stage: release
+    domain: governance
+    artifact: reproducibility/governance-status.yaml
+    location: public aggregate release approval
+    evidence: "The public repository contains aggregate outputs, while author/institution disclosure approval is not recorded."
+    risk: "Repository visibility could be misread as documented disclosure authorization."
+    recommended_action: "Record the observed public state and keep release blocked until approval evidence is supplied by the responsible institution/authors."
+    owner: authors and institution
+    verification: "A dated approval record is added and the governance gate is independently rerun."
     status: open
-    artifact: dist/author_completion_checklist.md
-    location: author, ethics, declaration, and production items
-    evidence: "Required author metadata, declarations, ethics confirmation, institutional disclosure approval, editable source, and fresh visually inspected PDFs are incomplete; citeproc preflight has passed."
-    impact: "The journal upload package is not ready."
-    action: "Complete author checklist, final institutional disclosure approval, editable source, and verified visual submission build."
-    owner: authors and submission manager
-    verification: "Complete title/declaration package and visually verified DOCX/PDF/ESM"
     closure_evidence: null
     closed_by: null
     closed_at: null
-  - id: REV-008
-    stage: manuscript_review
-    domain: design
+  - id: "REV-20260724-006"
     severity: major
+    gate_effect: blocks_ready
     confidence: high
-    status: closed
-    artifact: sap.md
-    location: implemented exploratory outcome association
-    evidence: "The manuscript implied a priori selection and SAP v1.0.0 did not reproduce the implemented main logistic formula."
-    impact: "Readers could mistake post-outcome choices for prespecification and could not reconstruct the reported adjusted ORs from the SAP."
-    action: "Document the implemented post-outcome exploratory formula and synchronize both manuscripts."
-    owner: manuscript reviewer
-    verification: "SAP v1.0.1; DEV-009; bilingual manuscript Methods"
-    closure_evidence: "Main formula matches build_adjusted_regression_formulas; frozen estimates unchanged."
-    closed_by: manuscript_review
-    closed_at: "2026-07-23"
-  - id: REV-009
-    stage: manuscript_review
-    domain: statistics
-    severity: major
-    confidence: high
-    status: closed
-    artifact: dist/electronic_supplementary_material.md
-    location: ESM Table 9 and process-of-care model
-    evidence: "Previously transcribed Model 2 intervals did not match the frozen log, and duplicate etiology indicators made the process model rank deficient."
-    impact: "The supplementary table implied unsupported inferential precision."
-    action: "Remove the process model from inferential reporting while preserving its audit trail."
-    owner: statistical reviewer
-    verification: "DEV-011; ESM Table 9 contains only the implemented main exploratory model."
-    closure_evidence: "No Model 2 or 0.000-inf interval remains; main estimates match frozen output."
-    closed_by: manuscript_review
-    closed_at: "2026-07-23"
-  - id: REV-010
-    stage: manuscript_review
-    domain: cohort
-    severity: major
-    confidence: high
-    status: closed
-    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cited.md
-    location: Methods cohort and eICU missingness
-    evidence: "MIMIC exclusions were written as cross-database rules, and 49.4% lacked its 903-patient pre-eligibility denominator."
-    impact: "The eICU cohort was not reproducible from manuscript prose and INR imputation burden could be misread."
-    action: "Separate database-specific rules and report both INR denominators."
-    owner: clinical and external-transport reviewers
-    verification: "DEV-012; ESM Tables 2 and 5; 446/903 and 390/843 reported."
-    closure_evidence: "English and Chinese cohort Methods now match database-specific code and aggregate flow."
-    closed_by: manuscript_review
-    closed_at: "2026-07-23"
-  - id: REV-011
     stage: manuscript_review
     domain: reporting
-    severity: minor
-    confidence: high
-    status: closed
-    artifact: dist/manuscript_non_traumatic_sah_phenotypes_cn_cited.md
-    location: bilingual Purpose, Methods, Conclusion, and limitations
-    evidence: "Formulaic repeated wording and raw mixed-language phrasing reduced readability."
-    impact: "Scientific boundaries were harder to read and text appeared machine-generated."
-    action: "Perform a bilingual humanization and unsupported-claim audit without changing estimates."
-    owner: manuscript editor
-    verification: "18 citation keys and figure paths aligned; no em/en dash or inflated validation claim remains."
-    closure_evidence: "Final language audit and manuscript output tests passed."
-    closed_by: manuscript_review
-    closed_at: "2026-07-23"
-  - id: REV-012
-    stage: manuscript_review
-    domain: gate
-    severity: blocking
-    confidence: high
-    status: closed
-    artifact: dist/manuscript_review_report.md
-    location: five-round scientific-content acceptance gate
-    evidence: "Five review rounds completed across clinical, statistical, phenotyping, external transport, bilingual, and reproducibility domains."
-    impact: "Determines whether reviewed manuscript content can proceed while submission production remains separate."
-    action: "Require zero open blocking or major scientific-content findings plus mechanical validation."
-    owner: independent manuscript reviewer
-    verification: "42 tests passed; bilingual Pandoc citeproc preflight passed; abstract 250 words; citation and figure alignment passed."
-    closure_evidence: "Scientific-content verdict READY; REV-007 remains open for journal upload."
-    closed_by: manuscript_review
-    closed_at: "2026-07-23"
+    artifact: dist/pdf/generation-manifest.yaml
+    location: rendered submission artifacts
+    evidence: "The prior PDFs predated the reconciled bilingual manuscript and contained superseded denominators and metrics."
+    risk: "A stale PDF could be uploaded despite corrected Markdown."
+    recommended_action: "Rebuild all PDFs from current sources, bind their hashes to source hashes, and visually inspect every page."
+    owner: submission manager
+    verification: "Generation manifest hashes match current sources/outputs and visual inspection records no rendering defect."
+    status: open
+    closure_evidence: "The prior PDFs passed visual inspection, but the 2026-07-24 authorized eICU rerun changed their source text; generation-manifest now marks them stale and prevents submission use."
+    closed_by: null
+    closed_at: null

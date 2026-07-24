@@ -1,11 +1,20 @@
-bundle_version: "1.1"
+bundle_version: "1.2"
 stage: manuscript_review
+gate_status: "pending_independent_rereview"
 artifacts:
-  - role: independent_review_report
+  - role: superseded_independent_review_report
     path: dist/manuscript_review_report.md
-    version: "2026-07-23-READY"
-    sha256: "3f0bd49b5e1bc8e81f5cc2ef8ba45395c9597ad8ab4529b722b485f722a0f051"
+    version: "2026-07-23-historical-ready-superseded"
+    sha256: "0bb3f7b7737db8105b88af1261bb3ba77946f9cd145b1e78821ebf1902b562f1"
   - role: author_and_authorized_reanalysis_actions
     path: dist/author_completion_checklist.md
-    version: "2026-07-23"
-    sha256: "89889bbeb24bc270b246076e8a88f572434eb48121f760b67c4cc5354ce6121b"
+    version: "2026-07-24"
+    sha256: "f3f4f2d77ae0d5e3da83973ebffcda3e6c6c7d1b7681888e55e718d7f07e2d53"
+  - role: review_input
+    path: reproducibility/reviews/MR-20260724T120911+0800-418f7e0/review-input.yaml
+    version: "MR-20260724T120911+0800-418f7e0"
+    sha256: "b7d47efc3241b4770768ad08fee64edff7f3c832ebb1c89d6ed9403680cd10d3"
+  - role: current_issue_register
+    path: reproducibility/issue-register.yaml
+    version: "2026-07-24"
+    sha256: "498f250e7961aa0e05bfaff5f7f5528f6db9ba9255878b92e03fcc4fc80880d3"
